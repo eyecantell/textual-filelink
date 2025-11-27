@@ -1,4 +1,4 @@
-# tests/test_toggleable_file_link.py
+# Fixed test_toggleable_file_link.py
 import pytest
 from pathlib import Path
 from textual.app import App, ComposeResult
@@ -92,19 +92,19 @@ class TestToggleableFileLink:
             assert app.toggled_events[0].is_toggled is True
             assert app.toggled_events[1].is_toggled is False
     
-    async def test_toggle_visual_update(self, temp_file):
+    async def test_toggle_visual_update(self, temp_file, get_rendered_text):
         """Test toggle visual updates correctly."""
         link = ToggleableFileLink(temp_file, initial_toggle=False, show_toggle=True)
         app = ToggleableFileLinkTestApp(link)
         
         async with app.run_test() as pilot:
             toggle_widget = link.query_one("#toggle", Static)
-            assert toggle_widget.renderable == "☐"
+            assert get_rendered_text(toggle_widget) == "☐"
             
             await pilot.click("#toggle")
             await pilot.pause()
             
-            assert toggle_widget.renderable == "✓"
+            assert get_rendered_text(toggle_widget) == "✓"
     
     async def test_remove_click_posts_message(self, temp_file):
         """Test clicking remove button posts Removed message."""
@@ -168,16 +168,16 @@ class TestToggleableFileLink:
             with pytest.raises(Exception):
                 link.query_one("#remove", Static)
     
-    async def test_status_icon_displayed(self, temp_file):
+    async def test_status_icon_displayed(self, temp_file, get_rendered_text):
         """Test status icon is displayed when provided."""
         link = ToggleableFileLink(temp_file, status_icon="⚠")
         app = ToggleableFileLinkTestApp(link)
         
         async with app.run_test() as pilot:
             status_widget = link.query_one("#status-icon", Static)
-            assert status_widget.renderable == "⚠"
+            assert get_rendered_text(status_widget) == "⚠"
     
-    async def test_set_status_icon(self, temp_file):
+    async def test_set_status_icon(self, temp_file, get_rendered_text):
         """Test updating status icon after creation."""
         link = ToggleableFileLink(temp_file, status_icon="✓")
         app = ToggleableFileLinkTestApp(link)
@@ -190,7 +190,7 @@ class TestToggleableFileLink:
             
             assert link.status_icon == "⚠"
             status_widget = link.query_one("#status-icon", Static)
-            assert status_widget.renderable == "⚠"
+            assert get_rendered_text(status_widget) == "⚠"
     
     async def test_set_status_icon_to_none(self, temp_file):
         """Test hiding status icon by setting to None."""
@@ -241,7 +241,7 @@ class TestToggleableFileLink:
         async with app.run_test() as pilot:
             # Click on the FileLink component
             file_link = link.query_one(FileLink)
-            await pilot.click(FileLink)
+            await pilot.click(file_link)
             await pilot.pause()
             
             assert len(app.clicked_events) == 1

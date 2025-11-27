@@ -1,4 +1,4 @@
-# tests/test_file_link.py
+# Fixed test_file_link.py
 import pytest
 from pathlib import Path
 from textual.app import App, ComposeResult
@@ -40,13 +40,13 @@ class TestFileLink:
         assert link.line == 10
         assert link.column == 5
     
-    async def test_filelink_displays_filename(self, temp_file):
+    async def test_filelink_displays_filename(self, temp_file, get_rendered_text):
         """Test FileLink displays only the filename, not full path."""
         link = FileLink(temp_file)
         
         async with FileLinkTestApp(link).run_test() as pilot:
             # The Static widget should display just the filename
-            assert link.renderable == temp_file.name
+            assert get_rendered_text(link) == temp_file.name
     
     async def test_filelink_click_posts_message(self, temp_file):
         """Test clicking FileLink posts a Clicked message."""
@@ -117,7 +117,7 @@ class TestFileLink:
         
         assert cmd[0] == "code"
         assert cmd[1] == "--goto"
-        assert cmd[2] == str(temp_file.name)
+        assert cmd[2] == str(temp_file)
     
     async def test_filelink_vim_command_builder(self, temp_file):
         """Test vim command builder generates correct command."""

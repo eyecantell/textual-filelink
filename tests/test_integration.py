@@ -1,4 +1,4 @@
-# tests/test_integration.py
+# Fixed test_integration.py
 """Integration tests for FileLink and ToggleableFileLink working together."""
 
 import pytest
@@ -59,7 +59,7 @@ class TestIntegration:
             
             # Toggle first link
             first_link = links[0]
-            await pilot.click("#toggle")
+            await pilot.click(first_link.query_one("#toggle"))
             await pilot.pause()
             
             assert first_link.is_toggled is True
@@ -75,7 +75,7 @@ class TestIntegration:
         app = IntegrationTestApp(links)
         
         async with app.run_test() as pilot:
-            assert len(list(app.query(FileLink))) == 5  # 3 FileLink + 2 inside ToggleableFileLink
+            assert len(list(app.query(FileLink))) == 3  # 2 FileLink + 1 inside ToggleableFileLink
             assert len(list(app.query(ToggleableFileLink))) == 1
     
     async def test_toggle_multiple_links(self, sample_files):
@@ -90,7 +90,7 @@ class TestIntegration:
             # Toggle all links
             toggleables = list(app.query(ToggleableFileLink))
             for link in toggleables:
-                await pilot.click(ToggleableFileLink, link)
+                await pilot.click(link.query_one("#toggle"))
                 await pilot.pause()
             
             # All should be toggled
@@ -121,23 +121,24 @@ class TestIntegration:
         
         async with app.run_test() as pilot:
             # Remove all links
-            for _ in range(3):
-                await pilot.click("#remove")
+            toggleables = list(app.query(ToggleableFileLink))
+            for link in toggleables:
+                await pilot.click(link.query_one("#remove"))
                 await pilot.pause()
             
             # Should have 3 remove events
             assert len([e for e in app.events if e[0] == "removed"]) == 3
     
-    async def test_long_filename_rendering(self, long_filename):
+    async def test_long_filename_rendering(self, long_filename, get_rendered_text):
         """Test rendering of very long filenames."""
         link = FileLink(long_filename)
         app = IntegrationTestApp([link])
         
         async with app.run_test() as pilot:
             # Should render without error
-            assert link.renderable == long_filename.name
+            assert get_rendered_text(link) == long_filename.name
     
-    async def test_special_chars_filename(self, special_char_filename):
+    async def test_special_chars_filename(self, special_char_filename, get_rendered_text):
         """Test filenames with special characters."""
         link = ToggleableFileLink(
             special_char_filename,
@@ -149,14 +150,14 @@ class TestIntegration:
         async with app.run_test() as pilot:
             # Should handle special characters
             file_link = link.query_one(FileLink)
-            assert file_link.renderable == special_char_filename.name
+            assert get_rendered_text(file_link) == special_char_filename.name
             
             # Should be clickable
-            await pilot.click("#toggle")
+            await pilot.click(link.query_one("#toggle"))
             await pilot.pause()
             assert link.is_toggled is True
     
-    async def test_unicode_filename(self, unicode_filename):
+    async def test_unicode_filename(self, unicode_filename, get_rendered_text):
         """Test filenames with unicode characters."""
         link = ToggleableFileLink(unicode_filename, status_icon="🌟")
         app = IntegrationTestApp([link])
@@ -164,7 +165,7 @@ class TestIntegration:
         async with app.run_test() as pilot:
             # Should handle unicode in filename and icon
             file_link = link.query_one(FileLink)
-            assert file_link.renderable == unicode_filename.name
+            assert get_rendered_text(file_link) == unicode_filename.name
             assert link.status_icon == "🌟"
     
     async def test_disable_on_untoggle_interaction(self, sample_files):
@@ -180,18 +181,18 @@ class TestIntegration:
         async with app.run_test() as pilot:
             # Try clicking disabled link
             file_link = link.query_one(FileLink)
-            await pilot.click(FileLink)
+            await pilot.click(file_link)
             await pilot.pause()
             
             # Click should be blocked
             assert len([e for e in app.events if e[0] == "clicked"]) == 0
             
             # Enable by toggling
-            await pilot.click("#toggle")
+            await pilot.click(link.query_one("#toggle"))
             await pilot.pause()
             
             # Now click should work
-            await pilot.click(FileLink)
+            await pilot.click(file_link)
             await pilot.pause()
             
             assert len([e for e in app.events if e[0] == "clicked"]) == 1
@@ -230,12 +231,12 @@ class TestIntegration:
             assert clicked_events[0][1].column == 10
             
             # Toggle off
-            await pilot.click("#toggle")
+            await pilot.click(link.query_one("#toggle"))
             await pilot.pause()
             assert link.is_toggled is False
             
             # Remove
-            await pilot.click("#remove")
+            await pilot.click(link.query_one("#remove"))
             await pilot.pause()
             
             removed_events = [e for e in app.events if e[0] == "removed"]

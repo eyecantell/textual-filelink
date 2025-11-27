@@ -97,6 +97,7 @@ addopts = [
     "--cov-report=html",
     "-v",
 ]
+asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 python_files = "test_*.py"
 testpaths = ["tests"]

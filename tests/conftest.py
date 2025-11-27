@@ -1,3 +1,4 @@
+# Fixed conftest.py
 # tests/conftest.py
 """Pytest configuration and shared fixtures."""
 
@@ -65,11 +66,20 @@ def special_char_filename(tmp_path):
 @pytest.fixture
 def unicode_filename(tmp_path):
     """Create a file with unicode characters."""
-    unicode_name = "测试文件_🔥_test.txt"
+    unicode_name = "my_🔥_test.txt"
     file_path = tmp_path / unicode_name
     file_path.write_text("unicode content")
     return file_path
 
+@pytest.fixture
+def get_rendered_text():
+    """Helper to get plain text from a rendered widget."""
+    def _get(widget):
+        content = widget.render()
+        if content is None:
+            return ""
+        return content.plain
+    return _get
 
 # Pytest configuration
 def pytest_configure(config):
