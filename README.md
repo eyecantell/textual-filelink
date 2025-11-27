@@ -1,8 +1,7 @@
 # textual-filelink
-
+[![CI](https://github.com/eyecantell/textual-filelink/actions/workflows/ci.yml/badge.svg)](https://github.com/eyecantell/textual-filelink/actions/runs/19725973735)
 [![PyPI](https://img.shields.io/pypi/v/textual-filelink.svg)](https://pypi.org/project/textual-filelink/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/textual-filelink.svg)](https://pypi.org/project/textual-filelink/)
-
 [![Downloads](https://pepy.tech/badge/textual-filelink)](https://pepy.tech/project/textual-filelink)
 [![License](https://img.shields.io/pypi/l/textual-filelink.svg)](https://github.com/eyecantell/textual-filelink/blob/main/LICENSE)
 
