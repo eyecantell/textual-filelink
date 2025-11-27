@@ -17,7 +17,7 @@
             "consistency": "cached"
         }
     ],
-    "postCreateCommand": "cd /mounted/dev/textual-filelink && pdm install -G test -G dev",
+    "postCreateCommand": "cd /mounted/dev/textual-filelink && pdm install -G test",
     "customizations": {
         "vscode": {
             "extensions": [
