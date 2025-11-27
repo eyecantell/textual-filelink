@@ -12,10 +12,11 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 🔗 **Clickable file links** that open in your preferred editor (VSCode, vim, nano, etc.)
 - ☑️ **Toggle controls** for selecting/deselecting files
 - ❌ **Remove buttons** for file management interfaces
-- 🎨 **Status icons** with unicode support for visual feedback
+- 🎨 **Status icons** with unicode support for visual feedback (optionally clickable)
 - 🎯 **Jump to specific line and column** in your editor
 - 🔧 **Customizable command builders** for any editor
 - 🎭 **Flexible layouts** - show/hide controls as needed
+- 💬 **Tooltips** for toggle, status icon, and remove button
 
 ## Installation
 
@@ -62,6 +63,10 @@ class MyApp(App):
             show_toggle=True,
             show_remove=True,
             status_icon="✓",
+            status_icon_clickable=True,
+            toggle_tooltip="Toggle selection",
+            status_tooltip="File status",
+            remove_tooltip="Remove file",
             line=42
         )
     
@@ -70,6 +75,12 @@ class MyApp(App):
     
     def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
         self.notify(f"{event.path.name} removed")
+    
+    def on_toggleable_file_link_status_icon_clicked(self, event: ToggleableFileLink.StatusIconClicked):
+        self.notify(f"Status icon '{event.icon}' clicked for {event.path.name}")
+
+if __name__ == "__main__":
+    MyApp().run()
 ```
 
 ## FileLink API
@@ -123,10 +134,14 @@ ToggleableFileLink(
     show_toggle: bool = True,
     show_remove: bool = True,
     status_icon: str | None = None,
+    status_icon_clickable: bool = False,
     line: int | None = None,
     column: int | None = None,
     command_builder: Callable | None = None,
     disable_on_untoggle: bool = False,
+    toggle_tooltip: str | None = None,
+    status_tooltip: str | None = None,
+    remove_tooltip: str | None = None,
     name: str | None = None,
     id: str | None = None,
     classes: str | None = None,
@@ -139,10 +154,14 @@ ToggleableFileLink(
 - `show_toggle`: Whether to display the toggle control (☐/✓)
 - `show_remove`: Whether to display the remove button (×)
 - `status_icon`: Optional unicode icon to display before the filename
+- `status_icon_clickable`: Whether the status icon is clickable (posts `StatusIconClicked` message)
 - `line`: Optional line number to jump to
 - `column`: Optional column number to jump to
 - `command_builder`: Custom function to build the editor command
 - `disable_on_untoggle`: If True, dim/disable the link when untoggled
+- `toggle_tooltip`: Optional tooltip text for the toggle button
+- `status_tooltip`: Optional tooltip text for the status icon
+- `remove_tooltip`: Optional tooltip text for the remove button
 
 ### Properties
 
@@ -152,15 +171,21 @@ ToggleableFileLink(
 
 ### Methods
 
-#### `set_status_icon(icon: str | None)`
-Update the status icon. Pass `None` to hide it.
+#### `set_status_icon(icon: str | None, tooltip: str | None = None)`
+Update the status icon and optionally its tooltip.
 
 ```python
-link.set_status_icon("⚠")  # Warning
-link.set_status_icon("✓")  # Success
-link.set_status_icon("⏳")  # In progress
+link.set_status_icon("⚠", tooltip="Warning: File modified")  # Warning
+link.set_status_icon("✓", tooltip="Validated")  # Success
+link.set_status_icon("⏳", tooltip="Processing...")  # In progress
 link.set_status_icon(None) # Hide icon
 ```
+
+#### `set_toggle_tooltip(tooltip: str | None)`
+Update the toggle button tooltip.
+
+#### `set_remove_tooltip(tooltip: str | None)`
+Update the remove button tooltip.
 
 ### Messages
 
@@ -176,6 +201,13 @@ Posted when the remove button is clicked.
 
 **Attributes:**
 - `path: Path`
+
+#### `ToggleableFileLink.StatusIconClicked`
+Posted when the status icon is clicked (if `status_icon_clickable=True`).
+
+**Attributes:**
+- `path: Path`
+- `icon: str`
 
 ## Custom Editor Commands
 
@@ -302,19 +334,23 @@ class FileManagerApp(App):
             yield Static("📁 Project Files")
             
             files = [
-                ("main.py", "✓", True),
-                ("config.json", "⚠", False),
-                ("README.md", "📝", False),
-                ("tests.py", "⏳", False),
+                ("main.py", "✓", True, "Validated", True),
+                ("config.json", "⚠", False, "Needs review", True),
+                ("README.md", "📝", False, "Draft", False),
+                ("tests.py", "⏳", False, "Running tests", False),
             ]
             
-            for filename, icon, toggled in files:
+            for filename, icon, toggled, tooltip, clickable in files:
                 yield ToggleableFileLink(
                     Path(filename),
                     initial_toggle=toggled,
                     show_toggle=True,
                     show_remove=True,
                     status_icon=icon,
+                    status_icon_clickable=clickable,
+                    toggle_tooltip="Toggle selection",
+                    status_tooltip=tooltip,
+                    remove_tooltip="Remove file",
                     line=1,
                 )
         
@@ -335,6 +371,9 @@ class FileManagerApp(App):
             if child.path == event.path:
                 child.remove()
         self.notify(f"❌ Removed {event.path.name}", severity="warning")
+    
+    def on_toggleable_file_link_status_icon_clicked(self, event: ToggleableFileLink.StatusIconClicked):
+        self.notify(f"Clicked status icon '{event.icon}' for {event.path.name}")
     
     def on_file_link_clicked(self, event):
         self.notify(f"Opening {event.path.name}...")
