@@ -21,7 +21,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Terminals",
     "Topic :: Software Development :: User Interfaces",
-    "Framework :: Textual",
 ]
 
 keywords = [
