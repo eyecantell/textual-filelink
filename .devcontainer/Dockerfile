@@ -36,6 +36,7 @@ RUN pip install --no-cache-dir \
     build \
     GitPython \
     pdm \
+    prepdir \
     pydantic \
     pytest \
     ruff \
