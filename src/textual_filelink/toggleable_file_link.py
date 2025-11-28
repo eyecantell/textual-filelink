@@ -20,8 +20,8 @@ class IconConfig:
     """Configuration for a status icon in ToggleableFileLink."""
     name: str
     icon: str
-    position: Literal["before", "after"] = "before"  # before or after filename
-    index: int | None = None # Explicit ordering index
+    position: Literal["before", "after"] = "before"
+    index: int | None = None
     visible: bool = True
     clickable: bool = False
     tooltip: str | None = None
@@ -418,7 +418,8 @@ class ToggleableFileLink(Widget):
         
         # If position or index changed, we need to recompose
         if "position" in kwargs or "index" in kwargs:
-            self._recompose_icons()
+            # Schedule the recompose as a background task
+            self.call_later(self._recompose_icons)
         else:
             # Update existing static widget
             try:
@@ -443,21 +444,27 @@ class ToggleableFileLink(Widget):
                 # Icon not yet mounted or needs recompose
                 pass
 
-    def _recompose_icons(self) -> None:
+    async def _recompose_icons(self) -> None:
         """Recompose the entire widget to reflect icon order changes."""
-        # Remove all existing icon statics
-        for static in self.query(".status-icon"):
-            static.remove()
-        
         # Get the horizontal container
         try:
             container = self.query_one(Horizontal)
         except Exception:
             return
         
-        # Find the FileLink position
+        # Find the FileLink position before removing icons
         try:
             file_link = self.query_one(FileLink)
+        except Exception:
+            return
+        
+        # Remove all existing icon statics and await removal
+        icons_to_remove = list(self.query(".status-icon"))
+        for static in icons_to_remove:
+            await static.remove()
+        
+        # Now recalculate FileLink index after removals
+        try:
             file_link_index = list(container.children).index(file_link)
         except Exception:
             return
@@ -471,13 +478,14 @@ class ToggleableFileLink(Widget):
                 insert_pos = (1 if self._show_toggle else 0) + i
                 container.mount(icon_static, before=insert_pos)
         
-        # Insert after icons
+        # Insert after icons (need to recalculate file_link_index after before icons)
+        file_link_index = list(container.children).index(file_link)
         after_icons = self._sort_icons(self._icons, "after")
         for icon_config in after_icons:
             if icon_config.visible:
                 icon_static = self._create_icon_static(icon_config)
                 # Insert right after FileLink
-                container.mount(icon_static, after=file_link_index + len(before_icons))
+                container.mount(icon_static, after=file_link_index)
 
     def get_icon(self, name: str) -> dict | None:
         """Get a copy of an icon's configuration.
