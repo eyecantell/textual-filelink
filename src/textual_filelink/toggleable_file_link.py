@@ -44,7 +44,7 @@ class ToggleableFileLink(Widget):
     
     ToggleableFileLink .toggle-static {
         width: 3;
-        min-width: 3;
+        max-width: 3;
         height: auto;
         background: transparent;
         border: none;
@@ -58,12 +58,12 @@ class ToggleableFileLink(Widget):
     }
     
     ToggleableFileLink .status-icon {
-        width: auto;
-        min-width: 2;
+        width: 2;
+        max-width: 2;
         height: auto;
         background: transparent;
         border: none;
-        padding: 0 1 0 0;
+        padding: 0;
         color: $text;
         content-align: center middle;
     }
@@ -81,9 +81,13 @@ class ToggleableFileLink(Widget):
         height: auto;
     }
     
+    ToggleableFileLink .file-link-container FileLink {
+        text-align: left;
+    }
+    
     ToggleableFileLink .remove-static {
         width: 3;
-        min-width: 3;
+        max-width: 3;
         height: auto;
         background: transparent;
         border: none;
@@ -578,6 +582,7 @@ class ToggleableFileLink(Widget):
         icon_config = self._get_icon_config(icon_name)
         
         if icon_config and icon_config.clickable:
+            # Post message - it will automatically have self (ToggleableFileLink) as the sender
             self.post_message(self.IconClicked(self._path, icon_name, icon_config.icon))
 
     @on(events.Click, "#remove")

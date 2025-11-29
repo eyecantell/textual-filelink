@@ -12,11 +12,15 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 🔗 **Clickable file links** that open in your preferred editor (VSCode, vim, nano, etc.)
 - ☑️ **Toggle controls** for selecting/deselecting files
 - ❌ **Remove buttons** for file management interfaces
-- 🎨 **Status icons** with unicode support for visual feedback (optionally clickable)
+- 🎨 **Multiple status icons** with unicode support for rich visual feedback
+- 📍 **Icon positioning** - place icons before or after filenames
+- 🔢 **Icon ordering** - control display order with explicit indices
+- 👆 **Clickable icons** - make icons interactive with click events
+- 👁️ **Dynamic visibility** - show/hide icons on the fly
 - 🎯 **Jump to specific line and column** in your editor
 - 🔧 **Customizable command builders** for any editor
 - 🎭 **Flexible layouts** - show/hide controls as needed
-- 💬 **Tooltips** for toggle, status icon, and remove button
+- 💬 **Tooltips** for all interactive elements
 
 ## Installation
 
@@ -41,7 +45,7 @@ from textual_filelink import FileLink
 
 class MyApp(App):
     def compose(self) -> ComposeResult:
-        yield FileLink(Path("README.md"), line=10, column=5)
+        yield FileLink("README.md", line=10, column=5)
     
     def on_file_link_clicked(self, event: FileLink.Clicked):
         self.notify(f"Opened {event.path.name} at line {event.line}")
@@ -50,7 +54,7 @@ if __name__ == "__main__":
     MyApp().run()
 ```
 
-### ToggleableFileLink with Status Icons
+### ToggleableFileLink with Multiple Icons
 
 ```python
 from textual_filelink import ToggleableFileLink
@@ -58,14 +62,16 @@ from textual_filelink import ToggleableFileLink
 class MyApp(App):
     def compose(self) -> ComposeResult:
         yield ToggleableFileLink(
-            Path("script.py"),
+            "script.py",
             initial_toggle=True,
             show_toggle=True,
             show_remove=True,
-            status_icon="✓",
-            status_icon_clickable=True,
+            icons=[
+                {"name": "status", "icon": "✓", "clickable": True, "tooltip": "Validated"},
+                {"name": "lock", "icon": "🔒", "position": "after", "tooltip": "Read-only"},
+                {"name": "modified", "icon": "📝", "visible": False, "tooltip": "Modified"},
+            ],
             toggle_tooltip="Toggle selection",
-            status_tooltip="File status",
             remove_tooltip="Remove file",
             line=42
         )
@@ -76,8 +82,12 @@ class MyApp(App):
     def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
         self.notify(f"{event.path.name} removed")
     
-    def on_toggleable_file_link_status_icon_clicked(self, event: ToggleableFileLink.StatusIconClicked):
-        self.notify(f"Status icon '{event.icon}' clicked for {event.path.name}")
+    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
+        self.notify(f"Clicked '{event.icon_name}' icon on {event.path.name}")
+        
+        # Example: dynamically update icon
+        link = event.control
+        link.update_icon("status", icon="⏳", tooltip="Processing...")
 
 if __name__ == "__main__":
     MyApp().run()
@@ -133,14 +143,12 @@ ToggleableFileLink(
     initial_toggle: bool = False,
     show_toggle: bool = True,
     show_remove: bool = True,
-    status_icon: str | None = None,
-    status_icon_clickable: bool = False,
+    icons: list[IconConfig | dict] | None = None,
     line: int | None = None,
     column: int | None = None,
     command_builder: Callable | None = None,
     disable_on_untoggle: bool = False,
     toggle_tooltip: str | None = None,
-    status_tooltip: str | None = None,
     remove_tooltip: str | None = None,
     name: str | None = None,
     id: str | None = None,
@@ -151,34 +159,73 @@ ToggleableFileLink(
 **Parameters:**
 - `path`: Full path to the file
 - `initial_toggle`: Whether the item starts toggled (checked)
-- `show_toggle`: Whether to display the toggle control (☐/✓)
+- `show_toggle`: Whether to display the toggle control (☐/☑)
 - `show_remove`: Whether to display the remove button (×)
-- `status_icon`: Optional unicode icon to display before the filename
-- `status_icon_clickable`: Whether the status icon is clickable (posts `StatusIconClicked` message)
+- `icons`: List of icon configurations (see IconConfig below)
 - `line`: Optional line number to jump to
 - `column`: Optional column number to jump to
 - `command_builder`: Custom function to build the editor command
 - `disable_on_untoggle`: If True, dim/disable the link when untoggled
 - `toggle_tooltip`: Optional tooltip text for the toggle button
-- `status_tooltip`: Optional tooltip text for the status icon
 - `remove_tooltip`: Optional tooltip text for the remove button
+
+### IconConfig
+
+Icons can be specified as dicts or `IconConfig` dataclasses:
+
+```python
+from textual_filelink.toggleable_file_link import IconConfig
+
+# As dict
+{"name": "status", "icon": "✓", "clickable": True, "tooltip": "Done"}
+
+# As dataclass
+IconConfig(name="status", icon="✓", clickable=True, tooltip="Done")
+```
+
+**IconConfig Properties:**
+- `name` (str, **required**): Unique identifier for the icon
+- `icon` (str, **required**): Unicode character to display
+- `position` (str): "before" or "after" the filename (default: "before")
+- `index` (int | None): Explicit ordering index (default: None = use list order)
+- `visible` (bool): Whether icon is initially visible (default: True)
+- `clickable` (bool): Whether icon posts `IconClicked` messages (default: False)
+- `tooltip` (str | None): Tooltip text (default: None)
 
 ### Properties
 
 - `path: Path` - The file path
 - `is_toggled: bool` - Current toggle state
-- `status_icon: str | None` - Current status icon
+- `icons: list[dict]` - List of all icon configurations
 
 ### Methods
 
-#### `set_status_icon(icon: str | None, tooltip: str | None = None)`
-Update the status icon and optionally its tooltip.
+#### `set_icon_visible(name: str, visible: bool)`
+Show or hide a specific icon.
 
 ```python
-link.set_status_icon("⚠", tooltip="Warning: File modified")  # Warning
-link.set_status_icon("✓", tooltip="Validated")  # Success
-link.set_status_icon("⏳", tooltip="Processing...")  # In progress
-link.set_status_icon(None) # Hide icon
+link.set_icon_visible("warning", True)   # Show icon
+link.set_icon_visible("warning", False)  # Hide icon
+```
+
+#### `update_icon(name: str, **kwargs)`
+Update any properties of an existing icon.
+
+```python
+link.update_icon("status", icon="✓", tooltip="Complete")
+link.update_icon("status", visible=False)
+link.update_icon("status", position="after", index=5)
+```
+
+**Updatable properties:** `icon`, `position`, `index`, `visible`, `clickable`, `tooltip`
+
+#### `get_icon(name: str) -> dict | None`
+Get a copy of an icon's configuration.
+
+```python
+config = link.get_icon("status")
+if config:
+    print(f"Icon: {config['icon']}, Visible: {config['visible']}")
 ```
 
 #### `set_toggle_tooltip(tooltip: str | None)`
@@ -202,12 +249,13 @@ Posted when the remove button is clicked.
 **Attributes:**
 - `path: Path`
 
-#### `ToggleableFileLink.StatusIconClicked`
-Posted when the status icon is clicked (if `status_icon_clickable=True`).
+#### `ToggleableFileLink.IconClicked`
+Posted when a clickable icon is clicked.
 
 **Attributes:**
 - `path: Path`
-- `icon: str`
+- `icon_name: str` - The name of the clicked icon
+- `icon: str` - The unicode character of the icon
 
 ## Custom Editor Commands
 
@@ -246,6 +294,116 @@ def my_editor_command(path: Path, line: int | None, column: int | None) -> list[
 link = FileLink(path, command_builder=my_editor_command)
 ```
 
+## Icon Examples
+
+### Icon Positioning
+
+```python
+# Icons before filename
+ToggleableFileLink(
+    path,
+    icons=[
+        {"name": "type", "icon": "🐍", "position": "before"},
+        {"name": "status", "icon": "✓", "position": "before"},
+    ]
+)
+# Display: 🐍 ✓ script.py
+
+# Icons after filename
+ToggleableFileLink(
+    path,
+    icons=[
+        {"name": "size", "icon": "📊", "position": "after"},
+        {"name": "sync", "icon": "☁️", "position": "after"},
+    ]
+)
+# Display: script.py 📊 ☁️
+
+# Mixed positions
+ToggleableFileLink(
+    path,
+    icons=[
+        {"name": "type", "icon": "🐍", "position": "before"},
+        {"name": "sync", "icon": "☁️", "position": "after"},
+    ]
+)
+# Display: 🐍 script.py ☁️
+```
+
+### Icon Ordering
+
+```python
+# Explicit ordering with index
+ToggleableFileLink(
+    path,
+    icons=[
+        {"name": "third", "icon": "3️⃣", "index": 3},
+        {"name": "first", "icon": "1️⃣", "index": 1},
+        {"name": "second", "icon": "2️⃣", "index": 2},
+    ]
+)
+# Display: 1️⃣ 2️⃣ 3️⃣ filename.py
+
+# Auto ordering (maintains list order)
+ToggleableFileLink(
+    path,
+    icons=[
+        {"name": "first", "icon": "A"},
+        {"name": "second", "icon": "B"},
+        {"name": "third", "icon": "C"},
+    ]
+)
+# Display: A B C filename.py
+```
+
+### Dynamic Icon Updates
+
+```python
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield ToggleableFileLink(
+            "process.py",
+            id="task-file",
+            icons=[
+                {"name": "status", "icon": "⏳", "tooltip": "Pending"},
+                {"name": "result", "icon": "⚪", "visible": False},
+            ]
+        )
+    
+    def on_mount(self):
+        # Simulate processing
+        self.set_timer(2.0, self.complete_task)
+    
+    def complete_task(self):
+        link = self.query_one("#task-file", ToggleableFileLink)
+        link.update_icon("status", icon="✓", tooltip="Complete")
+        link.set_icon_visible("result", True)
+        link.update_icon("result", icon="🟢", tooltip="Success")
+```
+
+### Clickable Icons
+
+```python
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield ToggleableFileLink(
+            path,
+            icons=[
+                {"name": "edit", "icon": "✏️", "clickable": True, "tooltip": "Edit settings"},
+                {"name": "refresh", "icon": "🔄", "clickable": True, "tooltip": "Refresh"},
+                {"name": "info", "icon": "ℹ️", "clickable": True, "tooltip": "Show info"},
+            ]
+        )
+    
+    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
+        if event.icon_name == "edit":
+            self.edit_file(event.path)
+        elif event.icon_name == "refresh":
+            self.refresh_file(event.path)
+        elif event.icon_name == "info":
+            self.show_info(event.path)
+```
+
 ## Layout Configurations
 
 ### Toggle Only
@@ -266,15 +424,18 @@ ToggleableFileLink(path, show_toggle=True, show_remove=True)
 ```
 Display: `☐ filename.txt ×`
 
-### Neither (Plain Link with Status)
+### Plain Link with Icons
 ```python
-ToggleableFileLink(path, show_toggle=False, show_remove=False, status_icon="📄")
+ToggleableFileLink(
+    path, 
+    show_toggle=False, 
+    show_remove=False,
+    icons=[{"name": "type", "icon": "📄"}]
+)
 ```
 Display: `📄 filename.txt`
 
-## Status Icons
-
-Common unicode icons you can use:
+## Common Unicode Icons
 
 ```python
 # Status indicators
@@ -294,6 +455,20 @@ Common unicode icons you can use:
 "🐍"  # Python file
 "📊"  # Data file
 "⚙️"  # Config file
+
+# Actions
+"✏️"  # Edit
+"👁️"  # View
+"🗑️"  # Delete
+"💾"  # Save
+"📋"  # Copy
+
+# States
+"🟢"  # Success/Green
+"🟡"  # Warning/Yellow
+"🔴"  # Error/Red
+"⚪"  # Neutral/White
+"🟣"  # Info/Purple
 ```
 
 ## Complete Example
@@ -301,7 +476,7 @@ Common unicode icons you can use:
 ```python
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.containers import Vertical, Horizontal
+from textual.containers import Vertical
 from textual.widgets import Header, Footer, Static
 from textual_filelink import ToggleableFileLink
 
@@ -323,60 +498,84 @@ class FileManagerApp(App):
     }
     """
     
-    def __init__(self):
-        super().__init__()
-        self.selected_files = set()
-    
     def compose(self) -> ComposeResult:
         yield Header()
         
         with Vertical():
-            yield Static("📁 Project Files")
+            yield Static("📂 Project Files")
             
-            files = [
-                ("main.py", "✓", True, "Validated", True),
-                ("config.json", "⚠", False, "Needs review", True),
-                ("README.md", "📝", False, "Draft", False),
-                ("tests.py", "⏳", False, "Running tests", False),
-            ]
+            # Validated file with multiple icons
+            yield ToggleableFileLink(
+                Path("main.py"),
+                initial_toggle=True,
+                icons=[
+                    {"name": "status", "icon": "✓", "tooltip": "Validated", "clickable": True},
+                    {"name": "type", "icon": "🐍", "tooltip": "Python file"},
+                    {"name": "lock", "icon": "🔒", "position": "after", "tooltip": "Read-only"},
+                ]
+            )
             
-            for filename, icon, toggled, tooltip, clickable in files:
-                yield ToggleableFileLink(
-                    Path(filename),
-                    initial_toggle=toggled,
-                    show_toggle=True,
-                    show_remove=True,
-                    status_icon=icon,
-                    status_icon_clickable=clickable,
-                    toggle_tooltip="Toggle selection",
-                    status_tooltip=tooltip,
-                    remove_tooltip="Remove file",
-                    line=1,
-                )
+            # File needing review
+            yield ToggleableFileLink(
+                Path("config.json"),
+                icons=[
+                    {"name": "status", "icon": "⚠", "tooltip": "Needs review", "clickable": True},
+                    {"name": "type", "icon": "⚙️", "tooltip": "Config file"},
+                ]
+            )
+            
+            # File being processed
+            yield ToggleableFileLink(
+                Path("data.csv"),
+                id="processing-file",
+                icons=[
+                    {"name": "status", "icon": "⏳", "tooltip": "Processing...", "clickable": True},
+                    {"name": "type", "icon": "📊", "tooltip": "Data file"},
+                    {"name": "result", "icon": "⚪", "visible": False, "position": "after"},
+                ]
+            )
         
         yield Footer()
     
     def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
-        if event.is_toggled:
-            self.selected_files.add(event.path)
-            self.notify(f"✓ Selected {event.path.name}")
-        else:
-            self.selected_files.discard(event.path)
-            self.notify(f"☐ Deselected {event.path.name}")
+        state = "selected" if event.is_toggled else "deselected"
+        self.notify(f"📋 {event.path.name} {state}")
     
     def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
-        self.selected_files.discard(event.path)
-        # Find and remove the widget
+        # Remove the widget
         for child in self.query(ToggleableFileLink):
             if child.path == event.path:
                 child.remove()
-        self.notify(f"❌ Removed {event.path.name}", severity="warning")
+        self.notify(f"🗑️ Removed {event.path.name}", severity="warning")
     
-    def on_toggleable_file_link_status_icon_clicked(self, event: ToggleableFileLink.StatusIconClicked):
-        self.notify(f"Clicked status icon '{event.icon}' for {event.path.name}")
-    
-    def on_file_link_clicked(self, event):
-        self.notify(f"Opening {event.path.name}...")
+    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
+        # Find the link by path
+        link = None
+        for child in self.query(ToggleableFileLink):
+            if child.path == event.path:
+                link = child
+                break
+        
+        if not link:
+            return
+        
+        if event.icon_name == "status":
+            # Toggle processing status
+            if event.icon == "⏳":
+                # Complete processing
+                link.update_icon("status", icon="✓", tooltip="Complete")
+                # Only update result icon if it exists (for data.csv)
+                if link.get_icon("result"):
+                    link.set_icon_visible("result", True)
+                    link.update_icon("result", icon="🟢", tooltip="Success")
+                self.notify(f"✅ {event.path.name} processing complete")
+            else:
+                # Start processing
+                link.update_icon("status", icon="⏳", tooltip="Processing...")
+                # Only hide result icon if it exists (for data.csv)
+                if link.get_icon("result"):
+                    link.set_icon_visible("result", False)
+                self.notify(f"⏳ Processing {event.path.name}...")
 
 if __name__ == "__main__":
     FileManagerApp().run()
@@ -429,4 +628,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **PyPI**: https://pypi.org/project/textual-filelink/
 - **GitHub**: https://github.com/eyecantell/textual-filelink
 - **Issues**: https://github.com/eyecantell/textual-filelink/issues
+- **Changelog**: https://github.com/eyecantell/textual-filelink/blob/main/CHANGELOG.md
 - **Textual Documentation**: https://textual.textualize.io/
