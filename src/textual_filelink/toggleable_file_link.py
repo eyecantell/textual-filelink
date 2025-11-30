@@ -14,6 +14,8 @@ from textual.containers import Horizontal
 
 from .file_link import FileLink
 
+import logging
+logger = logging.getLogger(__name__)
 
 @dataclass
 class IconConfig:
@@ -58,8 +60,8 @@ class ToggleableFileLink(Widget):
     }
     
     ToggleableFileLink .status-icon {
-        width: 2;
-        max-width: 2;
+        width: 3;
+        max-width: 3;
         height: auto;
         background: transparent;
         border: none;
@@ -201,6 +203,7 @@ class ToggleableFileLink(Widget):
         self._disable_on_untoggle = disable_on_untoggle
         self._toggle_tooltip = toggle_tooltip
         self._remove_tooltip = remove_tooltip
+        logger.debug(f"ToggleableFileLink initialized with path: {self._path}, initial_toggle: {initial_toggle}, show_toggle: {show_toggle}, show_remove: {show_remove}")
 
         # Handle backwards compatibility for old status_icon parameters
         if status_icon is not None:

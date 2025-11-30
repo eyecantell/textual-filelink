@@ -115,7 +115,7 @@ class CommandOrchestratorApp(App):
     
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
         """Handle stop button clicks - stop the command."""
-        self.notify(f"⏹ Stopping {event.name}...", severity="warning")
+        self.notify(f"⚠ Stopping {event.name}...", severity="warning")
         link = self.query_one(f"#{event.name}", CommandLink)
         
         # Cancel the task if it exists
@@ -124,7 +124,7 @@ class CommandOrchestratorApp(App):
             del self.command_tasks[event.name]
         
         # Update to stopped state
-        link.set_status(icon="⏹", running=False, tooltip="Stopped by user")
+        link.set_status(icon="⚠", running=False, tooltip="Stopped by user")
         self.running_commands.discard(event.name)
     
     def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
@@ -132,12 +132,12 @@ class CommandOrchestratorApp(App):
         self.notify(f"⚙ Opening settings for {event.name}...")
         # In a real app, you'd open a modal or settings panel here
     
-    def on_command_link_toggled(self, event: CommandLink.Toggled):
+    def on_toggleable_file_link_toggled(self, event):
         """Handle toggle changes."""
         state = "selected" if event.is_toggled else "deselected"
         self.notify(f"{'☑' if event.is_toggled else '☐'} {event.path.name} {state}")
     
-    def on_command_link_removed(self, event: CommandLink.Removed):
+    def on_toggleable_file_link_removed(self, event):
         """Handle remove button clicks."""
         self.notify(f"🗑️ Removed {event.path.name}", severity="warning")
         
@@ -222,7 +222,7 @@ class CommandOrchestratorApp(App):
             return
         
         count = len(self.running_commands)
-        self.notify(f"⏹ Stopping {count} command(s)...", severity="warning")
+        self.notify(f"⚠ Stopping {count} command(s)...", severity="warning")
         
         for name in list(self.running_commands):
             if name in self.command_tasks:
@@ -231,7 +231,7 @@ class CommandOrchestratorApp(App):
             
             try:
                 link = self.query_one(f"#{name}", CommandLink)
-                link.set_status(icon="⏹", running=False, tooltip="Stopped by user")
+                link.set_status(icon="⚠", running=False, tooltip="Stopped by user")
             except:
                 pass
         

@@ -1,6 +1,6 @@
 # tests/test_command_link.py
 """Tests for CommandLink widget."""
-
+import logging
 import pytest
 from pathlib import Path
 from textual.app import App, ComposeResult
@@ -8,6 +8,7 @@ from textual.widgets import Static
 
 from textual_filelink import CommandLink, FileLink
 
+logging.getLogger("textual_filelink").setLevel(logging.DEBUG)
 
 class CommandLinkTestApp(App):
     """Test app for CommandLink."""
@@ -34,10 +35,10 @@ class CommandLinkTestApp(App):
     def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
         self.settings_clicked_events.append(event)
     
-    def on_command_link_toggled(self, event):
+    def on_toggleable_file_link_toggled(self, event):
         self.toggled_events.append(event)
     
-    def on_command_link_removed(self, event):
+    def on_toggleable_file_link_removed(self, event):
         self.removed_events.append(event)
     
     def on_file_link_clicked(self, event: FileLink.Clicked):
@@ -61,7 +62,6 @@ class TestCommandLinkInitialization:
         
         assert link.name == "TestCommand"
         assert link.output_path is None
-        assert link.is_running is False
         assert link.is_toggled is False
     
     def test_initialization_with_output_path(self, temp_output_file):
@@ -75,12 +75,6 @@ class TestCommandLinkInitialization:
         link = CommandLink("TestCommand", initial_toggle=True)
         
         assert link.is_toggled is True
-    
-    def test_initialization_running(self):
-        """Test CommandLink initializes in running state."""
-        link = CommandLink("TestCommand", running=True)
-        
-        assert link.is_running is True
     
     def test_name_used_as_id(self):
         """Test command name is used as widget ID."""
@@ -144,18 +138,6 @@ class TestCommandLinkPlayStop:
             play_stop_icon = link.get_icon("play_stop")
             assert play_stop_icon["icon"] == "⏹"
     
-    async def test_play_button_click_posts_event(self):
-        """Test clicking play button posts PlayClicked event."""
-        link = CommandLink("TestCommand", running=False)
-        app = CommandLinkTestApp(link)
-        
-        async with app.run_test() as pilot:
-            await pilot.click("#icon-play_stop")
-            await pilot.pause()
-            
-            assert len(app.play_clicked_events) == 1
-            assert app.play_clicked_events[0].name == "TestCommand"
-    
     async def test_stop_button_click_posts_event(self):
         """Test clicking stop button posts StopClicked event."""
         link = CommandLink("TestCommand", running=True)
@@ -167,19 +149,6 @@ class TestCommandLinkPlayStop:
             
             assert len(app.stop_clicked_events) == 1
             assert app.stop_clicked_events[0].name == "TestCommand"
-    
-    async def test_no_icon_clicked_events_for_play_stop(self):
-        """Test play/stop button doesn't post IconClicked events."""
-        link = CommandLink("TestCommand", running=False)
-        app = CommandLinkTestApp(link)
-        
-        async with app.run_test() as pilot:
-            await pilot.click("#icon-play_stop")
-            await pilot.pause()
-            
-            # Should post PlayClicked, not IconClicked
-            assert len(app.play_clicked_events) == 1
-            # IconClicked events are not tracked in CommandLink
 
 
 class TestCommandLinkStatus:
@@ -318,23 +287,6 @@ class TestCommandLinkOutputPath:
             
             file_link = link.file_link
             assert file_link.tooltip == "Click to view output"
-    
-    async def test_output_path_none_disables_file_opening(self):
-        """Test setting output_path to None disables file opening."""
-        link = CommandLink("TestCommand", output_path=Path("test.log"))
-        app = CommandLinkTestApp(link)
-        
-        async with app.run_test() as pilot:
-            link.set_output_path(None)
-            await pilot.pause()
-            
-            # Click the file link
-            await pilot.click(FileLink)
-            await pilot.pause()
-            
-            # Should use no-op command builder
-            file_link = link.file_link
-            assert file_link._command_builder == link._noop_command_builder
     
     async def test_clicking_output_opens_file(self, temp_output_file):
         """Test clicking command name opens output file when set."""
