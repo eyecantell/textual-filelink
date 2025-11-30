@@ -614,3 +614,8 @@ class ToggleableFileLink(Widget):
     def icons(self) -> list[dict]:
         """Get a list of all icon configurations (as dicts)."""
         return [asdict(ic) for ic in self._icons]
+    
+    @property
+    def file_link(self) -> FileLink:
+        """Get the internal FileLink widget."""
+        return self.query_one(FileLink)
