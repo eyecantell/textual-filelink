@@ -1,16 +1,16 @@
 # Build Output
 
-**Status:** ✅ Passed
+**Status:** ❌ Failed
 **Duration:** 3.0s
-**Timestamp:** 2025-12-11 17:45:52 UTC
+**Timestamp:** 2025-12-11 20:38:12 UTC
 
 ## Summary
-Build completed successfully.
+Build failed with compilation errors.
 
 ## Details
-✓ Compilation: Success
+✗ Compilation: Failed
 ✓ Type checking: Passed
-✓ Bundling: Complete
+⊘ Bundling: Skipped
 
 ## Output
-dist/textual-filelink-0.2.0-py3-none-any.whl
+No artifacts generated

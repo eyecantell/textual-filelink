@@ -1,15 +1,15 @@
 # Lint Output
 
-**Status:** ✅ Passed
+**Status:** ❌ Failed
 **Duration:** 3.0s
-**Timestamp:** 2025-12-11 17:32:32 UTC
+**Timestamp:** 2025-12-11 20:38:12 UTC
 
 ## Summary
-All code conforms to style standards.
+Style violations detected.
 
 ## Issues Found
-0
+3
 
 ## Details
-✓ No style issues
-✓ Complexity checks passed
+✗ 3 style violations found
+⊘ Complexity checks skipped

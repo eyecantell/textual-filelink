@@ -123,8 +123,18 @@ class CommandOrchestratorApp(App):
         yield Footer()
 
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
-        """Handle play button clicks - start the command."""
+        """Handle play button clicks - start the command.
+
+        The event provides full context: command name, output path, and toggle state.
+        We no longer need to query the widget for this information.
+        """
         self.notify(f"▶ Starting {event.name}...")
+        # Event context is now available directly from the message:
+        # - event.name: Command name (e.g., "Test", "Build")
+        # - event.path: Output file path (same as output_path)
+        # - event.output_path: Output file path
+        # - event.is_toggled: Whether command is selected for batch run
+
         link = self.query_one(f"#{event.name}", CommandLink)
 
         # Track start time for elapsed time display
@@ -146,8 +156,13 @@ class CommandOrchestratorApp(App):
         self.command_tasks[event.name] = task
 
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
-        """Handle stop button clicks - stop the command."""
+        """Handle stop button clicks - stop the command.
+
+        The event provides full context including whether the command
+        is part of a batch run, making it easy to coordinate with other commands.
+        """
         self.notify(f"⚠ Stopping {event.name}...", severity="warning")
+        # Event context available: event.name, event.path, event.output_path, event.is_toggled
         link = self.query_one(f"#{event.name}", CommandLink)
 
         # Stop the elapsed time timer
@@ -166,8 +181,13 @@ class CommandOrchestratorApp(App):
         self.command_start_times.pop(event.name, None)
 
     def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
-        """Handle settings icon clicks."""
+        """Handle settings icon clicks.
+
+        The event provides full context about which command's settings were clicked,
+        including its current state and output path.
+        """
         self.notify(f"⚙ Opening settings for {event.name}...")
+        # Event context available: event.name, event.path, event.output_path, event.is_toggled
         # In a real app, you'd open a modal or settings panel here
 
     def _update_elapsed_time(self, name: str) -> None:
@@ -275,10 +295,14 @@ class CommandOrchestratorApp(App):
 
     def on_toggleable_file_link_removed(self, event):
         """Handle remove button clicks."""
-        # event.control is the ToggleableFileLink/CommandLink that posted the event
-        link = event.control
+        # The event.path for CommandLink is Path(name), e.g., Path("Test")
+        command_name = event.path.name  # Gets "Test", "Build", etc.
 
-        if not isinstance(link, CommandLink):
+        # Query for the CommandLink by its ID (which is set to the command name)
+        try:
+            link = self.query_one(f"#{command_name}", CommandLink)
+        except Exception:
+            # Widget not found
             return
 
         # Cancel task if running
@@ -314,7 +338,7 @@ class CommandOrchestratorApp(App):
                     if isinstance(next_widget, Static) and "command-description" in next_widget.classes:
                         next_widget.remove()
         except Exception:
-            # Fallback: just remove the link
+            # Fallback: just remove the link if something goes wrong
             link.remove()
 
     async def _simulate_command(self, name: str):

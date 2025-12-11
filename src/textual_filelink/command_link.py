@@ -23,6 +23,12 @@ class CommandLink(ToggleableFileLink):
     events for user interactions. Single-instance commands only (not multiple
     concurrent runs of the same command).
 
+    Event Bubbling Policy
+    ---------------------
+    - Internal click handlers stop event propagation with event.stop()
+    - Widget-specific messages (PlayClicked, StopClicked, SettingsClicked) bubble up by default
+    - Parent containers can handle or stop these messages as needed
+
     Example:
         ```python
         link = CommandLink(
@@ -45,25 +51,70 @@ class CommandLink(ToggleableFileLink):
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     class PlayClicked(Message):
-        """Posted when play button is clicked."""
+        """Posted when play button is clicked.
 
-        def __init__(self, name: str) -> None:
+        Attributes
+        ----------
+        path : Path | None
+            The output file path, or None if not set.
+        name : str
+            The command name.
+        output_path : Path | None
+            The output file path (same as path for consistency).
+        is_toggled : bool
+            Whether the command is toggled/selected.
+        """
+
+        def __init__(self, path: Path | None, name: str, output_path: Path | None, is_toggled: bool) -> None:
             super().__init__()
+            self.path = path
             self.name = name
+            self.output_path = output_path
+            self.is_toggled = is_toggled
 
     class StopClicked(Message):
-        """Posted when stop button is clicked."""
+        """Posted when stop button is clicked.
 
-        def __init__(self, name: str) -> None:
+        Attributes
+        ----------
+        path : Path | None
+            The output file path, or None if not set.
+        name : str
+            The command name.
+        output_path : Path | None
+            The output file path (same as path for consistency).
+        is_toggled : bool
+            Whether the command is toggled/selected.
+        """
+
+        def __init__(self, path: Path | None, name: str, output_path: Path | None, is_toggled: bool) -> None:
             super().__init__()
+            self.path = path
             self.name = name
+            self.output_path = output_path
+            self.is_toggled = is_toggled
 
     class SettingsClicked(Message):
-        """Posted when settings icon is clicked."""
+        """Posted when settings icon is clicked.
 
-        def __init__(self, name: str) -> None:
+        Attributes
+        ----------
+        path : Path | None
+            The output file path, or None if not set.
+        name : str
+            The command name.
+        output_path : Path | None
+            The output file path (same as path for consistency).
+        is_toggled : bool
+            Whether the command is toggled/selected.
+        """
+
+        def __init__(self, path: Path | None, name: str, output_path: Path | None, is_toggled: bool) -> None:
             super().__init__()
+            self.path = path
             self.name = name
+            self.output_path = output_path
+            self.is_toggled = is_toggled
 
     def __init__(
         self,
@@ -145,7 +196,7 @@ class CommandLink(ToggleableFileLink):
         )
 
         # Play/Stop button
-        play_stop_icon = "⏹" if running else "▶"
+        play_stop_icon = "⏹️" if running else "▶️"
         play_stop_tooltip = "Stop command" if running else "Run command"
         icons.append(
             {
@@ -198,7 +249,7 @@ class CommandLink(ToggleableFileLink):
         )
 
     @staticmethod
-    def _noop_command_builder(path: Path, line: int | None, column: int | None) -> list[str]:
+    def _noop_command_builder(_path: Path, _line: int | None, _column: int | None) -> list[str]:
         """No-op command builder when no output file exists."""
         return ["true"]  # Unix no-op command
 
@@ -231,7 +282,7 @@ class CommandLink(ToggleableFileLink):
             logger.debug(f"CommandLink '{self._name}' running state set to {running}")
 
             # Update play/stop button
-            play_stop_icon = "⏹" if running else "▶"
+            play_stop_icon = "⏹️" if running else "▶️"
             play_stop_tooltip = "Stop command" if running else "Run command"
             self.update_icon("play_stop", icon=play_stop_icon, tooltip=play_stop_tooltip)
 
@@ -392,20 +443,72 @@ class CommandLink(ToggleableFileLink):
 
         if icon_name == "play_stop":
             if self._command_running:
-                self.post_message(self.StopClicked(self.name))
+                self.post_message(self.StopClicked(
+                    path=self._output_path,
+                    name=self.name,
+                    output_path=self._output_path,
+                    is_toggled=self._is_toggled
+                ))
             else:
-                self.post_message(self.PlayClicked(self.name))
+                self.post_message(self.PlayClicked(
+                    path=self._output_path,
+                    name=self.name,
+                    output_path=self._output_path,
+                    is_toggled=self._is_toggled
+                ))
         elif icon_name == "settings":
-            self.post_message(self.SettingsClicked(self.name))
+            self.post_message(self.SettingsClicked(
+                path=self._output_path,
+                name=self.name,
+                output_path=self._output_path,
+                is_toggled=self._is_toggled
+            ))
+
+    @property
+    def display_name(self) -> str:
+        """Get the command display name.
+
+        Returns
+        -------
+        str
+            The command name used for display.
+        """
+        return self._name
 
     @property
     def name(self) -> str:
-        """Get the command name."""
+        """Get the command name (alias for display_name).
+
+        Returns
+        -------
+        str
+            The command name.
+        """
         return self.id or self._name
 
     @property
+    def path(self) -> Path | None:
+        """Get the output file path.
+
+        This overrides the parent's path property to return the actual
+        output file path instead of a display path.
+
+        Returns
+        -------
+        Path | None
+            The output file path, or None if not set.
+        """
+        return self._output_path
+
+    @property
     def output_path(self) -> Path | None:
-        """Get the current output file path."""
+        """Get the current output file path.
+
+        Returns
+        -------
+        Path | None
+            The output file path, or None if not set.
+        """
         return self._output_path
 
     @property

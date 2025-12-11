@@ -11,7 +11,14 @@ from textual.widgets import Static
 
 
 class FileLink(Static):
-    """Clickable filename that opens the real file using a configurable command."""
+    """Clickable filename that opens the real file using a configurable command.
+
+    Event Bubbling Policy
+    ---------------------
+    - Internal click handlers stop event propagation with event.stop()
+    - Widget-specific messages (Clicked) bubble up by default
+    - Parent containers can handle or stop these messages as needed
+    """
 
     DEFAULT_CSS = """
     FileLink {
@@ -33,7 +40,17 @@ class FileLink(Static):
     default_command_builder: Callable | None = None
 
     class Clicked(Message):
-        """Posted when the link is activated."""
+        """Posted when the link is activated.
+
+        Attributes
+        ----------
+        path : Path
+            The file path that was clicked.
+        line : int | None
+            The line number to navigate to, or None.
+        column : int | None
+            The column number to navigate to, or None.
+        """
 
         def __init__(self, path: Path, line: int | None, column: int | None) -> None:
             super().__init__()

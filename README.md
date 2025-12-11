@@ -307,17 +307,17 @@ class MyApp(App):
         )
 
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
-        # Start the command
+        # Event provides full context: name, path, output_path, is_toggled
         link = self.query_one(f"#{event.name}", CommandLink)
         link.set_status(running=True, tooltip="Running tests...")
         self.run_worker(self.run_tests(link))
 
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
-        # Stop the command
+        # Event provides full context including toggle state
         self.notify(f"Stopping {event.name}")
 
     def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
-        # Open settings
+        # Event provides full context for configuration
         self.notify(f"Settings for {event.name}")
 
     async def run_tests(self, link: CommandLink):
@@ -380,11 +380,12 @@ CommandLink(
 
 ### Properties
 
-- `name: str` - The command name
+- `name: str` - The command name (alias for display_name)
+- `display_name: str` - The command display name (e.g., "Test", "Build")
 - `output_path: Path | None` - Current output file path
+- `path: Path | None` - The output file path (returns the actual output path, not a display path)
 - `is_running: bool` - Whether the command is currently running
 - `is_toggled: bool` - Current toggle state (inherited)
-- `path: Path` - The file path (inherited)
 
 ### Methods
 
@@ -435,18 +436,27 @@ Posted when play button (▶) is clicked.
 
 **Attributes:**
 - `name: str` - The command name
+- `path: Path | None` - The output file path (or None if not set)
+- `output_path: Path | None` - The output file path (same as path)
+- `is_toggled: bool` - Whether the command is selected for batch run
 
 #### `CommandLink.StopClicked`
 Posted when stop button (⏹) is clicked.
 
 **Attributes:**
 - `name: str` - The command name
+- `path: Path | None` - The output file path (or None if not set)
+- `output_path: Path | None` - The output file path (same as path)
+- `is_toggled: bool` - Whether the command is selected for batch run
 
 #### `CommandLink.SettingsClicked`
 Posted when settings icon (⚙) is clicked.
 
 **Attributes:**
 - `name: str` - The command name
+- `path: Path | None` - The output file path (or None if not set)
+- `output_path: Path | None` - The output file path (same as path)
+- `is_toggled: bool` - Whether the command is selected for batch run
 
 **Inherited Messages:**
 - `ToggleableFileLink.Toggled` - When toggle state changes
@@ -544,6 +554,45 @@ class CommandRunnerApp(App):
 
 if __name__ == "__main__":
     CommandRunnerApp().run()
+```
+
+### Using Enriched Message Properties
+
+As of version 0.2.0, CommandLink messages include enriched context that eliminates the need to query widgets in event handlers:
+
+```python
+class SmartCommandApp(App):
+    def compose(self) -> ComposeResult:
+        yield CommandLink("Tests", initial_status_icon="❓", show_toggle=True)
+        yield CommandLink("Build", initial_status_icon="❓", initial_toggle=True)
+
+    def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
+        """Event provides full context about the command."""
+        # Instead of querying: link = self.query_one(f"#{event.name}", CommandLink)
+        # Just use the event properties:
+
+        self.log(f"Playing {event.name}")
+        self.log(f"Output path: {event.path}")        # Path to output file
+        self.log(f"Is toggled: {event.is_toggled}")   # Selected for batch run?
+
+        # You still need to query for widget methods (like set_status),
+        # but now you have context directly from the message
+        link = self.query_one(f"#{event.name}", CommandLink)
+        link.set_status(running=True, tooltip="Running...")
+
+    def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
+        """Stop button includes state context."""
+        # All message types (PlayClicked, StopClicked, SettingsClicked)
+        # include: name, path, output_path, is_toggled
+        self.notify(f"Stopping {event.name} (toggled={event.is_toggled})")
+
+    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
+        """Settings event has full context."""
+        # Can now make decisions based on command state without querying
+        if event.is_toggled:
+            self.notify(f"Settings for {event.name} (part of batch run)")
+        else:
+            self.notify(f"Settings for {event.name} (standalone)")
 ```
 
 ## Custom Editor Commands

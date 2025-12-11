@@ -32,7 +32,14 @@ class IconConfig:
 
 
 class ToggleableFileLink(Widget):
-    """A FileLink with optional toggle (☐/☑) on the left, multiple status icons, and optional remove (×) on the right."""
+    """A FileLink with optional toggle (☐/☑) on the left, multiple status icons, and optional remove (×) on the right.
+
+    Event Bubbling Policy
+    ---------------------
+    - Internal click handlers stop event propagation with event.stop()
+    - Widget-specific messages (Toggled, Removed, IconClicked) bubble up by default
+    - Parent containers can handle or stop these messages as needed
+    """
 
     DEFAULT_CSS = """
     ToggleableFileLink {
@@ -116,7 +123,15 @@ class ToggleableFileLink(Widget):
     """
 
     class Toggled(Message):
-        """Posted when the toggle state changes."""
+        """Posted when the toggle state changes.
+
+        Attributes
+        ----------
+        path : Path
+            The file path of the toggled widget.
+        is_toggled : bool
+            The new toggle state (True if toggled on, False if toggled off).
+        """
 
         def __init__(self, path: Path, is_toggled: bool) -> None:
             super().__init__()
@@ -124,14 +139,30 @@ class ToggleableFileLink(Widget):
             self.is_toggled = is_toggled
 
     class Removed(Message):
-        """Posted when the remove button is clicked."""
+        """Posted when the remove button is clicked.
+
+        Attributes
+        ----------
+        path : Path
+            The file path of the widget to be removed.
+        """
 
         def __init__(self, path: Path) -> None:
             super().__init__()
             self.path = path
 
     class IconClicked(Message):
-        """Posted when a status icon is clicked."""
+        """Posted when a status icon is clicked.
+
+        Attributes
+        ----------
+        path : Path
+            The file path of the widget containing the icon.
+        icon_name : str
+            The name identifier of the clicked icon.
+        icon : str
+            The icon character/emoji that was clicked.
+        """
 
         def __init__(self, path: Path, icon_name: str, icon: str) -> None:
             super().__init__()
