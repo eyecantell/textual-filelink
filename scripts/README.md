@@ -30,38 +30,50 @@ Start with the beginner examples and progress at your own pace. Each demo is sel
    - Changing icon appearance dynamically
    - **Best for:** Adding visual feedback with icons
 
-### Intermediate Examples (Coming Soon!)
+### Intermediate Examples (Build Real Functionality!)
 
-4. **demo_04_icons_advanced.py** - Master the Icon System
-   - Advanced icon configuration
-   - Icon visibility toggling
-   - Icon ordering and positioning
-   - Interactive icon demonstrations
+4. **[demo_04_icons_advanced.py](demo_04_icons_advanced.py)** - Master the Icon System
+   - Icon ordering with explicit indices
+   - Multiple icons at before/after positions
+   - Icon visibility toggling with controls
+   - Interactive icon workflows (processing, cascading states)
+   - Simulated async operations with timers
+   - **Best for:** Creating complex visual feedback systems
 
-5. **demo_05_state_management.py** - Build Stateful File UIs
-   - State management patterns
-   - Multi-column file selection
-   - DataClass patterns for state
-   - Refreshing UI based on state changes
+5. **[demo_05_state_management.py](demo_05_state_management.py)** - Build Stateful File UIs
+   - Dataclass-based state tracking
+   - Multi-column layout with state synchronization
+   - Refreshing UI from state changes
+   - Practical file workflow patterns (select, archive, restore)
+   - Priority-based file organization
+   - **Best for:** Building file management applications
 
-6. **demo_06_commandlink_simple.py** - Introduce CommandLink
-   - Play/stop buttons
-   - Status indicators
-   - Simple command simulation
-   - Understanding CommandLink basics
+6. **[demo_06_commandlink_simple.py](demo_06_commandlink_simple.py)** - Introduce CommandLink
+   - CommandLink widget basics (play/stop buttons)
+   - Simple status indicators and updates
+   - Timer-based command simulation (synchronous)
+   - CommandLink event handling (PlayClicked, StopClicked, SettingsClicked)
+   - Output file path concept
+   - **Best for:** Understanding command execution patterns before async
 
-### Advanced Examples (Coming Later)
+### Advanced Examples (Complex Patterns!)
 
-7. **demo_07_commandlink_advanced.py** - Command Orchestration
-   - Complex command workflows
-   - Batch operations
-   - Elapsed time tracking
+These demos require deeper understanding of async patterns, event handling, and application architecture.
+
+7. **demo_07_commandlink_advanced.py** - Command Orchestration with Async
+   - Async command execution with asyncio
+   - Batch operations on selected commands
+   - Elapsed time tracking and progress display
    - Output file generation
+   - Task cancellation and cleanup
+   - **Prerequisites:** Understand demo_06 and async/await patterns
 
 8. **demo_08_custom_editor.py** - Editor Configuration
    - Built-in editor support (VSCode, vim, nano)
-   - Custom editor configuration
-   - Copy-to-clipboard functionality
+   - Custom command builders for file opening
+   - Environment variable configuration
+   - Editor detection patterns
+   - **Prerequisites:** Understand demo_01 FileLink basics
 
 9. **demo_09_file_browser.py** - Real File Browser
    - Directory tree navigation
@@ -128,13 +140,34 @@ Sample files include:
 - `Makefile` - Make build file
 - `LICENSE` - License file
 
+## Learning Path Progression
+
+### Foundation (Demos 01-03)
+Master the basics before moving to intermediate examples:
+1. **demo_01**: Understand FileLink and file clicking
+2. **demo_02**: Add toggle and remove controls
+3. **demo_03**: Learn about icons and status indicators
+
+### Intermediate (Demos 04-06)
+Build real-world patterns with progressive complexity:
+4. **demo_04**: Master advanced icon system (3-5 hours)
+5. **demo_06**: Learn CommandLink basics without async (4-6 hours)
+6. **demo_05**: Tackle state management and multi-column UIs (6-8 hours)
+
+### Advanced (Demos 07+)
+For experienced developers ready for async and complex workflows:
+7. **demo_07**: Async command orchestration (when ready for asyncio)
+8. **demo_08**: Custom editor configuration
+9+. **More complex patterns** (file browser, DataTable integration, etc.)
+
 ## Tips for Learning
 
 1. **Read the docstring** - Each demo has a clear explanation of what it demonstrates
 2. **Look at the comments** - Inline comments explain key concepts
-3. **Try modifications** - Experiment by changing the code
-4. **Run step by step** - Use the progression from demo_01 to demo_03, then evaluate
-5. **Check the README** - The main [README.md](../README.md) has comprehensive documentation
+3. **Try modifications** - Experiment by changing the code and seeing what breaks
+4. **Run step by step** - Follow the progression in order; each demo builds on previous ones
+5. **Check the README** - The main [README.md](../README.md) has comprehensive API documentation
+6. **Compare examples** - Look at similar code in different demos to understand patterns
 
 ## Structure of Each Demo
 
@@ -198,12 +231,24 @@ ls scripts/sample_files/
 
 ## Next Steps
 
-After exploring the foundation demos (01-03):
+### For Beginners (Completed Demos 01-03)
+1. Run demo_04 to see advanced icon patterns in action
+2. Run demo_06 to understand how commands work
+3. Run demo_05 to learn state management
+4. Pick your favorite intermediate demo and modify it
 
-1. Evaluate which features matter most to you
-2. Try modifying the demos to add your own features
-3. Refer back to the main [README.md](../README.md) for full API documentation
-4. Check the source code in `src/textual_filelink/` for implementation details
+### For Intermediate Learners (Completed Demos 04-06)
+1. Choose which patterns matter most to your use case
+2. Try modifying demos to combine features (e.g., state management + icons)
+3. Refer to the main [README.md](../README.md) for full API documentation
+4. Look at the source code in `src/textual_filelink/` for implementation details
+5. Consider whether you're ready for async patterns in demo_07
+
+### For Advanced Users
+1. Build your own TUI application using patterns from these demos
+2. Contribute improvements or new demos back to the project
+3. Explore the Textual framework for more advanced patterns
+4. Check the test suite in `tests/` for more examples
 
 ## Contributing
 
