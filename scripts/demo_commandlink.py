@@ -71,9 +71,9 @@ class CommandOrchestratorApp(App):
         with Vertical():
             yield Static("🎯 Command Orchestrator", classes="title")
 
-            # Tests command
+            # Test command
             yield CommandLink(
-                "Tests",
+                "Test",
                 output_path=Path("scripts/tests_output.md"),
                 initial_status_icon="🧪",
                 initial_status_tooltip="Not run",
@@ -187,7 +187,7 @@ class CommandOrchestratorApp(App):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
         status = "✅ Passed" if success else "❌ Failed"
 
-        if name == "Tests":
+        if name == "Test":
             return f"""# Tests Output
 
 **Status:** {status}
@@ -271,19 +271,33 @@ class CommandOrchestratorApp(App):
     
     def on_toggleable_file_link_removed(self, event):
         """Handle remove button clicks."""
-        self.notify(f"🗑️ Removed {event.path.name}", severity="warning")
-        
-        # Cancel task if running
-        name = event.path.name
-        if name in self.command_tasks:
-            self.command_tasks[name].cancel()
-            del self.command_tasks[name]
-        self.running_commands.discard(name)
-        
-        # Remove the widget
+        # event.path is the output file path, but we need the command name
+        # Find the CommandLink widget that matches this path
+        link = None
         for child in self.query(CommandLink):
-            if child.name == name:
-                child.remove()
+            if child.output_path == event.path:
+                link = child
+                break
+
+        if link is None:
+            return
+
+        # Cancel task if running
+        if link.name in self.command_tasks:
+            self.command_tasks[link.name].cancel()
+            del self.command_tasks[link.name]
+        self.running_commands.discard(link.name)
+        self.command_start_times.pop(link.name, None)
+
+        # Stop elapsed time timer
+        if link.name in self.command_elapsed_timers:
+            self.command_elapsed_timers[link.name].stop()
+            del self.command_elapsed_timers[link.name]
+
+        self.notify(f"🗑️ Removed {link.name} command", severity="warning")
+
+        # Remove the widget and the associated description
+        link.remove()
     
     async def _simulate_command(self, name: str):
         """Simulate running a command with random success/failure."""
@@ -305,7 +319,14 @@ class CommandOrchestratorApp(App):
 
             # Generate and write output to the markdown file
             output_content = self._generate_output_content(name, success, duration)
-            output_file = Path(f"scripts/{name.lower()}_output.md")
+            # Map singular names to output filenames
+            output_filenames = {
+                "Test": "tests_output.md",
+                "Build": "build_output.md",
+                "Lint": "lint_output.md",
+                "Deploy": "deploy_output.md"
+            }
+            output_file = Path(f"scripts/{output_filenames.get(name, name.lower() + '_output.md')}")
             output_file.write_text(output_content)
 
             if success:

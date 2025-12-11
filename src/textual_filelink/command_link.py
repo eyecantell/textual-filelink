@@ -161,9 +161,9 @@ class CommandLink(ToggleableFileLink):
         # Determine command builder - use no-op if no output path
         if output_path is None and command_builder is None:
             command_builder = CommandLink._noop_command_builder
-        
-        # Use a dummy path if no output (required by parent)
-        display_path = self._output_path if self._output_path else Path(name)
+
+        # Use command name as display text (parent will show path.name)
+        display_path = Path(name)
         
         # Initialize parent
         super().__init__(
