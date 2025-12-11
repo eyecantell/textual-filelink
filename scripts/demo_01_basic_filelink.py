@@ -24,14 +24,13 @@ from textual.widgets import Footer, Header, Static
 from textual_filelink import FileLink
 
 
-def file_link_with_coords(file_path: Path, line: int | None = None, column: int | None = None) -> Horizontal:
-    """Create a FileLink with coordinate information displayed.
+def file_link_with_coords(file_path: Path, line: int | None = None, column: int | None = None):
+    """Yield FileLink with coordinate display.
 
-    This helper creates a horizontal container with the FileLink on the left
-    and the line/column coordinates on the right for clarity.
+    This is a generator function that yields widgets to be composed.
+    Use with 'yield from' in the compose() method.
     """
-    container = Horizontal()
-    container.mount(FileLink(file_path, line=line, column=column))
+    yield FileLink(file_path, line=line, column=column)
 
     # Show coordinates in muted text
     if line is not None or column is not None:
@@ -40,9 +39,7 @@ def file_link_with_coords(file_path: Path, line: int | None = None, column: int 
             coords = f":{line}"
         if column is not None:
             coords += f":{column}"
-        container.mount(Static(coords, classes="coord-label"))
-
-    return container
+        yield Static(coords, classes="coord-label")
 
 
 class BasicFileLinkApp(App):
@@ -117,17 +114,23 @@ class BasicFileLinkApp(App):
             with Vertical(classes="column"):
                 yield Static("With Line Numbers", classes="column-title")
                 yield Static("Jump to a specific line:")
-                yield file_link_with_coords(Path("sample_files/example.py"), line=10)
-                yield file_link_with_coords(Path("sample_files/Makefile"), line=1)
-                yield file_link_with_coords(Path("sample_files/data.csv"), line=2)
+                with Horizontal():
+                    yield from file_link_with_coords(Path("sample_files/example.py"), line=10)
+                with Horizontal():
+                    yield from file_link_with_coords(Path("sample_files/Makefile"), line=1)
+                with Horizontal():
+                    yield from file_link_with_coords(Path("sample_files/data.csv"), line=2)
 
             # Column 3: Files with line and column
             with Vertical(classes="column"):
                 yield Static("With Line & Column", classes="column-title")
                 yield Static("Jump to specific line and column:")
-                yield file_link_with_coords(Path("sample_files/example.py"), line=13, column=4)
-                yield file_link_with_coords(Path("sample_files/config.json"), line=3, column=8)
-                yield file_link_with_coords(Path("sample_files/notes.txt"), line=5, column=1)
+                with Horizontal():
+                    yield from file_link_with_coords(Path("sample_files/example.py"), line=13, column=4)
+                with Horizontal():
+                    yield from file_link_with_coords(Path("sample_files/config.json"), line=3, column=8)
+                with Horizontal():
+                    yield from file_link_with_coords(Path("sample_files/notes.txt"), line=5, column=1)
 
         yield Footer()
 
