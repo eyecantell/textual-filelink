@@ -21,6 +21,7 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 🔧 **Customizable command builders** for any editor
 - 🎭 **Flexible layouts** - show/hide controls as needed
 - 💬 **Tooltips** for all interactive elements
+- 🚀 **Command orchestration** with play/stop controls and animated spinners
 
 ## Installation
 
@@ -88,6 +89,32 @@ class MyApp(App):
         # Example: dynamically update icon
         link = event.control
         link.update_icon("status", icon="⏳", tooltip="Processing...")
+
+if __name__ == "__main__":
+    MyApp().run()
+```
+
+### CommandLink for Command Orchestration
+
+```python
+from textual_filelink import CommandLink
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield CommandLink(
+            "Run Tests",
+            initial_status_icon="❓",
+            initial_status_tooltip="Not run yet",
+        )
+
+    def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
+        link = self.query_one(f"#{event.name}", CommandLink)
+        link.set_status(running=True, tooltip="Running...")
+        # Start your command here
+
+    def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
+        link = self.query_one(f"#{event.name}", CommandLink)
+        link.set_status(icon="⏹", running=False, tooltip="Stopped")
 
 if __name__ == "__main__":
     MyApp().run()
@@ -197,6 +224,7 @@ IconConfig(name="status", icon="✓", clickable=True, tooltip="Done")
 - `path: Path` - The file path
 - `is_toggled: bool` - Current toggle state
 - `icons: list[dict]` - List of all icon configurations
+- `file_link: FileLink` - The internal FileLink widget
 
 ### Methods
 
@@ -256,6 +284,267 @@ Posted when a clickable icon is clicked.
 - `path: Path`
 - `icon_name: str` - The name of the clicked icon
 - `icon: str` - The unicode character of the icon
+
+## CommandLink API
+
+`CommandLink` is a specialized widget for command orchestration and status display, extending `ToggleableFileLink`. It's designed for single-instance commands (not multiple concurrent runs of the same command).
+
+### Quick Start
+
+```python
+from textual_filelink import CommandLink
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield CommandLink(
+            "Run Tests",
+            output_path="test_output.log",
+            initial_status_icon="❓",
+            initial_status_tooltip="Not run yet",
+            show_toggle=True,
+            show_settings=True,
+            show_remove=True,
+        )
+
+    def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
+        # Start the command
+        link = self.query_one(f"#{event.name}", CommandLink)
+        link.set_status(running=True, tooltip="Running tests...")
+        self.run_worker(self.run_tests(link))
+
+    def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
+        # Stop the command
+        self.notify(f"Stopping {event.name}")
+
+    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
+        # Open settings
+        self.notify(f"Settings for {event.name}")
+
+    async def run_tests(self, link: CommandLink):
+        # Simulate test run
+        await asyncio.sleep(2)
+        link.set_status(icon="✅", running=False, tooltip="All tests passed")
+        link.set_output_path(Path("test_output.log"), tooltip="Click to view results")
+```
+
+### Constructor
+
+```python
+CommandLink(
+    name: str,
+    output_path: Path | str | None = None,
+    *,
+    initial_toggle: bool = False,
+    initial_status_icon: str = "❓",
+    initial_status_tooltip: str | None = None,
+    running: bool = False,
+    show_toggle: bool = True,
+    show_settings: bool = True,
+    show_remove: bool = True,
+    toggle_tooltip: str | None = None,
+    settings_tooltip: str | None = None,
+    remove_tooltip: str | None = None,
+    command_builder: Callable | None = None,
+    disable_on_untoggle: bool = False,
+)
+```
+
+**Parameters:**
+- `name`: Command display name (also used as widget ID)
+- `output_path`: Path to output file. If None, clicking command name does nothing
+- `initial_toggle`: Whether the command starts toggled/selected
+- `initial_status_icon`: Initial status icon (default: "❓")
+- `initial_status_tooltip`: Initial tooltip for status icon
+- `running`: Whether command is currently running. If True, shows spinner and stop button
+- `show_toggle`: Whether to show the toggle checkbox
+- `show_settings`: Whether to show the settings icon
+- `show_remove`: Whether to show the remove button
+- `toggle_tooltip`: Tooltip for toggle checkbox
+- `settings_tooltip`: Tooltip for settings icon
+- `remove_tooltip`: Tooltip for remove button
+- `command_builder`: Custom command builder for opening output files
+- `disable_on_untoggle`: If True, dim/disable when untoggled
+
+### Layout
+
+```
+[toggle] [status/spinner] [play/stop] command_name [settings] [remove]
+```
+
+- **toggle**: Checkbox for selecting commands (inherited from ToggleableFileLink)
+- **status/spinner**: Shows status icon, or animated spinner when running
+- **play/stop**: ▶ when stopped, ⏹ when running
+- **command_name**: Clickable link to output file (if set)
+- **settings**: ⚙ icon for configuration
+- **remove**: × button (inherited from ToggleableFileLink)
+
+### Properties
+
+- `name: str` - The command name
+- `output_path: Path | None` - Current output file path
+- `is_running: bool` - Whether the command is currently running
+- `is_toggled: bool` - Current toggle state (inherited)
+- `path: Path` - The file path (inherited)
+
+### Methods
+
+#### `set_status(icon: str | None = None, tooltip: str | None = None, running: bool | None = None)`
+Update command status display.
+
+```python
+# Start running (shows spinner)
+link.set_status(running=True, tooltip="Running tests...")
+
+# Complete with success
+link.set_status(icon="✅", running=False, tooltip="All tests passed")
+
+# Complete with failure
+link.set_status(icon="❌", running=False, tooltip="3 tests failed")
+
+# Update tooltip only
+link.set_status(tooltip="Still running...")
+```
+
+#### `set_output_path(path: Path | str | None, tooltip: str | None = None)`
+Update the output file path.
+
+```python
+link.set_output_path(Path("output.log"), tooltip="Click to view output")
+link.set_output_path(None)  # Clear output path
+```
+
+#### `set_toggle(toggled: bool, tooltip: str | None = None)`
+Update toggle state programmatically.
+
+```python
+link.set_toggle(True, tooltip="Selected for batch run")
+link.set_toggle(False)
+```
+
+#### `set_settings_tooltip(tooltip: str | None)`
+Update settings icon tooltip.
+
+```python
+link.set_settings_tooltip("Configure test options")
+```
+
+### Messages
+
+#### `CommandLink.PlayClicked`
+Posted when play button (▶) is clicked.
+
+**Attributes:**
+- `name: str` - The command name
+
+#### `CommandLink.StopClicked`
+Posted when stop button (⏹) is clicked.
+
+**Attributes:**
+- `name: str` - The command name
+
+#### `CommandLink.SettingsClicked`
+Posted when settings icon (⚙) is clicked.
+
+**Attributes:**
+- `name: str` - The command name
+
+**Inherited Messages:**
+- `ToggleableFileLink.Toggled` - When toggle state changes
+- `ToggleableFileLink.Removed` - When remove button is clicked
+
+### Status Icons
+
+Common status icons for commands:
+
+```python
+"❓"  # Not run / Unknown
+"✅"  # Success / Passed
+"❌"  # Failed / Error
+"⚠️"  # Warning
+"⏭️"  # Skipped
+"🔄"  # Needs rerun
+```
+
+### Complete Example
+
+```python
+from pathlib import Path
+import asyncio
+from textual.app import App, ComposeResult
+from textual.containers import Vertical
+from textual.widgets import Header, Footer, Static
+from textual_filelink import CommandLink
+
+class CommandRunnerApp(App):
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+    Vertical {
+        width: 60;
+        height: auto;
+        border: solid green;
+        padding: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+
+        with Vertical():
+            yield Static("🚀 Command Runner")
+
+            yield CommandLink(
+                "Unit Tests",
+                initial_status_icon="❓",
+                initial_status_tooltip="Not run",
+                settings_tooltip="Configure test options",
+            )
+
+            yield CommandLink(
+                "Lint",
+                initial_status_icon="❓",
+                initial_status_tooltip="Not run",
+                show_settings=False,
+            )
+
+            yield CommandLink(
+                "Build",
+                initial_status_icon="❓",
+                initial_status_tooltip="Not run",
+                settings_tooltip="Build configuration",
+            )
+
+        yield Footer()
+
+    def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
+        link = self.query_one(f"#{event.name}", CommandLink)
+        link.set_status(running=True, tooltip=f"Running {event.name}...")
+        self.run_worker(self.simulate_command(link, event.name))
+
+    def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
+        link = self.query_one(f"#{event.name}", CommandLink)
+        link.set_status(icon="⏹", running=False, tooltip="Stopped")
+        self.notify(f"Stopped {event.name}", severity="warning")
+
+    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
+        self.notify(f"Settings for {event.name}")
+
+    async def simulate_command(self, link: CommandLink, name: str):
+        await asyncio.sleep(2)
+        # Simulate success/failure
+        import random
+        if random.random() > 0.3:
+            link.set_status(icon="✅", running=False, tooltip="Passed")
+            link.set_output_path(Path(f"{name.lower().replace(' ', '_')}.log"))
+            self.notify(f"{name} passed!", severity="information")
+        else:
+            link.set_status(icon="❌", running=False, tooltip="Failed")
+            self.notify(f"{name} failed!", severity="error")
+
+if __name__ == "__main__":
+    CommandRunnerApp().run()
+```
 
 ## Custom Editor Commands
 

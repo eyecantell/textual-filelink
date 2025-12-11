@@ -10,6 +10,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    npm \
     sudo \
     tree \
     vim \
@@ -19,6 +20,9 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -s /bin/bash -m developer && \
     usermod -aG sudo developer && \
     echo "developer ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Add claude code globally
+RUN npm install -g @anthropic-ai/claude-code
 
 # Switch to developer user for remaining operations
 USER developer
