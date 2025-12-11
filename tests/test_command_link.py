@@ -1,14 +1,18 @@
 # tests/test_command_link.py
 """Tests for CommandLink widget."""
+
+import asyncio
 import logging
 
 import pytest
 from textual.app import App, ComposeResult
+from textual.css.query import NoMatches
 from textual.widgets import Static
 
 from textual_filelink import CommandLink, FileLink
 
 logging.getLogger("textual_filelink").setLevel(logging.DEBUG)
+
 
 class CommandLinkTestApp(App):
     """Test app for CommandLink."""
@@ -87,7 +91,7 @@ class TestCommandLinkInitialization:
         link = CommandLink("TestCommand")
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should have status icon
             status_icon = link.get_icon("status")
             assert status_icon is not None
@@ -102,7 +106,7 @@ class TestCommandLinkInitialization:
         link = CommandLink("TestCommand")
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             settings_icon = link.get_icon("settings")
             assert settings_icon is not None
             assert settings_icon["visible"] is True
@@ -112,7 +116,7 @@ class TestCommandLinkInitialization:
         link = CommandLink("TestCommand", show_settings=False)
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             settings_icon = link.get_icon("settings")
             assert settings_icon is None
 
@@ -125,7 +129,7 @@ class TestCommandLinkPlayStop:
         link = CommandLink("TestCommand", running=False)
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             play_stop_icon = link.get_icon("play_stop")
             assert play_stop_icon["icon"] == "▶"
 
@@ -134,7 +138,7 @@ class TestCommandLinkPlayStop:
         link = CommandLink("TestCommand", running=True)
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             play_stop_icon = link.get_icon("play_stop")
             assert play_stop_icon["icon"] == "⏹"
 
@@ -159,7 +163,7 @@ class TestCommandLinkStatus:
         link = CommandLink("TestCommand", initial_status_icon="✅")
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             status_icon = link.get_icon("status")
             assert status_icon["icon"] == "✅"
 
@@ -391,9 +395,9 @@ class TestCommandLinkRemove:
         link = CommandLink("TestCommand", show_remove=False)
         app = CommandLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should not have remove button
-            with pytest.raises(Exception):
+            with pytest.raises(NoMatches):
                 link.query_one("#remove")
 
 
@@ -499,7 +503,3 @@ class TestCommandLinkIntegration:
             await pilot.click("#remove")
             await pilot.pause()
             assert len(app.removed_events) == 1
-
-
-# Import asyncio for spinner tests
-import asyncio

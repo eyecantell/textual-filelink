@@ -1,9 +1,9 @@
-
 from __future__ import annotations
 
+import contextlib
 import logging
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 from textual import on
 from textual.message import Message
@@ -13,15 +13,16 @@ from .toggleable_file_link import ToggleableFileLink
 
 logger = logging.getLogger(__name__)
 
+
 class CommandLink(ToggleableFileLink):
     """A specialized widget for command orchestration and status display.
-    
+
     Layout: [toggle] [status/spinner] [play/stop] command_name [settings] [remove]
-    
+
     The widget is fully controlled by the parent - it displays state and emits
     events for user interactions. Single-instance commands only (not multiple
     concurrent runs of the same command).
-    
+
     Example:
         ```python
         link = CommandLink(
@@ -30,10 +31,10 @@ class CommandLink(ToggleableFileLink):
             initial_status_icon="❓",
             initial_status_tooltip="Not run",
         )
-        
+
         # When command starts
         link.set_status(running=True, tooltip="Running tests...")
-        
+
         # When command completes
         link.set_status(icon="✅", running=False, tooltip="Passed")
         link.set_output_path(Path("test_output.log"))
@@ -45,18 +46,21 @@ class CommandLink(ToggleableFileLink):
 
     class PlayClicked(Message):
         """Posted when play button is clicked."""
+
         def __init__(self, name: str) -> None:
             super().__init__()
             self.name = name
 
     class StopClicked(Message):
         """Posted when stop button is clicked."""
+
         def __init__(self, name: str) -> None:
             super().__init__()
             self.name = name
 
     class SettingsClicked(Message):
         """Posted when settings icon is clicked."""
+
         def __init__(self, name: str) -> None:
             super().__init__()
             self.name = name
@@ -76,7 +80,7 @@ class CommandLink(ToggleableFileLink):
         toggle_tooltip: str | None = None,
         settings_tooltip: str | None = None,
         remove_tooltip: str | None = None,
-        command_builder: Optional[Callable] = None,
+        command_builder: Callable | None = None,
         disable_on_untoggle: bool = False,
     ) -> None:
         """
@@ -121,43 +125,51 @@ class CommandLink(ToggleableFileLink):
         self._spinner_timer: Timer | None = None
         self._spinner_frame = 0
 
-        logger.debug(f"Initializing CommandLink: {self._name}, running={self._command_running}, output_path={self._output_path}")
+        logger.debug(
+            f"Initializing CommandLink: {self._name}, running={self._command_running}, output_path={self._output_path}"
+        )
 
         # Build icons list for parent ToggleableFileLink
         icons = []
 
         # Status icon (or will be replaced by spinner if running)
-        icons.append({
-            "name": "status",
-            "icon": initial_status_icon,
-            "tooltip": initial_status_tooltip,
-            "position": "before",
-            "index": 0,
-            "visible": not running,  # Hide if running (spinner will show instead)
-        })
+        icons.append(
+            {
+                "name": "status",
+                "icon": initial_status_icon,
+                "tooltip": initial_status_tooltip,
+                "position": "before",
+                "index": 0,
+                "visible": not running,  # Hide if running (spinner will show instead)
+            }
+        )
 
         # Play/Stop button
         play_stop_icon = "⏹" if running else "▶"
         play_stop_tooltip = "Stop command" if running else "Run command"
-        icons.append({
-            "name": "play_stop",
-            "icon": play_stop_icon,
-            "tooltip": play_stop_tooltip,
-            "position": "before",
-            "index": 1,
-            "clickable": True,
-        })
+        icons.append(
+            {
+                "name": "play_stop",
+                "icon": play_stop_icon,
+                "tooltip": play_stop_tooltip,
+                "position": "before",
+                "index": 1,
+                "clickable": True,
+            }
+        )
 
         # Settings icon (after command name)
         if show_settings:
-            icons.append({
-                "name": "settings",
-                "icon": "⚙",
-                "tooltip": settings_tooltip or "Settings",
-                "position": "after",
-                "index": 0,
-                "clickable": True,
-            })
+            icons.append(
+                {
+                    "name": "settings",
+                    "icon": "⚙",
+                    "tooltip": settings_tooltip or "Settings",
+                    "position": "after",
+                    "index": 0,
+                    "clickable": True,
+                }
+            )
 
         # Determine command builder - use no-op if no output path
         if output_path is None and command_builder is None:
@@ -181,10 +193,12 @@ class CommandLink(ToggleableFileLink):
             name=None,  # Don't set Widget.name, we use our own _name
         )
 
-        logger.debug(f"CommandLink after super init: {self._name}, running={self._command_running}, output_path={self._output_path}")
+        logger.debug(
+            f"CommandLink after super init: {self._name}, running={self._command_running}, output_path={self._output_path}"
+        )
 
     @staticmethod
-    def _noop_command_builder(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
+    def _noop_command_builder(path: Path, line: int | None, column: int | None) -> list[str]:
         """No-op command builder when no output file exists."""
         return ["true"]  # Unix no-op command
 
@@ -195,7 +209,7 @@ class CommandLink(ToggleableFileLink):
         running: bool | None = None,
     ) -> None:
         """Update command status display.
-        
+
         Parameters
         ----------
         icon : str | None
@@ -204,7 +218,7 @@ class CommandLink(ToggleableFileLink):
             Tooltip for status icon/spinner.
         running : bool | None
             Update running state. If True, shows stop button; if False, shows play button.
-        
+
         Examples
         --------
         >>> link.set_status(running=True, tooltip="Running tests...")
@@ -280,14 +294,14 @@ class CommandLink(ToggleableFileLink):
         tooltip: str | None = None,
     ) -> None:
         """Update the output file path and optionally its tooltip.
-        
+
         Parameters
         ----------
         path : Path | str | None
             New output file path. If None, clicking command name does nothing.
         tooltip : str | None
             New tooltip for the command name/file link.
-        
+
         Examples
         --------
         >>> link.set_output_path(Path("output.log"), tooltip="Click to view output")
@@ -319,14 +333,14 @@ class CommandLink(ToggleableFileLink):
         tooltip: str | None = None,
     ) -> None:
         """Update toggle state and optionally its tooltip.
-        
+
         Parameters
         ----------
         toggled : bool
             New toggle state.
         tooltip : str | None
             New tooltip for the toggle checkbox.
-        
+
         Examples
         --------
         >>> link.set_toggle(True, tooltip="Selected for batch run")
@@ -350,21 +364,19 @@ class CommandLink(ToggleableFileLink):
 
     def set_settings_tooltip(self, tooltip: str | None) -> None:
         """Update settings icon tooltip.
-        
+
         Parameters
         ----------
         tooltip : str | None
             New tooltip text, or None to remove tooltip.
-        
+
         Examples
         --------
         >>> link.set_settings_tooltip("Configure test options")
         """
         if self._show_settings:
-            try:
+            with contextlib.suppress(KeyError):
                 self.update_icon("settings", tooltip=tooltip or "Settings")
-            except KeyError:
-                pass
 
     def on_unmount(self) -> None:
         """Clean up spinner timer when widget is unmounted."""

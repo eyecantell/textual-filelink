@@ -25,14 +25,14 @@ class MultiIconExampleApp(App):
     Screen {
         align: center middle;
     }
-    
+
     Vertical {
         width: 100;
         height: auto;
         border: solid green;
         padding: 1;
     }
-    
+
     .title {
         width: 100%;
         content-align: center middle;
@@ -40,20 +40,20 @@ class MultiIconExampleApp(App):
         color: $accent;
         margin: 1 0;
     }
-    
+
     .section-title {
         width: 100%;
         text-style: bold;
         color: $primary;
         margin: 1 0 0 0;
     }
-    
+
     .controls {
         width: 100%;
         height: auto;
         margin: 1 0;
     }
-    
+
     Button {
         margin: 0 1 0 0;
     }

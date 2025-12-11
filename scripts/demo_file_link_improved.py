@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -16,6 +15,7 @@ from textual_filelink import FileLink, ToggleableFileLink
 @dataclass
 class FileStatus:
     """Holds file metadata and state."""
+
     name: str
     path: Path
     toggled: bool = False
@@ -73,7 +73,7 @@ class ColumnContainer(Vertical):
         height: 100%;
         border: solid $primary;
     }
-    
+
     ColumnContainer > Label {
         dock: top;
         width: 100%;
@@ -83,7 +83,7 @@ class ColumnContainer(Vertical):
         color: $text;
         text-style: bold;
     }
-    
+
     ColumnContainer > ScrollableContainer {
         width: 100%;
         height: 1fr;
@@ -91,10 +91,10 @@ class ColumnContainer(Vertical):
     }
     """
 
-    def __init__(self, title: str, name: Optional[str] = None, id: Optional[str] = None):
+    def __init__(self, title: str, name: str | None = None, id: str | None = None):
         super().__init__(name=name, id=id)
         self.title = title
-        self.container: Optional[ScrollableContainer] = None
+        self.container: ScrollableContainer | None = None
 
     def compose(self) -> ComposeResult:
         yield Label(self.title)
@@ -113,7 +113,7 @@ class DemoApp(App):
     Screen {
         layout: vertical;
     }
-    
+
     #main-container {
         width: 100%;
         height: 1fr;
@@ -124,10 +124,10 @@ class DemoApp(App):
     def __init__(self):
         super().__init__()
         self.file_statuses: dict[Path, FileStatus] = {}
-        self.master_column: Optional[ColumnContainer] = None
-        self.selected_column: Optional[ColumnContainer] = None
-        self.unselected_column: Optional[ColumnContainer] = None
-        self.removed_column: Optional[ColumnContainer] = None
+        self.master_column: ColumnContainer | None = None
+        self.selected_column: ColumnContainer | None = None
+        self.unselected_column: ColumnContainer | None = None
+        self.removed_column: ColumnContainer | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -153,9 +153,7 @@ class DemoApp(App):
 
         if not sample_dir.exists():
             self.notify(
-                "Warning: ./sample_files directory not found. Using current directory.",
-                severity="warning",
-                timeout=5
+                "Warning: ./sample_files directory not found. Using current directory.", severity="warning", timeout=5
             )
             sample_dir = Path(".")
 
@@ -171,23 +169,14 @@ class DemoApp(App):
 
         # Create FileStatus instances
         for file_path in files:
-            file_status = FileStatus(
-                name=file_path.name,
-                path=file_path.resolve(),
-                toggled=False,
-                removed=False
-            )
+            file_status = FileStatus(name=file_path.name, path=file_path.resolve(), toggled=False, removed=False)
             self.file_statuses[file_path.resolve()] = file_status
 
         # Populate all columns
         self.refresh_all_columns()
 
         if not files:
-            self.notify(
-                "No files found in ./sample_files directory",
-                severity="warning",
-                timeout=5
-            )
+            self.notify("No files found in ./sample_files directory", severity="warning", timeout=5)
 
     def refresh_all_columns(self) -> None:
         """Regenerate all columns based on current FileStatus state."""

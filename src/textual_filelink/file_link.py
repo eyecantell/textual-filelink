@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 from textual import events
 from textual.message import Message
@@ -30,12 +30,12 @@ class FileLink(Static):
     """
 
     # Class-level default command builder
-    default_command_builder: Optional[Callable] = None
+    default_command_builder: Callable | None = None
 
     class Clicked(Message):
         """Posted when the link is activated."""
 
-        def __init__(self, path: Path, line: Optional[int], column: Optional[int]) -> None:
+        def __init__(self, path: Path, line: int | None, column: int | None) -> None:
             super().__init__()
             self.path = path
             self.line = line
@@ -45,12 +45,12 @@ class FileLink(Static):
         self,
         path: Path | str,
         *,
-        line: Optional[int] = None,
-        column: Optional[int] = None,
-        command_builder: Optional[Callable] = None,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
-        classes: Optional[str] = None,
+        line: int | None = None,
+        column: int | None = None,
+        command_builder: Callable | None = None,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
     ) -> None:
         """
         Parameters
@@ -86,53 +86,32 @@ class FileLink(Static):
         self.post_message(self.Clicked(self._path, self._line, self._column))
 
         # Determine which command builder to use
-        command_builder = (
-            self._command_builder
-            or self.default_command_builder
-            or self.vscode_command
-        )
+        command_builder = self._command_builder or self.default_command_builder or self.vscode_command
 
         # Open the file directly (it's fast enough not to block)
         try:
             cmd = command_builder(self._path, self._line, self._column)
 
             result = subprocess.run(
-                cmd,
-                env=os.environ.copy(),
-                cwd=str(Path.cwd()),
-                capture_output=True,
-                text=True,
-                timeout=5
+                cmd, env=os.environ.copy(), cwd=str(Path.cwd()), capture_output=True, text=True, timeout=5
             )
 
             if result.returncode == 0:
                 self.app.notify(f"Opened {self._path.name}", title="FileLink", timeout=1.5)
             else:
                 error_msg = result.stderr.strip() if result.stderr else f"Exit code {result.returncode}"
-                self.app.notify(
-                    f"Failed to open {self._path.name}: {error_msg}",
-                    severity="error",
-                    timeout=3
-                )
+                self.app.notify(f"Failed to open {self._path.name}: {error_msg}", severity="error", timeout=3)
 
         except subprocess.TimeoutExpired:
-            self.app.notify(
-                f"Timeout opening {self._path.name}",
-                severity="error",
-                timeout=3
-            )
+            self.app.notify(f"Timeout opening {self._path.name}", severity="error", timeout=3)
         except Exception as exc:
-            self.app.notify(
-                f"Failed to open {self._path.name}: {exc}",
-                severity="error",
-                timeout=3
-            )
+            self.app.notify(f"Failed to open {self._path.name}: {exc}", severity="error", timeout=3)
 
     # ------------------------------------------------------------------ #
     # Default command builders
     # ------------------------------------------------------------------ #
     @staticmethod
-    def vscode_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
+    def vscode_command(path: Path, line: int | None, column: int | None) -> list[str]:
         """Build VSCode 'code --goto' command."""
         try:
             cwd = Path.cwd()
@@ -151,7 +130,7 @@ class FileLink(Static):
         return ["code", "--goto", goto_arg]
 
     @staticmethod
-    def vim_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
+    def vim_command(path: Path, line: int | None, column: int | None) -> list[str]:
         """Build vim command."""
         cmd = ["vim"]
         if line is not None:
@@ -163,7 +142,7 @@ class FileLink(Static):
         return cmd
 
     @staticmethod
-    def nano_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
+    def nano_command(path: Path, line: int | None, column: int | None) -> list[str]:
         """Build nano command."""
         cmd = ["nano"]
         if line is not None:
@@ -175,7 +154,7 @@ class FileLink(Static):
         return cmd
 
     @staticmethod
-    def eclipse_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
+    def eclipse_command(path: Path, line: int | None, column: int | None) -> list[str]:
         """Build Eclipse command."""
         cmd = ["eclipse"]
         if line is not None:
@@ -185,7 +164,7 @@ class FileLink(Static):
         return cmd
 
     @staticmethod
-    def copy_path_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
+    def copy_path_command(path: Path, line: int | None, column: int | None) -> list[str]:
         """Copy the full path (with line:column) to clipboard."""
         import platform
 
@@ -201,7 +180,11 @@ class FileLink(Static):
         elif system == "Windows":
             return ["cmd", "/c", f"echo {path_str} | clip"]
         else:
-            return ["bash", "-c", f"echo -n '{path_str}' | xclip -selection clipboard 2>/dev/null || echo -n '{path_str}' | xsel --clipboard"]
+            return [
+                "bash",
+                "-c",
+                f"echo -n '{path_str}' | xclip -selection clipboard 2>/dev/null || echo -n '{path_str}' | xsel --clipboard",
+            ]
 
     # ------------------------------------------------------------------ #
     # Properties
@@ -212,11 +195,11 @@ class FileLink(Static):
         return self._path
 
     @property
-    def line(self) -> Optional[int]:
+    def line(self) -> int | None:
         """Get the line number."""
         return self._line
 
     @property
-    def column(self) -> Optional[int]:
+    def column(self) -> int | None:
         """Get the column number."""
         return self._column

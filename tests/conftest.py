@@ -2,7 +2,6 @@
 # tests/conftest.py
 """Pytest configuration and shared fixtures."""
 
-
 import pytest
 
 
@@ -12,13 +11,7 @@ def sample_files(tmp_path):
     files = []
 
     # Create various test files
-    file_names = [
-        "document.txt",
-        "script.py",
-        "config.json",
-        "readme.md",
-        "data.csv"
-    ]
+    file_names = ["document.txt", "script.py", "config.json", "readme.md", "data.csv"]
 
     for name in file_names:
         file_path = tmp_path / name
@@ -71,25 +64,25 @@ def unicode_filename(tmp_path):
     file_path.write_text("unicode content")
     return file_path
 
+
 @pytest.fixture
 def get_rendered_text():
     """Helper to get plain text from a rendered widget."""
+
     def _get(widget):
         content = widget.render()
         if content is None:
             return ""
         return content.plain
+
     return _get
+
 
 # Pytest configuration
 def pytest_configure(config):
     """Configure pytest markers."""
-    config.addinivalue_line(
-        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-    )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
+    config.addinivalue_line("markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')")
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
 
 
 # Enable async tests

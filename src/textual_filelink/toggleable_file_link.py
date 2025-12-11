@@ -4,7 +4,7 @@ import logging
 import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Callable, Literal, Optional
+from typing import Callable, Literal
 
 from textual import events, on
 from textual.app import ComposeResult
@@ -17,9 +17,11 @@ from .file_link import FileLink
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class IconConfig:
     """Configuration for a status icon in ToggleableFileLink."""
+
     name: str
     icon: str
     position: Literal["before", "after"] = "before"
@@ -44,7 +46,7 @@ class ToggleableFileLink(Widget):
         width: auto;
         align: left middle;
     }
-    
+
     ToggleableFileLink .toggle-static {
         width: 3;
         max-width: 3;
@@ -55,11 +57,11 @@ class ToggleableFileLink(Widget):
         color: $text;
         content-align: center middle;
     }
-    
+
     ToggleableFileLink .toggle-static:hover {
         background: $boost;
     }
-    
+
     ToggleableFileLink .status-icon {
         width: 3;
         max-width: 3;
@@ -70,24 +72,24 @@ class ToggleableFileLink(Widget):
         color: $text;
         content-align: center middle;
     }
-    
+
     ToggleableFileLink .status-icon:hover {
         background: $boost;
     }
-    
+
     ToggleableFileLink .status-icon.clickable {
         text-style: underline;
     }
-    
+
     ToggleableFileLink .file-link-container {
         width: 1fr;
         height: auto;
     }
-    
+
     ToggleableFileLink .file-link-container FileLink {
         text-align: left;
     }
-    
+
     ToggleableFileLink .remove-static {
         width: 3;
         max-width: 3;
@@ -98,16 +100,16 @@ class ToggleableFileLink(Widget):
         color: $error;
         content-align: center middle;
     }
-    
+
     ToggleableFileLink .remove-static:hover {
         background: $boost;
         color: $error;
     }
-    
+
     ToggleableFileLink.disabled {
         opacity: 0.5;
     }
-    
+
     ToggleableFileLink.disabled .file-link-container {
         text-style: dim;
     }
@@ -115,6 +117,7 @@ class ToggleableFileLink(Widget):
 
     class Toggled(Message):
         """Posted when the toggle state changes."""
+
         def __init__(self, path: Path, is_toggled: bool) -> None:
             super().__init__()
             self.path = path
@@ -122,12 +125,14 @@ class ToggleableFileLink(Widget):
 
     class Removed(Message):
         """Posted when the remove button is clicked."""
+
         def __init__(self, path: Path) -> None:
             super().__init__()
             self.path = path
 
     class IconClicked(Message):
         """Posted when a status icon is clicked."""
+
         def __init__(self, path: Path, icon_name: str, icon: str) -> None:
             super().__init__()
             self.path = path
@@ -142,19 +147,19 @@ class ToggleableFileLink(Widget):
         show_toggle: bool = True,
         show_remove: bool = True,
         icons: list[IconConfig | dict] | None = None,
-        line: Optional[int] = None,
-        column: Optional[int] = None,
-        command_builder: Optional[Callable] = None,
+        line: int | None = None,
+        column: int | None = None,
+        command_builder: Callable | None = None,
         disable_on_untoggle: bool = False,
-        toggle_tooltip: Optional[str] = None,
-        remove_tooltip: Optional[str] = None,
+        toggle_tooltip: str | None = None,
+        remove_tooltip: str | None = None,
         # Deprecated parameters for backwards compatibility
-        status_icon: Optional[str] = None,
+        status_icon: str | None = None,
         status_icon_clickable: bool = False,
-        status_tooltip: Optional[str] = None,
-        name: Optional[str] = None,
-        id: Optional[str] = None,
-        classes: Optional[str] = None,
+        status_tooltip: str | None = None,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
     ) -> None:
         """
         Parameters
@@ -204,7 +209,9 @@ class ToggleableFileLink(Widget):
         self._disable_on_untoggle = disable_on_untoggle
         self._toggle_tooltip = toggle_tooltip
         self._remove_tooltip = remove_tooltip
-        logger.debug(f"ToggleableFileLink initialized with path: {self._path}, initial_toggle: {initial_toggle}, show_toggle: {show_toggle}, show_remove: {show_remove}")
+        logger.debug(
+            f"ToggleableFileLink initialized with path: {self._path}, initial_toggle: {initial_toggle}, show_toggle: {show_toggle}, show_remove: {show_remove}"
+        )
 
         # Handle backwards compatibility for old status_icon parameters
         if status_icon is not None:
@@ -212,17 +219,19 @@ class ToggleableFileLink(Widget):
                 "status_icon, status_icon_clickable, and status_tooltip are deprecated. "
                 "Use the icons parameter instead.",
                 DeprecationWarning,
-                stacklevel=2
+                stacklevel=2,
             )
             if icons is None:
                 icons = []
-            icons.append({
-                "name": "status",
-                "icon": status_icon,
-                "clickable": status_icon_clickable,
-                "tooltip": status_tooltip,
-                "position": "before"
-            })
+            icons.append(
+                {
+                    "name": "status",
+                    "icon": status_icon,
+                    "clickable": status_icon_clickable,
+                    "tooltip": status_tooltip,
+                    "position": "before",
+                }
+            )
 
         # Convert icons to IconConfig dataclasses and validate
         self._icons: list[IconConfig] = []
@@ -246,7 +255,9 @@ class ToggleableFileLink(Widget):
                 # Validate position if provided
                 position = icon_data.get("position", "before")
                 if position not in ("before", "after"):
-                    raise ValueError(f"Icon '{icon_data['name']}' has invalid position '{position}'. Must be 'before' or 'after'.")
+                    raise ValueError(
+                        f"Icon '{icon_data['name']}' has invalid position '{position}'. Must be 'before' or 'after'."
+                    )
 
                 icon_config = IconConfig(**icon_data)
             elif isinstance(icon_data, IconConfig):
@@ -358,14 +369,14 @@ class ToggleableFileLink(Widget):
 
     def set_icon_visible(self, name: str, visible: bool) -> None:
         """Show or hide a specific icon.
-        
+
         Parameters
         ----------
         name : str
             The name of the icon to show/hide.
         visible : bool
             True to show, False to hide.
-        
+
         Raises
         ------
         KeyError
@@ -387,21 +398,21 @@ class ToggleableFileLink(Widget):
 
     def update_icon(self, name: str, **kwargs) -> None:
         """Update properties of an existing icon.
-        
+
         Parameters
         ----------
         name : str
             The name of the icon to update.
         **kwargs
             Properties to update: icon, position, index, visible, clickable, tooltip
-        
+
         Raises
         ------
         KeyError
             If no icon with the given name exists.
         ValueError
             If an invalid property value is provided.
-        
+
         Examples
         --------
         >>> link.update_icon("status", icon="✓", tooltip="Complete")
@@ -497,12 +508,12 @@ class ToggleableFileLink(Widget):
 
     def get_icon(self, name: str) -> dict | None:
         """Get a copy of an icon's configuration.
-        
+
         Parameters
         ----------
         name : str
             The name of the icon to retrieve.
-        
+
         Returns
         -------
         dict | None
@@ -520,9 +531,9 @@ class ToggleableFileLink(Widget):
                 return icon_config
         return None
 
-    def set_toggle_tooltip(self, tooltip: Optional[str]) -> None:
+    def set_toggle_tooltip(self, tooltip: str | None) -> None:
         """Update the toggle button tooltip.
-        
+
         Parameters
         ----------
         tooltip : str | None
@@ -535,9 +546,9 @@ class ToggleableFileLink(Widget):
         except Exception:
             pass
 
-    def set_remove_tooltip(self, tooltip: Optional[str]) -> None:
+    def set_remove_tooltip(self, tooltip: str | None) -> None:
         """Update the remove button tooltip.
-        
+
         Parameters
         ----------
         tooltip : str | None

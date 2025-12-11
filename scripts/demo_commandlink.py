@@ -129,6 +129,7 @@ class CommandOrchestratorApp(App):
 
         # Track start time for elapsed time display
         import time
+
         self.command_start_times[event.name] = time.time()
 
         # Update to running state
@@ -175,95 +176,96 @@ class CommandOrchestratorApp(App):
             return
 
         import time
+
         elapsed = int(time.time() - self.command_start_times[name])
         try:
             link = self.query_one(f"#{name}", CommandLink)
             link.set_status(tooltip=f"Running {name}... ({elapsed}s)")
-        except:
+        except Exception:
             # Widget might have been removed
             pass
 
     def _generate_output_content(self, name: str, success: bool, duration: float) -> str:
         """Generate output content for a completed command."""
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
         status = "✅ Passed" if success else "❌ Failed"
 
-        if name == "Test":
-            return f"""# Tests Output
+        # Template generators for each command type
+        templates = {
+            "Test": lambda: f"""# Tests Output
 
 **Status:** {status}
 **Duration:** {duration}s
 **Timestamp:** {timestamp}
 
 ## Summary
-{'All tests passed successfully!' if success else 'Some tests failed. Review details below.'}
+{"All tests passed successfully!" if success else "Some tests failed. Review details below."}
 
 ## Details
-{'✓ test_file_link.py - All tests passed' if success else '✗ test_file_link.py - 2 failures'}
-{'✓ test_toggleable_file_link.py - All tests passed' if success else '✓ test_toggleable_file_link.py - All tests passed'}
-{'✓ test_command_link.py - All tests passed' if success else '✗ test_command_link.py - 1 failure'}
-{'✓ test_integration.py - All tests passed' if success else '✓ test_integration.py - All tests passed'}
+{"✓ test_file_link.py - All tests passed" if success else "✗ test_file_link.py - 2 failures"}
+{"✓ test_toggleable_file_link.py - All tests passed" if success else "✓ test_toggleable_file_link.py - All tests passed"}
+{"✓ test_command_link.py - All tests passed" if success else "✗ test_command_link.py - 1 failure"}
+{"✓ test_integration.py - All tests passed" if success else "✓ test_integration.py - All tests passed"}
 
 ## Coverage
 - Lines: {94 if success else 89}%
 - Branches: {87 if success else 81}%
-"""
-
-        elif name == "Build":
-            return f"""# Build Output
+""",
+            "Build": lambda: f"""# Build Output
 
 **Status:** {status}
 **Duration:** {duration}s
 **Timestamp:** {timestamp}
 
 ## Summary
-{'Build completed successfully.' if success else 'Build failed with compilation errors.'}
+{"Build completed successfully." if success else "Build failed with compilation errors."}
 
 ## Details
-{'✓ Compilation: Success' if success else '✗ Compilation: Failed'}
-{'✓ Type checking: Passed' if success else '✓ Type checking: Passed'}
-{'✓ Bundling: Complete' if success else '⊘ Bundling: Skipped'}
+{"✓ Compilation: Success" if success else "✗ Compilation: Failed"}
+{"✓ Type checking: Passed" if success else "✓ Type checking: Passed"}
+{"✓ Bundling: Complete" if success else "⊘ Bundling: Skipped"}
 
 ## Output
-{'dist/textual-filelink-0.2.0-py3-none-any.whl' if success else 'No artifacts generated'}
-"""
-
-        elif name == "Lint":
-            return f"""# Lint Output
+{"dist/textual-filelink-0.2.0-py3-none-any.whl" if success else "No artifacts generated"}
+""",
+            "Lint": lambda: f"""# Lint Output
 
 **Status:** {status}
 **Duration:** {duration}s
 **Timestamp:** {timestamp}
 
 ## Summary
-{'All code conforms to style standards.' if success else 'Style violations detected.'}
+{"All code conforms to style standards." if success else "Style violations detected."}
 
 ## Issues Found
 {0 if success else 3}
 
 ## Details
-{'✓ No style issues' if success else '✗ 3 style violations found'}
-{'✓ Complexity checks passed' if success else '⊘ Complexity checks skipped'}
-"""
-
-        elif name == "Deploy":
-            return f"""# Deploy Output
+{"✓ No style issues" if success else "✗ 3 style violations found"}
+{"✓ Complexity checks passed" if success else "⊘ Complexity checks skipped"}
+""",
+            "Deploy": lambda: f"""# Deploy Output
 
 **Status:** {status}
 **Duration:** {duration}s
 **Timestamp:** {timestamp}
 
 ## Summary
-{'Deployment successful - all instances healthy.' if success else 'Deployment failed - rolling back.'}
+{"Deployment successful - all instances healthy." if success else "Deployment failed - rolling back."}
 
 ## Instances
-{'✓ 5/5 instances updated' if success else '✗ 2/5 instances failed'}
+{"✓ 5/5 instances updated" if success else "✗ 2/5 instances failed"}
 
 ## Endpoint
-{'https://api.example.com/v1' if success else 'Service unavailable'}
-"""
+{"https://api.example.com/v1" if success else "Service unavailable"}
+""",
+        }
 
+        # Return template for command or default
+        if name in templates:
+            return templates[name]()
         return f"# {name} Output\n\nStatus: {status}\nDuration: {duration}s\n"
 
     def on_toggleable_file_link_toggled(self, event):
@@ -312,6 +314,7 @@ class CommandOrchestratorApp(App):
 
             # Simulate success/failure
             import random
+
             success = random.random() > 0.3  # 70% success rate
 
             # Generate and write output to the markdown file
@@ -321,7 +324,7 @@ class CommandOrchestratorApp(App):
                 "Test": "tests_output.md",
                 "Build": "build_output.md",
                 "Lint": "lint_output.md",
-                "Deploy": "deploy_output.md"
+                "Deploy": "deploy_output.md",
             }
             output_file = Path(f"scripts/{output_filenames.get(name, name.lower() + '_output.md')}")
             output_file.write_text(output_content)
@@ -399,7 +402,7 @@ class CommandOrchestratorApp(App):
             try:
                 link = self.query_one(f"#{name}", CommandLink)
                 link.set_status(icon="⚠", running=False, tooltip="Stopped by user")
-            except:
+            except Exception:
                 pass
 
         self.running_commands.clear()

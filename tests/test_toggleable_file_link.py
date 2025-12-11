@@ -2,6 +2,7 @@
 
 import pytest
 from textual.app import App, ComposeResult
+from textual.css.query import NoMatches
 from textual.widgets import Static
 
 from textual_filelink import FileLink, ToggleableFileLink
@@ -119,33 +120,25 @@ class TestToggleableFileLink:
 
     async def test_toggle_only_layout(self, temp_file):
         """Test layout with toggle only (no remove)."""
-        link = ToggleableFileLink(
-            temp_file,
-            show_toggle=True,
-            show_remove=False
-        )
+        link = ToggleableFileLink(temp_file, show_toggle=True, show_remove=False)
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should have toggle
             assert link.query_one("#toggle", Static)
 
             # Should not have remove
-            with pytest.raises(Exception):
+            with pytest.raises(NoMatches):
                 link.query_one("#remove", Static)
 
     async def test_remove_only_layout(self, temp_file):
         """Test layout with remove only (no toggle)."""
-        link = ToggleableFileLink(
-            temp_file,
-            show_toggle=False,
-            show_remove=True
-        )
+        link = ToggleableFileLink(temp_file, show_toggle=False, show_remove=True)
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should not have toggle
-            with pytest.raises(Exception):
+            with pytest.raises(NoMatches):
                 link.query_one("#toggle", Static)
 
             # Should have remove
@@ -153,28 +146,19 @@ class TestToggleableFileLink:
 
     async def test_no_controls_layout(self, temp_file):
         """Test layout with no controls."""
-        link = ToggleableFileLink(
-            temp_file,
-            show_toggle=False,
-            show_remove=False
-        )
+        link = ToggleableFileLink(temp_file, show_toggle=False, show_remove=False)
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should not have toggle or remove
-            with pytest.raises(Exception):
+            with pytest.raises(NoMatches):
                 link.query_one("#toggle", Static)
-            with pytest.raises(Exception):
+            with pytest.raises(NoMatches):
                 link.query_one("#remove", Static)
 
     async def test_disable_on_untoggle(self, temp_file):
         """Test disable_on_untoggle adds disabled class."""
-        link = ToggleableFileLink(
-            temp_file,
-            initial_toggle=False,
-            disable_on_untoggle=True,
-            show_toggle=True
-        )
+        link = ToggleableFileLink(temp_file, initial_toggle=False, disable_on_untoggle=True, show_toggle=True)
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -214,12 +198,7 @@ class TestToggleableFileLink:
 
     async def test_file_link_click_blocked_when_disabled(self, temp_file):
         """Test FileLink click is blocked when disable_on_untoggle is active."""
-        link = ToggleableFileLink(
-            temp_file,
-            initial_toggle=False,
-            disable_on_untoggle=True,
-            show_toggle=True
-        )
+        link = ToggleableFileLink(temp_file, initial_toggle=False, disable_on_untoggle=True, show_toggle=True)
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -242,13 +221,14 @@ class TestToggleableFileLink:
 
     async def test_command_builder_passed_to_filelink(self, temp_file):
         """Test command_builder is passed to internal FileLink."""
+
         def custom_builder(path, line, column):
             return ["custom", str(path)]
 
         link = ToggleableFileLink(temp_file, command_builder=custom_builder)
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             file_link = link.query_one(FileLink)
             assert file_link._command_builder == custom_builder
 
@@ -257,7 +237,7 @@ class TestToggleableFileLink:
         link = ToggleableFileLink(temp_file, line=42, column=7)
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             file_link = link.query_one(FileLink)
             assert file_link.line == 42
             assert file_link.column == 7
@@ -280,10 +260,7 @@ class TestMultipleIcons:
 
     async def test_single_icon_dict(self, temp_file):
         """Test creating link with single icon as dict."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓"}])
 
         assert len(link.icons) == 1
         assert link.icons[0]["name"] == "status"
@@ -305,7 +282,7 @@ class TestMultipleIcons:
                 {"name": "status", "icon": "✓"},
                 {"name": "warning", "icon": "⚠"},
                 {"name": "lock", "icon": "🔒"},
-            ]
+            ],
         )
 
         assert len(link.icons) == 3
@@ -320,11 +297,11 @@ class TestMultipleIcons:
             icons=[
                 {"name": "icon1", "icon": "🔥", "position": "before"},
                 {"name": "icon2", "icon": "⭐", "position": "before"},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Both icons should be present
             icon1 = link.query_one("#icon-icon1", Static)
             icon2 = link.query_one("#icon-icon2", Static)
@@ -337,11 +314,11 @@ class TestMultipleIcons:
             temp_file,
             icons=[
                 {"name": "icon1", "icon": "🔥", "position": "after"},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             icon1 = link.query_one("#icon-icon1", Static)
             assert get_rendered_text(icon1) == "🔥"
 
@@ -353,11 +330,11 @@ class TestMultipleIcons:
                 {"name": "before1", "icon": "🔥", "position": "before"},
                 {"name": "after1", "icon": "⭐", "position": "after"},
                 {"name": "before2", "icon": "✓", "position": "before"},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # All icons should be present
             assert link.query_one("#icon-before1", Static)
             assert link.query_one("#icon-before2", Static)
@@ -370,17 +347,17 @@ class TestMultipleIcons:
             icons=[
                 {"name": "visible", "icon": "✓", "visible": True},
                 {"name": "hidden", "icon": "⚠", "visible": False},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Visible icon should exist
             visible_icon = link.query_one("#icon-visible", Static)
             assert visible_icon.display is True
 
             # Hidden icon should not be rendered
-            with pytest.raises(Exception):
+            with pytest.raises(NoMatches):
                 link.query_one("#icon-hidden", Static)
 
     async def test_icon_clickable(self, temp_file):
@@ -389,7 +366,7 @@ class TestMultipleIcons:
             temp_file,
             icons=[
                 {"name": "clickable", "icon": "✓", "clickable": True},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
@@ -408,7 +385,7 @@ class TestMultipleIcons:
             temp_file,
             icons=[
                 {"name": "not_clickable", "icon": "✓", "clickable": False},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
@@ -425,11 +402,11 @@ class TestMultipleIcons:
             temp_file,
             icons=[
                 {"name": "status", "icon": "✓", "tooltip": "All good!"},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             icon = link.query_one("#icon-status", Static)
             assert icon.tooltip == "All good!"
 
@@ -441,7 +418,7 @@ class TestMultipleIcons:
                 {"name": "third", "icon": "3", "index": 3},
                 {"name": "first", "icon": "1", "index": 1},
                 {"name": "second", "icon": "2", "index": 2},
-            ]
+            ],
         )
 
         # Icons should be sorted by index
@@ -458,7 +435,7 @@ class TestMultipleIcons:
                 {"name": "first", "icon": "1"},
                 {"name": "second", "icon": "2"},
                 {"name": "third", "icon": "3"},
-            ]
+            ],
         )
 
         sorted_icons = link._sort_icons(link._icons, "before")
@@ -474,7 +451,7 @@ class TestMultipleIcons:
                 {"name": "auto1", "icon": "A"},
                 {"name": "explicit", "icon": "E", "index": 0},
                 {"name": "auto2", "icon": "B"},
-            ]
+            ],
         )
 
         # Explicit index should come first
@@ -490,7 +467,7 @@ class TestMultipleIcons:
             icons=[
                 {"name": "zebra", "icon": "Z", "index": 1},
                 {"name": "apple", "icon": "A", "index": 1},
-            ]
+            ],
         )
 
         sorted_icons = link._sort_icons(link._icons, "before")
@@ -503,10 +480,7 @@ class TestIconManipulation:
 
     async def test_set_icon_visible(self, temp_file):
         """Test showing/hiding icons dynamically."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓", "visible": True}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "visible": True}])
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -533,10 +507,7 @@ class TestIconManipulation:
 
     async def test_update_icon_properties(self, temp_file):
         """Test updating icon properties."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "⏳", "tooltip": "Processing"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "⏳", "tooltip": "Processing"}])
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -550,10 +521,7 @@ class TestIconManipulation:
 
     async def test_update_icon_visibility(self, temp_file):
         """Test updating icon visibility via update_icon."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓", "visible": True}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "visible": True}])
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -565,10 +533,7 @@ class TestIconManipulation:
 
     async def test_update_icon_clickable(self, temp_file):
         """Test updating icon clickable state."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓", "clickable": False}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "clickable": False}])
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -580,10 +545,7 @@ class TestIconManipulation:
 
     async def test_update_icon_position(self, temp_file):
         """Test updating icon position triggers recompose."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓", "position": "before"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "position": "before"}])
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test() as pilot:
@@ -600,7 +562,7 @@ class TestIconManipulation:
             icons=[
                 {"name": "first", "icon": "1"},
                 {"name": "second", "icon": "2"},
-            ]
+            ],
         )
         app = ToggleableFileLinkTestApp(link)
 
@@ -620,30 +582,21 @@ class TestIconManipulation:
 
     async def test_update_icon_invalid_property(self, temp_file):
         """Test updating invalid property raises ValueError."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓"}])
 
         with pytest.raises(ValueError):
             link.update_icon("status", invalid_prop="value")
 
     async def test_update_icon_invalid_position(self, temp_file):
         """Test updating to invalid position raises ValueError."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓"}])
 
         with pytest.raises(ValueError):
             link.update_icon("status", position="middle")
 
     async def test_get_icon(self, temp_file):
         """Test getting icon configuration."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓", "tooltip": "Done"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "tooltip": "Done"}])
 
         icon_config = link.get_icon("status")
         assert icon_config is not None
@@ -653,10 +606,7 @@ class TestIconManipulation:
 
     async def test_get_icon_returns_copy(self, temp_file):
         """Test get_icon returns a copy, not reference."""
-        link = ToggleableFileLink(
-            temp_file,
-            icons=[{"name": "status", "icon": "✓"}]
-        )
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓"}])
 
         icon_config = link.get_icon("status")
         icon_config["icon"] = "⚠"  # Modify copy
@@ -689,33 +639,21 @@ class TestBackwardsCompatibility:
     async def test_status_icon_clickable_deprecated(self, temp_file):
         """Test old status_icon_clickable parameter works."""
         with pytest.warns(DeprecationWarning):
-            link = ToggleableFileLink(
-                temp_file,
-                status_icon="✓",
-                status_icon_clickable=True
-            )
+            link = ToggleableFileLink(temp_file, status_icon="✓", status_icon_clickable=True)
 
         assert link.icons[0]["clickable"] is True
 
     async def test_status_tooltip_deprecated(self, temp_file):
         """Test old status_tooltip parameter works."""
         with pytest.warns(DeprecationWarning):
-            link = ToggleableFileLink(
-                temp_file,
-                status_icon="✓",
-                status_tooltip="All good"
-            )
+            link = ToggleableFileLink(temp_file, status_icon="✓", status_tooltip="All good")
 
         assert link.icons[0]["tooltip"] == "All good"
 
     async def test_status_icon_with_icons_parameter(self, temp_file):
         """Test status_icon is added to icons list."""
         with pytest.warns(DeprecationWarning):
-            link = ToggleableFileLink(
-                temp_file,
-                status_icon="✓",
-                icons=[{"name": "other", "icon": "⚠"}]
-            )
+            link = ToggleableFileLink(temp_file, status_icon="✓", icons=[{"name": "other", "icon": "⚠"}])
 
         assert len(link.icons) == 2
         # Status icon should be added
@@ -745,16 +683,13 @@ class TestValidation:
                 icons=[
                     {"name": "status", "icon": "✓"},
                     {"name": "status", "icon": "⚠"},
-                ]
+                ],
             )
 
     def test_invalid_position_raises_error(self, temp_file):
         """Test invalid position raises ValueError."""
         with pytest.raises(ValueError, match="invalid position"):
-            ToggleableFileLink(
-                temp_file,
-                icons=[{"name": "status", "icon": "✓", "position": "middle"}]
-            )
+            ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "position": "middle"}])
 
     def test_invalid_icon_type_raises_error(self, temp_file):
         """Test invalid icon type raises ValueError."""

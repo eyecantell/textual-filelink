@@ -1,7 +1,6 @@
 # Updated test_integration.py with multi-icon support
 """Integration tests for FileLink and ToggleableFileLink working together."""
 
-
 import pytest
 from textual.app import App, ComposeResult
 from textual.containers import Vertical
@@ -19,8 +18,7 @@ class IntegrationTestApp(App):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            for link in self.file_links:
-                yield link
+            yield from self.file_links
 
     def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
         self.events.append(("toggled", event))
@@ -44,16 +42,13 @@ class TestIntegration:
         links = [FileLink(f) for f in sample_files]
         app = IntegrationTestApp(links)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # All links should be present
             assert len(list(app.query(FileLink))) == len(sample_files)
 
     async def test_multiple_toggleable_filelinks(self, sample_files):
         """Test multiple ToggleableFileLink widgets."""
-        links = [
-            ToggleableFileLink(f, show_toggle=True, show_remove=True)
-            for f in sample_files
-        ]
+        links = [ToggleableFileLink(f, show_toggle=True, show_remove=True) for f in sample_files]
         app = IntegrationTestApp(links)
 
         async with app.run_test() as pilot:
@@ -77,16 +72,13 @@ class TestIntegration:
         ]
         app = IntegrationTestApp(links)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert len(list(app.query(FileLink))) == 3  # 2 FileLink + 1 inside ToggleableFileLink
             assert len(list(app.query(ToggleableFileLink))) == 1
 
     async def test_toggle_multiple_links(self, sample_files):
         """Test toggling multiple links independently."""
-        links = [
-            ToggleableFileLink(f, show_toggle=True)
-            for f in sample_files[:3]
-        ]
+        links = [ToggleableFileLink(f, show_toggle=True) for f in sample_files[:3]]
         app = IntegrationTestApp(links)
 
         async with app.run_test() as pilot:
@@ -108,25 +100,25 @@ class TestIntegration:
                 icons=[
                     {"name": "status", "icon": "✓"},
                     {"name": "lock", "icon": "🔒"},
-                ]
+                ],
             ),
             ToggleableFileLink(
                 sample_files[1],
                 icons=[
                     {"name": "warning", "icon": "⚠"},
                     {"name": "progress", "icon": "⏳"},
-                ]
+                ],
             ),
             ToggleableFileLink(
                 sample_files[2],
                 icons=[
                     {"name": "error", "icon": "✗"},
-                ]
+                ],
             ),
         ]
         app = IntegrationTestApp(links)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Each link should have its icons
             assert len(links[0].icons) == 2
             assert len(links[1].icons) == 2
@@ -134,10 +126,7 @@ class TestIntegration:
 
     async def test_remove_multiple_links(self, sample_files):
         """Test removing multiple links."""
-        links = [
-            ToggleableFileLink(f, show_remove=True)
-            for f in sample_files[:3]
-        ]
+        links = [ToggleableFileLink(f, show_remove=True) for f in sample_files[:3]]
         app = IntegrationTestApp(links)
 
         async with app.run_test() as pilot:
@@ -155,17 +144,13 @@ class TestIntegration:
         link = FileLink(long_filename)
         app = IntegrationTestApp([link])
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should render without error
             assert get_rendered_text(link) == long_filename.name
 
     async def test_special_chars_filename(self, special_char_filename, get_rendered_text):
         """Test filenames with special characters."""
-        link = ToggleableFileLink(
-            special_char_filename,
-            show_toggle=True,
-            show_remove=True
-        )
+        link = ToggleableFileLink(special_char_filename, show_toggle=True, show_remove=True)
         app = IntegrationTestApp([link])
 
         async with app.run_test() as pilot:
@@ -180,13 +165,10 @@ class TestIntegration:
 
     async def test_unicode_filename(self, unicode_filename, get_rendered_text):
         """Test filenames with unicode characters."""
-        link = ToggleableFileLink(
-            unicode_filename,
-            icons=[{"name": "star", "icon": "🌟"}]
-        )
+        link = ToggleableFileLink(unicode_filename, icons=[{"name": "star", "icon": "🌟"}])
         app = IntegrationTestApp([link])
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should handle unicode in filename and icon
             file_link = link.query_one(FileLink)
             assert get_rendered_text(file_link) == unicode_filename.name
@@ -194,12 +176,7 @@ class TestIntegration:
 
     async def test_disable_on_untoggle_interaction(self, sample_files):
         """Test disable_on_untoggle affects click behavior."""
-        link = ToggleableFileLink(
-            sample_files[0],
-            initial_toggle=False,
-            disable_on_untoggle=True,
-            show_toggle=True
-        )
+        link = ToggleableFileLink(sample_files[0], initial_toggle=False, disable_on_untoggle=True, show_toggle=True)
         app = IntegrationTestApp([link])
 
         async with app.run_test() as pilot:
@@ -234,7 +211,7 @@ class TestIntegration:
             ],
             line=42,
             column=10,
-            disable_on_untoggle=False
+            disable_on_untoggle=False,
         )
         app = IntegrationTestApp([link])
 
@@ -284,7 +261,7 @@ class TestIntegration:
                 f,
                 icons=[
                     {"name": "status", "icon": "⏳", "visible": True},
-                ]
+                ],
             )
             for f in sample_files[:3]
         ]
@@ -307,7 +284,7 @@ class TestIntegration:
                 f,
                 icons=[
                     {"name": "status", "icon": "✓", "visible": True},
-                ]
+                ],
             )
             for f in sample_files[:3]
         ]
@@ -331,26 +308,26 @@ class TestIntegration:
                 icons=[
                     {"name": "before1", "icon": "🔥", "position": "before"},
                     {"name": "before2", "icon": "⭐", "position": "before"},
-                ]
+                ],
             ),
             ToggleableFileLink(
                 sample_files[1],
                 icons=[
                     {"name": "after1", "icon": "✓", "position": "after"},
                     {"name": "after2", "icon": "🔒", "position": "after"},
-                ]
+                ],
             ),
             ToggleableFileLink(
                 sample_files[2],
                 icons=[
                     {"name": "before", "icon": "⚠", "position": "before"},
                     {"name": "after", "icon": "✓", "position": "after"},
-                ]
+                ],
             ),
         ]
         app = IntegrationTestApp(links)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # All icons should be present
             assert links[0].query_one("#icon-before1")
             assert links[0].query_one("#icon-before2")
@@ -366,7 +343,7 @@ class TestIntegration:
                 f,
                 icons=[
                     {"name": "action", "icon": "🔔", "clickable": True},
-                ]
+                ],
             )
             for f in sample_files[:3]
         ]
@@ -389,18 +366,11 @@ class TestIntegration:
     async def test_backwards_compat_status_icon_in_integration(self, sample_files):
         """Test backwards compatibility with old status_icon in integration."""
         with pytest.warns(DeprecationWarning):
-            links = [
-                ToggleableFileLink(
-                    f,
-                    status_icon="✓",
-                    status_icon_clickable=True
-                )
-                for f in sample_files[:2]
-            ]
+            links = [ToggleableFileLink(f, status_icon="✓", status_icon_clickable=True) for f in sample_files[:2]]
 
         app = IntegrationTestApp(links)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Old API should still work
             for link in links:
                 assert len(link.icons) == 1

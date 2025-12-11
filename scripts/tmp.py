@@ -39,7 +39,7 @@ class FileManagerApp(App):
                     {"name": "status", "icon": "✓", "tooltip": "Validated", "clickable": True},
                     {"name": "type", "icon": "🐍", "tooltip": "Python file"},
                     {"name": "lock", "icon": "🔒", "position": "after", "tooltip": "Read-only"},
-                ]
+                ],
             )
 
             # File needing review
@@ -48,7 +48,7 @@ class FileManagerApp(App):
                 icons=[
                     {"name": "status", "icon": "⚠", "tooltip": "Needs review", "clickable": True},
                     {"name": "type", "icon": "⚙️", "tooltip": "Config file"},
-                ]
+                ],
             )
 
             # File being processed
@@ -59,7 +59,7 @@ class FileManagerApp(App):
                     {"name": "status", "icon": "⏳", "tooltip": "Processing...", "clickable": True},
                     {"name": "type", "icon": "📊", "tooltip": "Data file"},
                     {"name": "result", "icon": "⚪", "visible": False, "position": "after"},
-                ]
+                ],
             )
 
         yield Footer()
@@ -103,6 +103,7 @@ class FileManagerApp(App):
                 if link.get_icon("result"):
                     link.set_icon_visible("result", False)
                 self.notify(f"⏳ Processing {event.path.name}...")
+
 
 if __name__ == "__main__":
     FileManagerApp().run()

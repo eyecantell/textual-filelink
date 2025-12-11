@@ -45,7 +45,7 @@ class TestFileLink:
         """Test FileLink displays only the filename, not full path."""
         link = FileLink(temp_file)
 
-        async with FileLinkTestApp(link).run_test() as pilot:
+        async with FileLinkTestApp(link).run_test():
             # The Static widget should display just the filename
             assert get_rendered_text(link) == temp_file.name
 
@@ -95,6 +95,7 @@ class TestFileLink:
 
     async def test_filelink_custom_command_builder(self, temp_file):
         """Test FileLink with custom command builder."""
+
         def custom_builder(path, line, column):
             return ["custom", "command", str(path)]
 

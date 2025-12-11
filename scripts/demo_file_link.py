@@ -70,7 +70,6 @@ class DemoApp(App):
 
         yield Footer()
 
-
     @on(FileLink.Clicked)
     def file_clicked(self, event: FileLink.Clicked) -> None:
         pos = f" @ {event.line}:{event.column}" if event.line else ""
@@ -93,13 +92,7 @@ class DemoApp(App):
             config = configs[i]
             for f in self.FILES:
                 list_item = ListItem(
-                    ToggleableFileLink(
-                        f,
-                        line=1,
-                        initial_toggle=False,
-                        disable_on_untoggle=True,
-                        **config
-                    ),
+                    ToggleableFileLink(f, line=1, initial_toggle=False, disable_on_untoggle=True, **config),
                     name=str(f),
                 )
                 list_item.can_focus_children = True
@@ -119,6 +112,7 @@ class DemoApp(App):
                 if isinstance(child, ListItem) and child.name == path_str:
                     child.remove()
                     break
+
 
 if __name__ == "__main__":
     DemoApp().run()
