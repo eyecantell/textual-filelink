@@ -443,26 +443,29 @@ class CommandLink(ToggleableFileLink):
 
         if icon_name == "play_stop":
             if self._command_running:
-                self.post_message(self.StopClicked(
-                    path=self._output_path,
-                    name=self.name,
-                    output_path=self._output_path,
-                    is_toggled=self._is_toggled
-                ))
+                self.post_message(
+                    self.StopClicked(
+                        path=self._output_path,
+                        name=self.name,
+                        output_path=self._output_path,
+                        is_toggled=self._is_toggled,
+                    )
+                )
             else:
-                self.post_message(self.PlayClicked(
-                    path=self._output_path,
-                    name=self.name,
-                    output_path=self._output_path,
-                    is_toggled=self._is_toggled
-                ))
+                self.post_message(
+                    self.PlayClicked(
+                        path=self._output_path,
+                        name=self.name,
+                        output_path=self._output_path,
+                        is_toggled=self._is_toggled,
+                    )
+                )
         elif icon_name == "settings":
-            self.post_message(self.SettingsClicked(
-                path=self._output_path,
-                name=self.name,
-                output_path=self._output_path,
-                is_toggled=self._is_toggled
-            ))
+            self.post_message(
+                self.SettingsClicked(
+                    path=self._output_path, name=self.name, output_path=self._output_path, is_toggled=self._is_toggled
+                )
+            )
 
     @property
     def display_name(self) -> str:
