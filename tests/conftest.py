@@ -2,15 +2,15 @@
 # tests/conftest.py
 """Pytest configuration and shared fixtures."""
 
+
 import pytest
-from pathlib import Path
 
 
 @pytest.fixture
 def sample_files(tmp_path):
     """Create a set of sample files for testing."""
     files = []
-    
+
     # Create various test files
     file_names = [
         "document.txt",
@@ -19,12 +19,12 @@ def sample_files(tmp_path):
         "readme.md",
         "data.csv"
     ]
-    
+
     for name in file_names:
         file_path = tmp_path / name
         file_path.write_text(f"Content of {name}")
         files.append(file_path)
-    
+
     return files
 
 
@@ -35,13 +35,13 @@ def sample_directory_structure(tmp_path):
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "main.py").write_text("main content")
     (tmp_path / "src" / "utils.py").write_text("utils content")
-    
+
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "test_main.py").write_text("test content")
-    
+
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "readme.md").write_text("docs content")
-    
+
     return tmp_path
 
 

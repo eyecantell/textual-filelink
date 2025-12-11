@@ -1,9 +1,11 @@
 # demo_file_link.py
-from textual.app import App, ComposeResult, on
-from textual.widgets import Header, Footer, ListView, ListItem, Label
-from textual.containers import Horizontal, Vertical
 from pathlib import Path
-from textual_filelink import FileLink, ToggleableFileLink 
+
+from textual.app import App, ComposeResult, on
+from textual.containers import Horizontal, Vertical
+from textual.widgets import Footer, Header, Label, ListItem, ListView
+
+from textual_filelink import FileLink, ToggleableFileLink
 
 
 class DemoApp(App):
@@ -41,7 +43,7 @@ class DemoApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        
+
         with Horizontal():
             with Vertical():
                 yield Label("Both")
@@ -65,7 +67,7 @@ class DemoApp(App):
                 yield Label("Neither")
                 self.lv4 = ListView()
                 yield self.lv4
-        
+
         yield Footer()
 
 
@@ -76,17 +78,17 @@ class DemoApp(App):
 
     def on_mount(self) -> None:
         self.lvs = [self.lv1, self.lv2, self.lv3, self.lv4]
-        
+
         configs = [
             {"show_toggle": True, "show_remove": True},
             {"show_toggle": False, "show_remove": True},
             {"show_toggle": True, "show_remove": False},
             {"show_toggle": False, "show_remove": False},
         ]
-        
+
         for lv in self.lvs:
             lv.can_focus_children = True
-        
+
         for i, lv in enumerate(self.lvs):
             config = configs[i]
             for f in self.FILES:

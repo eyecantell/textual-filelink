@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Optional, Callable
 import os
 import subprocess
+from pathlib import Path
+from typing import Callable, Optional
 
-from textual import on, events
-from textual.app import ComposeResult
-from textual.widget import Widget
-from textual.widgets import Static
+from textual import events
 from textual.message import Message
+from textual.widgets import Static
 
 
 class FileLink(Static):
@@ -70,7 +68,7 @@ class FileLink(Static):
         self._line = line
         self._column = column
         self._command_builder = command_builder
-        
+
         # Initialize Static with the filename as content
         super().__init__(
             self._path.name,
@@ -86,18 +84,18 @@ class FileLink(Static):
         """Handle click event."""
         event.stop()
         self.post_message(self.Clicked(self._path, self._line, self._column))
-        
+
         # Determine which command builder to use
         command_builder = (
-            self._command_builder 
-            or self.default_command_builder 
+            self._command_builder
+            or self.default_command_builder
             or self.vscode_command
         )
-        
+
         # Open the file directly (it's fast enough not to block)
         try:
             cmd = command_builder(self._path, self._line, self._column)
-            
+
             result = subprocess.run(
                 cmd,
                 env=os.environ.copy(),
@@ -106,7 +104,7 @@ class FileLink(Static):
                 text=True,
                 timeout=5
             )
-            
+
             if result.returncode == 0:
                 self.app.notify(f"Opened {self._path.name}", title="FileLink", timeout=1.5)
             else:
@@ -116,7 +114,7 @@ class FileLink(Static):
                     severity="error",
                     timeout=3
                 )
-            
+
         except subprocess.TimeoutExpired:
             self.app.notify(
                 f"Timeout opening {self._path.name}",
@@ -190,13 +188,13 @@ class FileLink(Static):
     def copy_path_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Copy the full path (with line:column) to clipboard."""
         import platform
-        
+
         path_str = str(path)
         if line is not None:
             path_str += f":{line}"
             if column is not None:
                 path_str += f":{column}"
-        
+
         system = platform.system()
         if system == "Darwin":
             return ["bash", "-c", f"echo -n '{path_str}' | pbcopy"]

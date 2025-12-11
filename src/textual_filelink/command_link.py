@@ -1,13 +1,14 @@
 
 from __future__ import annotations
+
+import logging
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Callable, Optional
 
 from textual import on
 from textual.message import Message
 from textual.timer import Timer
 
-import logging
 from .toggleable_file_link import ToggleableFileLink
 
 logger = logging.getLogger(__name__)
@@ -38,28 +39,28 @@ class CommandLink(ToggleableFileLink):
         link.set_output_path(Path("test_output.log"))
         ```
     """
-    
+
     # Spinner frames for animation
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-    
+
     class PlayClicked(Message):
         """Posted when play button is clicked."""
         def __init__(self, name: str) -> None:
             super().__init__()
             self.name = name
-    
+
     class StopClicked(Message):
         """Posted when stop button is clicked."""
         def __init__(self, name: str) -> None:
             super().__init__()
             self.name = name
-    
+
     class SettingsClicked(Message):
         """Posted when settings icon is clicked."""
         def __init__(self, name: str) -> None:
             super().__init__()
             self.name = name
-    
+
     def __init__(
         self,
         name: str,
@@ -121,10 +122,10 @@ class CommandLink(ToggleableFileLink):
         self._spinner_frame = 0
 
         logger.debug(f"Initializing CommandLink: {self._name}, running={self._command_running}, output_path={self._output_path}")
-        
+
         # Build icons list for parent ToggleableFileLink
         icons = []
-        
+
         # Status icon (or will be replaced by spinner if running)
         icons.append({
             "name": "status",
@@ -134,7 +135,7 @@ class CommandLink(ToggleableFileLink):
             "index": 0,
             "visible": not running,  # Hide if running (spinner will show instead)
         })
-        
+
         # Play/Stop button
         play_stop_icon = "⏹" if running else "▶"
         play_stop_tooltip = "Stop command" if running else "Run command"
@@ -146,7 +147,7 @@ class CommandLink(ToggleableFileLink):
             "index": 1,
             "clickable": True,
         })
-        
+
         # Settings icon (after command name)
         if show_settings:
             icons.append({
@@ -157,14 +158,14 @@ class CommandLink(ToggleableFileLink):
                 "index": 0,
                 "clickable": True,
             })
-        
+
         # Determine command builder - use no-op if no output path
         if output_path is None and command_builder is None:
             command_builder = CommandLink._noop_command_builder
 
         # Use command name as display text (parent will show path.name)
         display_path = Path(name)
-        
+
         # Initialize parent
         super().__init__(
             display_path,
@@ -179,14 +180,14 @@ class CommandLink(ToggleableFileLink):
             id=name,  # Use name as ID for easy lookup
             name=None,  # Don't set Widget.name, we use our own _name
         )
-        
+
         logger.debug(f"CommandLink after super init: {self._name}, running={self._command_running}, output_path={self._output_path}")
-    
+
     @staticmethod
     def _noop_command_builder(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """No-op command builder when no output file exists."""
         return ["true"]  # Unix no-op command
-    
+
     def set_status(
         self,
         icon: str | None = None,
@@ -214,12 +215,12 @@ class CommandLink(ToggleableFileLink):
         if running is not None:
             self._command_running = running
             logger.debug(f"CommandLink '{self._name}' running state set to {running}")
-            
+
             # Update play/stop button
             play_stop_icon = "⏹" if running else "▶"
             play_stop_tooltip = "Stop command" if running else "Run command"
             self.update_icon("play_stop", icon=play_stop_icon, tooltip=play_stop_tooltip)
-        
+
         # Update status icon/spinner
         if icon is not None:
             self._status_icon = icon
@@ -233,7 +234,7 @@ class CommandLink(ToggleableFileLink):
             self._status_tooltip = tooltip
             if self.get_icon("status")["visible"]:
                 self.update_icon("status", tooltip=tooltip)
-        
+
         # Handle spinner visibility
         if running is not None:
             if running and icon is None:
@@ -246,7 +247,7 @@ class CommandLink(ToggleableFileLink):
                 self.set_icon_visible("status", True)
                 if self._status_icon:
                     self.update_icon("status", icon=self._status_icon, tooltip=self._status_tooltip)
-    
+
     def _start_spinner(self) -> None:
         """Start the spinner animation."""
         if self._spinner_timer is None:
@@ -256,14 +257,14 @@ class CommandLink(ToggleableFileLink):
             self.set_icon_visible("status", True)
             # Start timer for animation (10 FPS)
             self._spinner_timer = self.set_interval(0.1, self._animate_spinner)
-    
+
     def _stop_spinner(self) -> None:
         """Stop the spinner animation."""
         if self._spinner_timer is not None:
             self._spinner_timer.stop()
             self._spinner_timer = None
             self._spinner_frame = 0
-    
+
     def _animate_spinner(self) -> None:
         """Animate the spinner by cycling through frames."""
         self._spinner_frame = (self._spinner_frame + 1) % len(self.SPINNER_FRAMES)
@@ -272,7 +273,7 @@ class CommandLink(ToggleableFileLink):
         except KeyError:
             # Icon was removed, stop the spinner
             self._stop_spinner()
-    
+
     def set_output_path(
         self,
         path: Path | str | None,
@@ -293,25 +294,25 @@ class CommandLink(ToggleableFileLink):
         >>> link.set_output_path(None)  # Clear output path
         """
         self._output_path = Path(path) if path else None
-        
+
         # Update the internal FileLink via the new property (only if mounted)
         try:
             file_link = self.file_link
             file_link._path = self._output_path if self._output_path else Path(self._name)
-            
+
             # Update command builder
             if self._output_path is None:
                 file_link._command_builder = CommandLink._noop_command_builder
             else:
                 file_link._command_builder = None  # Use default
-            
+
             # Update tooltip if provided
             if tooltip is not None:
                 file_link.tooltip = tooltip
         except Exception:
             # Widget not mounted yet, changes will apply when mounted
             pass
-    
+
     def set_toggle(
         self,
         toggled: bool,
@@ -333,20 +334,20 @@ class CommandLink(ToggleableFileLink):
         """
         # Update internal state
         self._is_toggled = toggled
-        
+
         # Update the toggle display
         try:
             toggle_static = self.query_one("#toggle")
             toggle_static.update("☑" if toggled else "☐")
-            
+
             if tooltip is not None:
                 toggle_static.tooltip = tooltip
         except Exception:
             pass
-        
+
         # Update disabled state if needed
         self._update_disabled_state()
-    
+
     def set_settings_tooltip(self, tooltip: str | None) -> None:
         """Update settings icon tooltip.
         
@@ -364,19 +365,19 @@ class CommandLink(ToggleableFileLink):
                 self.update_icon("settings", tooltip=tooltip or "Settings")
             except KeyError:
                 pass
-    
+
     def on_unmount(self) -> None:
         """Clean up spinner timer when widget is unmounted."""
         self._stop_spinner()
-    
+
     @on(ToggleableFileLink.IconClicked)
     def _handle_icon_click(self, event: ToggleableFileLink.IconClicked) -> None:
         """Handle icon clicks - convert to CommandLink-specific messages."""
         icon_name = event.icon_name
-        
+
         # Stop the event from bubbling further
         event.stop()
-        
+
         if icon_name == "play_stop":
             if self._command_running:
                 self.post_message(self.StopClicked(self.name))
@@ -384,17 +385,17 @@ class CommandLink(ToggleableFileLink):
                 self.post_message(self.PlayClicked(self.name))
         elif icon_name == "settings":
             self.post_message(self.SettingsClicked(self.name))
-    
+
     @property
     def name(self) -> str:
         """Get the command name."""
         return self.id or self._name
-    
+
     @property
     def output_path(self) -> Path | None:
         """Get the current output file path."""
         return self._output_path
-    
+
     @property
     def is_running(self) -> bool:
         """Get whether the command is currently running."""

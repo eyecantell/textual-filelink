@@ -1,8 +1,11 @@
 from pathlib import Path
+
 from textual.app import App, ComposeResult
 from textual.containers import Vertical
-from textual.widgets import Header, Footer, Static
+from textual.widgets import Footer, Header, Static
+
 from textual_filelink import ToggleableFileLink
+
 
 class FileManagerApp(App):
     CSS = """
@@ -21,13 +24,13 @@ class FileManagerApp(App):
         text-style: bold;
     }
     """
-    
+
     def compose(self) -> ComposeResult:
         yield Header()
-        
+
         with Vertical():
             yield Static("📂 Project Files")
-            
+
             # Validated file with multiple icons
             yield ToggleableFileLink(
                 Path("main.py"),
@@ -38,7 +41,7 @@ class FileManagerApp(App):
                     {"name": "lock", "icon": "🔒", "position": "after", "tooltip": "Read-only"},
                 ]
             )
-            
+
             # File needing review
             yield ToggleableFileLink(
                 Path("config.json"),
@@ -47,7 +50,7 @@ class FileManagerApp(App):
                     {"name": "type", "icon": "⚙️", "tooltip": "Config file"},
                 ]
             )
-            
+
             # File being processed
             yield ToggleableFileLink(
                 Path("data.csv"),
@@ -58,20 +61,20 @@ class FileManagerApp(App):
                     {"name": "result", "icon": "⚪", "visible": False, "position": "after"},
                 ]
             )
-        
+
         yield Footer()
-    
+
     def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
         state = "selected" if event.is_toggled else "deselected"
         self.notify(f"📋 {event.path.name} {state}")
-    
+
     def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
         # Remove the widget
         for child in self.query(ToggleableFileLink):
             if child.path == event.path:
                 child.remove()
         self.notify(f"🗑️ Removed {event.path.name}", severity="warning")
-    
+
     def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
         # Find the link by path
         link = None
@@ -79,10 +82,10 @@ class FileManagerApp(App):
             if child.path == event.path:
                 link = child
                 break
-        
+
         if not link:
             return
-        
+
         if event.icon_name == "status":
             # Toggle processing status
             if event.icon == "⏳":

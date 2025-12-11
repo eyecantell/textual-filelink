@@ -5,11 +5,13 @@ This shows a simple command orchestrator with multiple commands
 that can be run, stopped, and monitored.
 """
 
-from pathlib import Path
 import asyncio
+from pathlib import Path
+
 from textual.app import App, ComposeResult
-from textual.containers import Vertical, Horizontal
-from textual.widgets import Header, Footer, Static, Button
+from textual.containers import Horizontal, Vertical
+from textual.widgets import Button, Footer, Header, Static
+
 from textual_filelink import CommandLink
 
 
@@ -57,14 +59,14 @@ class CommandOrchestratorApp(App):
         margin: 0 1 0 0;
     }
     """
-    
+
     def __init__(self):
         super().__init__()
         self.running_commands = set()
         self.command_tasks = {}
         self.command_start_times = {}
         self.command_elapsed_timers = {}
-    
+
     def compose(self) -> ComposeResult:
         yield Header()
 
@@ -119,7 +121,7 @@ class CommandOrchestratorApp(App):
                 yield Button("Reset All", id="reset-all")
 
         yield Footer()
-    
+
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
         """Handle play button clicks - start the command."""
         self.notify(f"▶ Starting {event.name}...")
@@ -141,7 +143,7 @@ class CommandOrchestratorApp(App):
         # Simulate command execution
         task = asyncio.create_task(self._simulate_command(event.name))
         self.command_tasks[event.name] = task
-    
+
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
         """Handle stop button clicks - stop the command."""
         self.notify(f"⚠ Stopping {event.name}...", severity="warning")
@@ -161,7 +163,7 @@ class CommandOrchestratorApp(App):
         link.set_status(icon="⚠", running=False, tooltip="Stopped by user")
         self.running_commands.discard(event.name)
         self.command_start_times.pop(event.name, None)
-    
+
     def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
         """Handle settings icon clicks."""
         self.notify(f"⚙ Opening settings for {event.name}...")
@@ -256,30 +258,25 @@ class CommandOrchestratorApp(App):
 {'Deployment successful - all instances healthy.' if success else 'Deployment failed - rolling back.'}
 
 ## Instances
-{f'✓ 5/5 instances updated' if success else '✗ 2/5 instances failed'}
+{'✓ 5/5 instances updated' if success else '✗ 2/5 instances failed'}
 
 ## Endpoint
-{f'https://api.example.com/v1' if success else 'Service unavailable'}
+{'https://api.example.com/v1' if success else 'Service unavailable'}
 """
 
         return f"# {name} Output\n\nStatus: {status}\nDuration: {duration}s\n"
-    
+
     def on_toggleable_file_link_toggled(self, event):
         """Handle toggle changes."""
         state = "selected" if event.is_toggled else "deselected"
         self.notify(f"{'☑' if event.is_toggled else '☐'} {event.path.name} {state}")
-    
+
     def on_toggleable_file_link_removed(self, event):
         """Handle remove button clicks."""
-        # event.path is the output file path, but we need the command name
-        # Find the CommandLink widget that matches this path
-        link = None
-        for child in self.query(CommandLink):
-            if child.output_path == event.path:
-                link = child
-                break
+        # event.control is the ToggleableFileLink/CommandLink that posted the event
+        link = event.control
 
-        if link is None:
+        if not isinstance(link, CommandLink):
             return
 
         # Cancel task if running
@@ -296,9 +293,9 @@ class CommandOrchestratorApp(App):
 
         self.notify(f"🗑️ Removed {link.name} command", severity="warning")
 
-        # Remove the widget and the associated description
+        # Remove the widget
         link.remove()
-    
+
     async def _simulate_command(self, name: str):
         """Simulate running a command with random success/failure."""
         try:
@@ -349,7 +346,7 @@ class CommandOrchestratorApp(App):
                 self.command_elapsed_timers[name].stop()
                 del self.command_elapsed_timers[name]
             pass
-    
+
     def on_button_pressed(self, event: Button.Pressed):
         """Handle button presses."""
         if event.button.id == "run-selected":
@@ -358,28 +355,28 @@ class CommandOrchestratorApp(App):
             self._stop_all()
         elif event.button.id == "reset-all":
             self._reset_all()
-    
+
     def _run_selected(self):
         """Run all selected (toggled) commands."""
         selected = []
         for link in self.query(CommandLink):
             if link.is_toggled and link.name not in self.running_commands:
                 selected.append(link.name)
-        
+
         if not selected:
             self.notify("⚠ No commands selected", severity="warning")
             return
-        
+
         self.notify(f"▶ Running {len(selected)} selected command(s)...")
-        
+
         for name in selected:
             link = self.query_one(f"#{name}", CommandLink)
             link.set_status(running=True, tooltip=f"Running {name}...")
             self.running_commands.add(name)
-            
+
             task = asyncio.create_task(self._simulate_command(name))
             self.command_tasks[name] = task
-    
+
     def _stop_all(self):
         """Stop all running commands."""
         if not self.running_commands:
@@ -407,7 +404,7 @@ class CommandOrchestratorApp(App):
 
         self.running_commands.clear()
         self.command_start_times.clear()
-    
+
     def _reset_all(self):
         """Reset all commands to initial state."""
         # Stop all running commands first

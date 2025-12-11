@@ -1,20 +1,20 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from typing import Optional, Callable, Literal
+import logging
 import warnings
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Callable, Literal, Optional
 
-from textual import on, events
+from textual import events, on
 from textual.app import ComposeResult
+from textual.containers import Horizontal
+from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Static
-from textual.message import Message
-from textual.containers import Horizontal
 
 from .file_link import FileLink
 
-import logging
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -233,7 +233,7 @@ class ToggleableFileLink(Widget):
         """Validate and convert icon configs to IconConfig dataclasses."""
         result = []
         seen_names = set()
-        
+
         for i, icon_data in enumerate(icons):
             # Convert dict to IconConfig if needed
             if isinstance(icon_data, dict):
@@ -242,37 +242,37 @@ class ToggleableFileLink(Widget):
                     raise ValueError(f"Icon at index {i} missing required field 'name'")
                 if "icon" not in icon_data:
                     raise ValueError(f"Icon at index {i} missing required field 'icon'")
-                
+
                 # Validate position if provided
                 position = icon_data.get("position", "before")
                 if position not in ("before", "after"):
                     raise ValueError(f"Icon '{icon_data['name']}' has invalid position '{position}'. Must be 'before' or 'after'.")
-                
+
                 icon_config = IconConfig(**icon_data)
             elif isinstance(icon_data, IconConfig):
                 icon_config = icon_data
             else:
                 raise ValueError(f"Icon at index {i} must be IconConfig or dict, got {type(icon_data)}")
-            
+
             # Check for duplicate names
             if icon_config.name in seen_names:
                 raise ValueError(f"Duplicate icon name: '{icon_config.name}'")
             seen_names.add(icon_config.name)
-            
+
             result.append(icon_config)
-        
+
         return result
 
     def _sort_icons(self, icons: list[IconConfig], position: str) -> list[IconConfig]:
         """Sort icons by index (explicit first), then original list position, then name."""
         # Filter by position
         position_icons = [ic for ic in icons if ic.position == position]
-        
+
         # Attach original position for stable sorting
         icons_with_pos = []
         for i, ic in enumerate(position_icons):
             icons_with_pos.append((i, ic))
-        
+
         def sort_key(item):
             original_pos, ic = item
             idx = ic.index
@@ -280,7 +280,7 @@ class ToggleableFileLink(Widget):
                 return (0, idx, ic.name)  # Explicit indices first
             else:
                 return (1, original_pos, ic.name)  # Then by list order, name for tiebreak
-        
+
         sorted_icons = sorted(icons_with_pos, key=sort_key)
         return [ic for _, ic in sorted_icons]
 
@@ -296,13 +296,13 @@ class ToggleableFileLink(Widget):
                 if self._toggle_tooltip:
                     toggle_static.tooltip = self._toggle_tooltip
                 yield toggle_static
-            
+
             # Icons before filename
             before_icons = self._sort_icons(self._icons, "before")
             for icon_config in before_icons:
                 if icon_config.visible:
                     yield self._create_icon_static(icon_config)
-            
+
             # FileLink
             yield FileLink(
                 self._path,
@@ -311,13 +311,13 @@ class ToggleableFileLink(Widget):
                 command_builder=self._command_builder,
                 classes="file-link-container",
             )
-            
+
             # Icons after filename
             after_icons = self._sort_icons(self._icons, "after")
             for icon_config in after_icons:
                 if icon_config.visible:
                     yield self._create_icon_static(icon_config)
-            
+
             # Remove button
             if self._show_remove:
                 remove_static = Static(
@@ -334,7 +334,7 @@ class ToggleableFileLink(Widget):
         classes = "status-icon"
         if icon_config.clickable:
             classes += " clickable"
-        
+
         static = Static(
             icon_config.icon,
             id=f"icon-{icon_config.name}",
@@ -342,7 +342,7 @@ class ToggleableFileLink(Widget):
         )
         if icon_config.tooltip:
             static.tooltip = icon_config.tooltip
-        
+
         return static
 
     def on_mount(self) -> None:
@@ -374,9 +374,9 @@ class ToggleableFileLink(Widget):
         icon_config = self._get_icon_config(name)
         if icon_config is None:
             raise KeyError(f"No icon with name '{name}' found")
-        
+
         icon_config.visible = visible
-        
+
         # Update the DOM
         try:
             icon_static = self.query_one(f"#icon-{name}", Static)
@@ -410,20 +410,20 @@ class ToggleableFileLink(Widget):
         icon_config = self._get_icon_config(name)
         if icon_config is None:
             raise KeyError(f"No icon with name '{name}' found")
-        
+
         # Validate position if provided
         if "position" in kwargs:
             position = kwargs["position"]
             if position not in ("before", "after"):
                 raise ValueError(f"Invalid position '{position}'. Must be 'before' or 'after'.")
-        
+
         # Update the config
         for key, value in kwargs.items():
             if hasattr(icon_config, key):
                 setattr(icon_config, key, value)
             else:
                 raise ValueError(f"Invalid property '{key}' for IconConfig")
-        
+
         # If position or index changed, we need to recompose
         if "position" in kwargs or "index" in kwargs:
             # Schedule the recompose as a background task
@@ -432,22 +432,22 @@ class ToggleableFileLink(Widget):
             # Update existing static widget
             try:
                 icon_static = self.query_one(f"#icon-{name}", Static)
-                
+
                 if "icon" in kwargs:
                     icon_static.update(kwargs["icon"])
-                
+
                 if "tooltip" in kwargs:
                     icon_static.tooltip = kwargs["tooltip"] or ""
-                
+
                 if "visible" in kwargs:
                     icon_static.display = kwargs["visible"]
-                
+
                 if "clickable" in kwargs:
                     if kwargs["clickable"]:
                         icon_static.add_class("clickable")
                     else:
                         icon_static.remove_class("clickable")
-                        
+
             except Exception:
                 # Icon not yet mounted or needs recompose
                 pass
@@ -459,24 +459,24 @@ class ToggleableFileLink(Widget):
             container = self.query_one(Horizontal)
         except Exception:
             return
-        
+
         # Find the FileLink position before removing icons
         try:
             file_link = self.query_one(FileLink)
         except Exception:
             return
-        
+
         # Remove all existing icon statics and await removal
         icons_to_remove = list(self.query(".status-icon"))
         for static in icons_to_remove:
             await static.remove()
-        
+
         # Now recalculate FileLink index after removals
         try:
             file_link_index = list(container.children).index(file_link)
         except Exception:
             return
-        
+
         # Insert before icons
         before_icons = self._sort_icons(self._icons, "before")
         for i, icon_config in enumerate(before_icons):
@@ -485,7 +485,7 @@ class ToggleableFileLink(Widget):
                 # Calculate position: after toggle (if shown), before file_link
                 insert_pos = (1 if self._show_toggle else 0) + i
                 container.mount(icon_static, before=insert_pos)
-        
+
         # Insert after icons (need to recalculate file_link_index after before icons)
         file_link_index = list(container.children).index(file_link)
         after_icons = self._sort_icons(self._icons, "after")
@@ -557,14 +557,14 @@ class ToggleableFileLink(Widget):
             return
         event.stop()  # Prevent bubbling
         self._is_toggled = not self._is_toggled
-        
+
         # Update static content
         toggle_static = self.query_one("#toggle", Static)
         toggle_static.update("☑" if self._is_toggled else "☐")
-        
+
         # Update disabled state
         self._update_disabled_state()
-        
+
         # Post message
         self.post_message(self.Toggled(self._path, self._is_toggled))
 
@@ -572,19 +572,19 @@ class ToggleableFileLink(Widget):
     def _on_icon_clicked(self, event: events.Click) -> None:
         """Handle status icon click (if clickable)."""
         event.stop()  # Prevent bubbling
-        
+
         # Extract icon name from ID
         target = event.control
         if not isinstance(target, Static):
             return
-        
+
         icon_id = target.id
         if not icon_id or not icon_id.startswith("icon-"):
             return
-        
+
         icon_name = icon_id[5:]  # Remove "icon-" prefix
         icon_config = self._get_icon_config(icon_name)
-        
+
         if icon_config and icon_config.clickable:
             # Post message - it will automatically have self (ToggleableFileLink) as the sender
             self.post_message(self.IconClicked(self._path, icon_name, icon_config.icon))
@@ -613,12 +613,12 @@ class ToggleableFileLink(Widget):
     def path(self) -> Path:
         """Get the file path."""
         return self._path
-    
+
     @property
     def icons(self) -> list[dict]:
         """Get a list of all icon configurations (as dicts)."""
         return [asdict(ic) for ic in self._icons]
-    
+
     @property
     def file_link(self) -> FileLink:
         """Get the internal FileLink widget."""
