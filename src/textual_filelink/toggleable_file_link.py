@@ -35,12 +35,13 @@ class ToggleableFileLink(Widget):
     DEFAULT_CSS = """
     ToggleableFileLink {
         height: auto;
-        width: 100%;
+        width: auto;
+        min-width: 100%;
     }
-    
+
     ToggleableFileLink Horizontal {
         height: auto;
-        width: 100%;
+        width: auto;
         align: left middle;
     }
     
