@@ -295,8 +295,27 @@ class CommandOrchestratorApp(App):
 
         self.notify(f"🗑️ Removed {link.name} command", severity="warning")
 
-        # Remove the widget
-        link.remove()
+        # Remove the widget and its description
+        # The description Static immediately follows the CommandLink
+        try:
+            # Get the parent container
+            parent = link.parent
+            if parent:
+                # Get all children
+                children = list(parent.children)
+                link_index = children.index(link)
+
+                # Remove the CommandLink
+                link.remove()
+
+                # If there's a Static widget immediately after, remove it too (the description)
+                if link_index + 1 < len(children):
+                    next_widget = children[link_index + 1]
+                    if isinstance(next_widget, Static) and "command-description" in next_widget.classes:
+                        next_widget.remove()
+        except Exception:
+            # Fallback: just remove the link
+            link.remove()
 
     async def _simulate_command(self, name: str):
         """Simulate running a command with random success/failure."""

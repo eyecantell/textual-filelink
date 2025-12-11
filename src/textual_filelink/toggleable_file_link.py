@@ -63,8 +63,8 @@ class ToggleableFileLink(Widget):
     }
 
     ToggleableFileLink .status-icon {
-        width: 3;
-        max-width: 3;
+        width: 5;
+        max-width: 5;
         height: auto;
         background: transparent;
         border: none;
