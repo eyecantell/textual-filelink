@@ -43,7 +43,7 @@ from dataclasses import dataclass
 import time
 
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, ScrollableContainer
 from textual.widgets import Button, Footer, Header, Static
 
 from textual_filelink import CommandLink
@@ -90,12 +90,7 @@ class AsyncCommandApp(App):
         height: 1fr;
         padding: 1;
         overflow: auto;
-    }
-
-    Vertical {
-        width: 60;
         border: solid green;
-        padding: 1;
     }
 
     .description {
@@ -147,7 +142,7 @@ class AsyncCommandApp(App):
         """Create UI with 3 example commands and control buttons."""
         yield Header()
 
-        with Vertical():
+        with ScrollableContainer(id="content"):
             yield Static("⚙️ Async Command Orchestration", classes="title")
 
             yield Static(
