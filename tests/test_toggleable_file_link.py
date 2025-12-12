@@ -713,3 +713,19 @@ class TestValidation:
         async with app.run_test():
             remove = link.query_one("#remove", expect_type=Static)
             assert remove.tooltip == "Click to remove"
+
+    async def test_icon_clickable_toggle(self, temp_file):
+        """Test toggling icon clickable state."""
+        link = ToggleableFileLink(temp_file, icons=[{"name": "status", "icon": "✓", "clickable": False}])
+
+        # Icon should exist and not be clickable initially
+        icon = link.get_icon("status")
+        assert icon is not None
+        assert icon["clickable"] is False
+
+        # Update to clickable
+        link.update_icon("status", clickable=True)
+
+        # Verify the change was applied
+        icon_updated = link.get_icon("status")
+        assert icon_updated["clickable"] is True
