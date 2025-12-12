@@ -275,6 +275,65 @@ class AsyncCommandApp(App):
         if event.name in self.states:
             self.states[event.name].status = "stopped"
 
+    def on_toggleable_file_link_removed(self, event) -> None:
+        """Handle remove button clicks.
+
+        When user clicks the red X button:
+        1. Stop any running timer for elapsed time
+        2. Cancel the async task if running
+        3. Clean up state tracking
+        4. Remove the widget from UI
+        5. Remove the description Static below it
+        """
+        # Extract command name from event
+        # For CommandLink, event.path is Path(command_name)
+        command_name = event.path.name
+
+        # Get the CommandLink widget using sanitized ID
+        try:
+            sanitized_id = CommandLink.sanitize_id(command_name)
+            link = self.query_one(f"#{sanitized_id}", CommandLink)
+        except Exception:
+            # Widget not found, already removed
+            return
+
+        # Stop elapsed time timer if running
+        if link.name in self.timers:
+            self.timers[link.name].stop()
+            del self.timers[link.name]
+
+        # Cancel running async task if present
+        if link.name in self.tasks:
+            self.tasks[link.name].cancel()
+            del self.tasks[link.name]
+
+        # Clean up state tracking
+        self.start_times.pop(link.name, None)
+        if link.name in self.states:
+            del self.states[link.name]
+
+        # Notify user
+        self.notify(f"🗑️ Removed {link.name}", severity="warning")
+
+        # Remove widget and its description Static from UI
+        try:
+            parent = link.parent
+            if parent:
+                children = list(parent.children)
+                link_index = children.index(link)
+
+                # Remove the CommandLink
+                link.remove()
+
+                # Remove description Static immediately after if present
+                if link_index + 1 < len(children):
+                    next_widget = children[link_index + 1]
+                    if isinstance(next_widget, Static) and "command-description" in next_widget.classes:
+                        next_widget.remove()
+        except Exception:
+            # Fallback: just remove the link
+            link.remove()
+
     # ==== Async Command Execution ====
 
     async def _run_command(self, name: str, duration: float) -> None:
