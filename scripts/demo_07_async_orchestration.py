@@ -368,6 +368,9 @@ class AsyncCommandApp(App):
 
             self.notify(f"✅ {name} completed!", severity="information")
 
+            # Clean up task tracking
+            self.tasks.pop(name, None)
+
         except asyncio.CancelledError:
             # KEY PATTERN: Proper CancelledError handling
             # This is raised when task.cancel() is called
@@ -379,6 +382,9 @@ class AsyncCommandApp(App):
             # Update state
             if name in self.states:
                 self.states[name].status = "stopped"
+
+            # Clean up task tracking
+            self.tasks.pop(name, None)
 
             # Don't notify - user already stopped it
 
