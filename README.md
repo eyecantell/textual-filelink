@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/textual-filelink.svg)](https://pypi.org/project/textual-filelink/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/textual-filelink.svg)](https://pypi.org/project/textual-filelink/)
 [![Downloads](https://pepy.tech/badge/textual-filelink)](https://pepy.tech/project/textual-filelink)
+[![Coverage](https://codecov.io/gh/eyecantell/textual-filelink/branch/main/graph/badge.svg)](https://codecov.io/gh/eyecantell/textual-filelink)
 [![License](https://img.shields.io/pypi/l/textual-filelink.svg)](https://github.com/eyecantell/textual-filelink/blob/main/LICENSE)
 
 Clickable file links for [Textual](https://github.com/Textualize/textual) applications. Open files in your editor directly from your TUI.

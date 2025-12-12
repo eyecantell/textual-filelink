@@ -695,3 +695,21 @@ class TestValidation:
         """Test invalid icon type raises ValueError."""
         with pytest.raises(ValueError, match="must be IconConfig or dict"):
             ToggleableFileLink(temp_file, icons=["not a dict"])
+
+    async def test_toggle_tooltip_applied(self, temp_file):
+        """Test toggle tooltip is properly applied."""
+        link = ToggleableFileLink(temp_file, toggle_tooltip="Click to toggle")
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test():
+            toggle = link.query_one("#toggle", expect_type=Static)
+            assert toggle.tooltip == "Click to toggle"
+
+    async def test_remove_tooltip_applied(self, temp_file):
+        """Test remove tooltip is properly applied."""
+        link = ToggleableFileLink(temp_file, remove_tooltip="Click to remove")
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test():
+            remove = link.query_one("#remove", expect_type=Static)
+            assert remove.tooltip == "Click to remove"

@@ -19,7 +19,7 @@ jobs:
         run: pdm install -G test
 
       - name: Run tests with coverage
-        run: pdm run pytest --cov=src/vibedir --cov-report=xml
+        run: pdm run pytest --cov=src/textual_filelink --cov-report=xml --cov-fail-under=95
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
