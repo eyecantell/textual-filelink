@@ -56,40 +56,51 @@ Start with the beginner examples and progress at your own pace. Each demo is sel
    - Output file path concept
    - **Best for:** Understanding command execution patterns before async
 
-### Advanced Examples (Complex Patterns!)
+### Advanced Examples (Complex Patterns!) ✅
 
 These demos require deeper understanding of async patterns, event handling, and application architecture.
 
-7. **demo_07_commandlink_advanced.py** - Command Orchestration with Async
-   - Async command execution with asyncio
+7. **[demo_07_async_orchestration.py](demo_07_async_orchestration.py)** - Simplified Async Command Orchestration ✅
+   - asyncio.create_task() for background execution
+   - Proper CancelledError handling and cleanup
+   - Timer-based elapsed time tracking
    - Batch operations on selected commands
-   - Elapsed time tracking and progress display
-   - Output file generation
-   - Task cancellation and cleanup
-   - **Prerequisites:** Understand demo_06 and async/await patterns
+   - Simple output file generation
+   - **Prerequisites:** Understand demo_06 and basic async/await
 
-8. **demo_08_custom_editor.py** - Editor Configuration
-   - Built-in editor support (VSCode, vim, nano)
-   - Custom command builders for file opening
-   - Environment variable configuration
-   - Editor detection patterns
+8. **[demo_08_editor_config.py](demo_08_editor_config.py)** - Custom Editor Configuration ✅
+   - All 5 built-in editors (VSCode, Vim, Nano, Eclipse, Copy Path)
+   - Custom command builder examples (Sublime, IntelliJ, Emacs)
+   - Environment variable detection ($EDITOR)
+   - Auto-detection with fallback chain
+   - Per-instance vs class-level configuration
    - **Prerequisites:** Understand demo_01 FileLink basics
 
-9. **demo_09_file_browser.py** - Real File Browser
-   - Directory tree navigation
-   - File filtering and search
-   - Icon-based file type identification
-   - Real-world file browsing patterns
+9. **[demo_09_file_browser.py](demo_09_file_browser.py)** - Real File Browser with Navigation ✅
+   - Single directory view with file listings
+   - 20+ file type icons (emoji-based)
+   - Click directories to navigate
+   - Parent directory (..) support
+   - File filtering by pattern (*.py, test_*.py)
+   - Selection with checkboxes
+   - **Prerequisites:** Understand demo_05 state management
 
-10. **demo_10_datatable_integration.py** - DataTable Integration
-    - FileLink in DataTable cells
-    - Mixed content tables
-    - Status indicators in tables
+10. **[demo_10_datatable_files.py](demo_10_datatable_files.py)** - DataTable Integration ✅
+    - Files displayed in table format
+    - Columns: Icon, Name, Size, Type, Status
+    - Human-readable file sizes
+    - Status indicators (✅ Valid, ⚠️ Large, 🔒 Locked)
+    - Click row to open file
+    - **Prerequisites:** Basic Textual DataTable knowledge
 
-11. **demo_11_error_handling.py** - Error Handling Patterns
-    - Validation before opening files
-    - Graceful error handling
-    - User-friendly error messages
+11. **[demo_11_error_handling.py](demo_11_error_handling.py)** - Error Handling Patterns ✅
+    - Reusable validation helper functions
+    - Common error scenarios gallery (10 examples)
+    - User-friendly error messages with suggestions
+    - Symlink handling (broken link detection)
+    - Large file warnings
+    - Editor availability validation
+    - **Prerequisites:** Understand demo_01 and basic file operations
 
 ## Quick Reference
 
