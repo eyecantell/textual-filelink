@@ -275,6 +275,7 @@ class TestFileLink:
 
     async def test_filelink_subprocess_timeout_handling(self, temp_file):
         """Test handling of command timeout."""
+
         def slow_command(path, line, column):
             return ["sleep", "999"]
 
@@ -283,9 +284,7 @@ class TestFileLink:
 
         async with app.run_test() as pilot:
             with patch("subprocess.run") as mock_run:
-                mock_run.side_effect = subprocess.TimeoutExpired(
-                    cmd=["sleep", "999"], timeout=1
-                )
+                mock_run.side_effect = subprocess.TimeoutExpired(cmd=["sleep", "999"], timeout=1)
                 await pilot.click(FileLink)
                 await pilot.pause()
 
@@ -294,6 +293,7 @@ class TestFileLink:
 
     async def test_filelink_subprocess_failure(self, temp_file):
         """Test handling of failed command execution."""
+
         def failing_command(path, line, column):
             return ["false"]
 
@@ -311,6 +311,7 @@ class TestFileLink:
 
     async def test_filelink_subprocess_exception(self, temp_file):
         """Test handling of subprocess exceptions."""
+
         def error_command(path, line, column):
             return ["nonexistent-command"]
 

@@ -49,7 +49,6 @@ from textual.widgets import Button, Footer, Header, Input, Static
 
 from textual_filelink import ToggleableFileLink
 
-
 # File type to emoji icon mapping
 FILE_TYPE_ICONS = {
     # Programming languages

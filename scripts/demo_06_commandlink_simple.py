@@ -159,8 +159,7 @@ class CommandLinkSimpleApp(App):
                 show_remove=False,
             )
             yield Static(
-                "Click settings icon to show notification. "
-                "Settings would configure command options in a real app.",
+                "Click settings icon to show notification. Settings would configure command options in a real app.",
                 classes="hint",
             )
 
@@ -208,9 +207,7 @@ class CommandLinkSimpleApp(App):
         link.set_status(icon="⏸️", running=False, tooltip="Cancelled")
         self.notify(f"⏹️ Stopped: {event.name}", severity="warning", timeout=1.5)
 
-    def on_command_link_settings_clicked(
-        self, event: CommandLink.SettingsClicked
-    ) -> None:
+    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked) -> None:
         """Handle settings button click - show command configuration.
 
         In this simple demo, we just show a notification. In a real app,

@@ -322,8 +322,7 @@ class ErrorHandlingApp(App):
             # Section 1: File Not Found
             yield Static("Scenario 1: File Not Found", classes="section-title")
             yield Static(
-                "Validator: validate_file_exists(). "
-                "User selected a file that doesn't exist or was moved.",
+                "Validator: validate_file_exists(). User selected a file that doesn't exist or was moved.",
                 classes="section-description",
             )
             yield Static(
@@ -357,8 +356,7 @@ class ErrorHandlingApp(App):
             # Section 3: Wrong Type (Directory)
             yield Static("Scenario 3: Directory Instead of File", classes="section-title")
             yield Static(
-                "Validator: validate_file_exists() with is_file() check. "
-                "User accidentally selected a directory.",
+                "Validator: validate_file_exists() with is_file() check. User accidentally selected a directory.",
                 classes="section-description",
             )
             yield Static(
@@ -369,8 +367,7 @@ class ErrorHandlingApp(App):
             # Section 4: Broken Symlink
             yield Static("Scenario 4: Broken Symlink", classes="section-title")
             yield Static(
-                "Validator: validate_symlink(). "
-                "File is a symlink pointing to a missing target.",
+                "Validator: validate_symlink(). File is a symlink pointing to a missing target.",
                 classes="section-description",
             )
             yield Static(
@@ -398,8 +395,7 @@ class ErrorHandlingApp(App):
             # Section 6: Large File Warning
             yield Static("Scenario 6: Large File Warning", classes="section-title")
             yield Static(
-                "Validator: validate_file_size(). "
-                "File exists and is readable, but it's large and may be slow to open.",
+                "Validator: validate_file_size(). File exists and is readable, but it's large and may be slow to open.",
                 classes="section-description",
             )
             yield Static(
@@ -414,8 +410,7 @@ class ErrorHandlingApp(App):
             # Section 7: Editor Missing
             yield Static("Scenario 7: Editor Not Available", classes="section-title")
             yield Static(
-                "Validator: validate_editor_available(). "
-                "Requested editor is not installed on this system.",
+                "Validator: validate_editor_available(). Requested editor is not installed on this system.",
                 classes="section-description",
             )
             yield Static(

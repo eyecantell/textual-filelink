@@ -42,8 +42,8 @@ from textual.widgets import Footer, Header, Static
 
 from textual_filelink import FileLink
 
-
 # Helper functions for editor auto-detection and custom builders
+
 
 def detect_available_editor() -> str:
     """Auto-detect which editor is available on this system.
@@ -52,16 +52,16 @@ def detect_available_editor() -> str:
     Returns the first one found, defaulting to 'copy' if nothing else available.
     """
     # First check environment variable
-    if editor := os.environ.get('EDITOR'):
+    if editor := os.environ.get("EDITOR"):
         return editor
 
     # Try common editors in preferred order
-    for cmd in ['code', 'vim', 'nano']:
+    for cmd in ["code", "vim", "nano"]:
         if shutil.which(cmd):
             return cmd
 
     # Fallback - always works
-    return 'copy'
+    return "copy"
 
 
 def custom_sublime_command(path: Path, line: int | None, column: int | None) -> list[str]:
@@ -310,10 +310,10 @@ class EditorConfigApp(App):
 
             # Map detected editor to command builder
             editor_map = {
-                'code': FileLink.vscode_command,
-                'vim': FileLink.vim_command,
-                'nano': FileLink.nano_command,
-                'copy': FileLink.copy_path_command,
+                "code": FileLink.vscode_command,
+                "vim": FileLink.vim_command,
+                "nano": FileLink.nano_command,
+                "copy": FileLink.copy_path_command,
             }
             builder = editor_map.get(detected_editor, FileLink.vim_command)
             yield FileLink(
@@ -325,8 +325,7 @@ class EditorConfigApp(App):
             # Section 5: Class-level vs Per-instance Configuration
             yield Static("Section 5: Configuration Levels", classes="section-title")
             yield Static(
-                "Set default editor at class level (affects all FileLinks) "
-                "or per-instance (specific FileLink only).",
+                "Set default editor at class level (affects all FileLinks) or per-instance (specific FileLink only).",
                 classes="section-description",
             )
             yield Static(

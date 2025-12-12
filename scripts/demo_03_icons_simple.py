@@ -75,8 +75,7 @@ class IconsSimpleApp(App):
             # Title and explanation
             yield Static("🎨 Icons for Status and Metadata", classes="title")
             yield Static(
-                "Click the status icons to toggle processing state. "
-                "Try toggling and removing files.",
+                "Click the status icons to toggle processing state. Try toggling and removing files.",
                 classes="description",
             )
 
@@ -162,9 +161,7 @@ class IconsSimpleApp(App):
 
         self.notify(f"🗑️ Removed {event.path.name}", severity="warning", timeout=2)
 
-    def on_toggleable_file_link_icon_clicked(
-        self, event: ToggleableFileLink.IconClicked
-    ) -> None:
+    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked) -> None:
         """Handle when a clickable icon is clicked.
 
         In this demo, the status icons are clickable. Clicking them toggles
@@ -192,9 +189,7 @@ class IconsSimpleApp(App):
                 self.notify(f"✅ {event.path.name} processing complete", timeout=2)
             else:
                 # Currently done - toggle to processing
-                link.update_icon(
-                    "status", icon="⏳", tooltip="Processing... ⏳ Click to toggle"
-                )
+                link.update_icon("status", icon="⏳", tooltip="Processing... ⏳ Click to toggle")
                 # Hide the result icon
                 if link.get_icon("result"):
                     link.set_icon_visible("result", False)

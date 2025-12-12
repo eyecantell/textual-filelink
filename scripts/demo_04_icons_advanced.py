@@ -204,8 +204,7 @@ class IconsAdvancedApp(App):
             # Example 4: Processing States with Timers
             yield Static("4️⃣ Processing States - Click to Start", classes="section-title")
             yield Static(
-                "Click the processing icon to simulate a 2-second operation. "
-                "The result icon appears when complete.",
+                "Click the processing icon to simulate a 2-second operation. The result icon appears when complete.",
                 classes="section-description",
             )
             yield ToggleableFileLink(
@@ -299,9 +298,7 @@ class IconsAdvancedApp(App):
             self._reset_all_examples()
             self.notify("🔄 All examples reset to initial state", timeout=1.5)
 
-    def on_toggleable_file_link_icon_clicked(
-        self, event: ToggleableFileLink.IconClicked
-    ) -> None:
+    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked) -> None:
         """Handle clickable icon interactions."""
         if event.path.name == "notes.txt":
             # Handle processing demo

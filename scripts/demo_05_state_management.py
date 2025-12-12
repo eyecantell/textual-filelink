@@ -55,7 +55,7 @@ class FileState:
         """
         return {
             "normal": "⚪",  # Gray circle
-            "high": "🟡",   # Yellow circle
+            "high": "🟡",  # Yellow circle
             "urgent": "🔴",  # Red circle
         }[self.priority]
 

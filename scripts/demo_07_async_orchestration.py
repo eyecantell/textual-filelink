@@ -37,10 +37,10 @@ Notes:
 """
 
 import asyncio
+import time
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass
-import time
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, ScrollableContainer
@@ -234,9 +234,7 @@ class AsyncCommandApp(App):
         self.tasks[event.name] = task
 
         # Start timer for elapsed time updates (0.5s intervals)
-        self.timers[event.name] = self.set_interval(
-            0.5, lambda name=event.name: self._update_elapsed_time(name)
-        )
+        self.timers[event.name] = self.set_interval(0.5, lambda name=event.name: self._update_elapsed_time(name))
 
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked) -> None:
         """Handle stop button click - cancel async task.

@@ -79,10 +79,7 @@ class CommandLink(ToggleableFileLink):
         # Convert to lowercase and replace spaces with hyphens
         sanitized = name.lower().replace(" ", "-")
         # Keep only alphanumeric, hyphens, and underscores
-        return "".join(
-            char if char.isalnum() or char in ("-", "_") else "-"
-            for char in sanitized
-        )
+        return "".join(char if char.isalnum() or char in ("-", "_") else "-" for char in sanitized)
 
     class PlayClicked(Message):
         """Posted when play button is clicked.
