@@ -1,0 +1,866 @@
+File listing generated 2025-11-28T19:39:20.541655 by prepdir version 0.18.0 (pip install prepdir)
+Base directory is '/workspaces/textual-filelink/tests'
+Note: Valid (hyphenated) UUIDs in file contents will be scrubbed and replaced with '00000000-0000-0000-0000-000000000000'.
+Note: Valid hyphen-less UUIDs in file contents will be scrubbed and replaced with '00000000000000000000000000000000'.
+=-=-=-=-=-=-=-= Begin File: 'conftest.py' =-=-=-=-=-=-=-=
+# Fixed conftest.py
+# tests/conftest.py
+"""Pytest configuration and shared fixtures."""
+
+import pytest
+from pathlib import Path
+
+
+@pytest.fixture
+def sample_files(tmp_path):
+    """Create a set of sample files for testing."""
+    files = []
+    
+    # Create various test files
+    file_names = [
+        "document.txt",
+        "script.py",
+        "config.json",
+        "readme.md",
+        "data.csv"
+    ]
+    
+    for name in file_names:
+        file_path = tmp_path / name
+        file_path.write_text(f"Content of {name}")
+        files.append(file_path)
+    
+    return files
+
+
+@pytest.fixture
+def sample_directory_structure(tmp_path):
+    """Create a directory structure for testing."""
+    # Create nested directories with files
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "main.py").write_text("main content")
+    (tmp_path / "src" / "utils.py").write_text("utils content")
+    
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_main.py").write_text("test content")
+    
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "readme.md").write_text("docs content")
+    
+    return tmp_path
+
+
+@pytest.fixture
+def long_filename(tmp_path):
+    """Create a file with a very long name."""
+    long_name = "a" * 100 + ".txt"
+    file_path = tmp_path / long_name
+    file_path.write_text("content")
+    return file_path
+
+
+@pytest.fixture
+def special_char_filename(tmp_path):
+    """Create a file with special characters in the name."""
+    special_name = "test-file_with (special) chars & symbols.txt"
+    file_path = tmp_path / special_name
+    file_path.write_text("content")
+    return file_path
+
+
+@pytest.fixture
+def unicode_filename(tmp_path):
+    """Create a file with unicode characters."""
+    unicode_name = "my_🔥_test.txt"
+    file_path = tmp_path / unicode_name
+    file_path.write_text("unicode content")
+    return file_path
+
+@pytest.fixture
+def get_rendered_text():
+    """Helper to get plain text from a rendered widget."""
+    def _get(widget):
+        content = widget.render()
+        if content is None:
+            return ""
+        return content.plain
+    return _get
+
+# Pytest configuration
+def pytest_configure(config):
+    """Configure pytest markers."""
+    config.addinivalue_line(
+        "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
+    )
+    config.addinivalue_line(
+        "markers", "integration: marks tests as integration tests"
+    )
+
+
+# Enable async tests
+pytest_plugins = ["pytest_asyncio"]
+=-=-=-=-=-=-=-= End File: 'conftest.py' =-=-=-=-=-=-=-=
+=-=-=-=-=-=-=-= Begin File: 'test_file_link.py' =-=-=-=-=-=-=-=
+# Fixed test_file_link.py
+import pytest
+from pathlib import Path
+from textual.app import App, ComposeResult
+
+from textual_filelink import FileLink
+
+
+class FileLinkTestApp(App):
+    """Test app for FileLink."""
+    
+    def __init__(self, widget):
+        super().__init__()
+        self.widget = widget
+        self.clicked_events = []
+    
+    def compose(self) -> ComposeResult:
+        yield self.widget
+    
+    def on_file_link_clicked(self, event: FileLink.Clicked):
+        self.clicked_events.append(event)
+
+
+@pytest.fixture
+def temp_file(tmp_path):
+    """Create a temporary file for testing."""
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("test content")
+    return test_file
+
+
+class TestFileLink:
+    """Test suite for FileLink widget."""
+    
+    async def test_filelink_initialization(self, temp_file):
+        """Test FileLink initializes with correct properties."""
+        link = FileLink(temp_file, line=10, column=5)
+        
+        assert link.path == temp_file
+        assert link.line == 10
+        assert link.column == 5
+    
+    async def test_filelink_displays_filename(self, temp_file, get_rendered_text):
+        """Test FileLink displays only the filename, not full path."""
+        link = FileLink(temp_file)
+        
+        async with FileLinkTestApp(link).run_test() as pilot:
+            # The Static widget should display just the filename
+            assert get_rendered_text(link) == temp_file.name
+    
+    async def test_filelink_click_posts_message(self, temp_file):
+        """Test clicking FileLink posts a Clicked message."""
+        link = FileLink(temp_file, line=10, column=5)
+        app = FileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            await pilot.click(FileLink)
+            await pilot.pause()
+            
+            assert len(app.clicked_events) == 1
+            event = app.clicked_events[0]
+            assert event.path == temp_file
+            assert event.line == 10
+            assert event.column == 5
+    
+    async def test_filelink_click_without_position(self, temp_file):
+        """Test FileLink click works without line/column."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            await pilot.click(FileLink)
+            await pilot.pause()
+            
+            assert len(app.clicked_events) == 1
+            event = app.clicked_events[0]
+            assert event.path == temp_file
+            assert event.line is None
+            assert event.column is None
+    
+    async def test_filelink_with_string_path(self, temp_file):
+        """Test FileLink accepts string paths."""
+        link = FileLink(str(temp_file))
+        
+        assert link.path == temp_file.resolve()
+    
+    async def test_filelink_resolves_path(self, tmp_path):
+        """Test FileLink resolves relative paths."""
+        relative_path = Path("./test.txt")
+        link = FileLink(relative_path)
+        
+        # Path should be resolved to absolute
+        assert link.path.is_absolute()
+    
+    async def test_filelink_custom_command_builder(self, temp_file):
+        """Test FileLink with custom command builder."""
+        def custom_builder(path, line, column):
+            return ["custom", "command", str(path)]
+        
+        link = FileLink(temp_file, command_builder=custom_builder)
+        
+        # Command builder should be stored
+        assert link._command_builder == custom_builder
+    
+    async def test_filelink_vscode_command_builder(self, temp_file):
+        """Test VSCode command builder generates correct command."""
+        cmd = FileLink.vscode_command(temp_file, 10, 5)
+        
+        assert cmd[0] == "code"
+        assert cmd[1] == "--goto"
+        assert "10" in cmd[2]
+        assert "5" in cmd[2]
+    
+    async def test_filelink_vscode_command_without_position(self, temp_file):
+        """Test VSCode command builder without line/column."""
+        cmd = FileLink.vscode_command(temp_file, None, None)
+        
+        assert cmd[0] == "code"
+        assert cmd[1] == "--goto"
+        assert cmd[2] == str(temp_file)
+    
+    async def test_filelink_vim_command_builder(self, temp_file):
+        """Test vim command builder generates correct command."""
+        cmd = FileLink.vim_command(temp_file, 10, 5)
+        
+        assert cmd[0] == "vim"
+        assert "+call cursor(10,5)" in cmd
+        assert str(temp_file) in cmd
+    
+    async def test_filelink_nano_command_builder(self, temp_file):
+        """Test nano command builder generates correct command."""
+        cmd = FileLink.nano_command(temp_file, 10, 5)
+        
+        assert cmd[0] == "nano"
+        assert "+10,5" in cmd
+        assert str(temp_file) in cmd
+    
+    async def test_filelink_eclipse_command_builder(self, temp_file):
+        """Test Eclipse command builder generates correct command."""
+        cmd = FileLink.eclipse_command(temp_file, 10, None)
+        
+        assert cmd[0] == "eclipse"
+        assert "--launcher.openFile" in cmd
+        assert any(str(temp_file) in arg for arg in cmd)
+    
+    async def test_filelink_copy_path_command_builder(self, temp_file):
+        """Test copy path command builder."""
+        cmd = FileLink.copy_path_command(temp_file, 10, 5)
+        
+        # Should contain the path with line and column
+        full_cmd = " ".join(cmd)
+        assert str(temp_file) in full_cmd
+        assert "10" in full_cmd
+        assert "5" in full_cmd
+    
+    async def test_filelink_default_command_builder_class_level(self, temp_file):
+        """Test setting default command builder at class level."""
+        original = FileLink.default_command_builder
+        
+        try:
+            # Set custom default
+            FileLink.default_command_builder = FileLink.vim_command
+            link = FileLink(temp_file)
+            
+            # Should use vim command by default
+            assert link._command_builder is None  # Instance has no override
+            
+        finally:
+            # Restore original
+            FileLink.default_command_builder = original
+    
+    async def test_filelink_properties_readonly(self, temp_file):
+        """Test FileLink properties are read-only."""
+        link = FileLink(temp_file, line=10, column=5)
+        
+        # Properties should be accessible
+        assert link.path == temp_file
+        assert link.line == 10
+        assert link.column == 5
+        
+        # Properties should not have setters (will raise AttributeError)
+        with pytest.raises(AttributeError):
+            link.path = Path("/other/path")
+=-=-=-=-=-=-=-= End File: 'test_file_link.py' =-=-=-=-=-=-=-=
+=-=-=-=-=-=-=-= Begin File: 'test_integration.py' =-=-=-=-=-=-=-=
+# Fixed test_integration.py
+"""Integration tests for FileLink and ToggleableFileLink working together."""
+
+import pytest
+from pathlib import Path
+from textual.app import App, ComposeResult
+from textual.containers import Vertical
+
+from textual_filelink import FileLink, ToggleableFileLink
+
+
+class IntegrationTestApp(App):
+    """Test app with multiple file links."""
+    
+    def __init__(self, file_links):
+        super().__init__()
+        self.file_links = file_links
+        self.events = []
+    
+    def compose(self) -> ComposeResult:
+        with Vertical():
+            for link in self.file_links:
+                yield link
+    
+    def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
+        self.events.append(("toggled", event))
+    
+    def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
+        self.events.append(("removed", event))
+    
+    def on_file_link_clicked(self, event: FileLink.Clicked):
+        self.events.append(("clicked", event))
+
+
+@pytest.mark.integration
+class TestIntegration:
+    """Integration tests for file link widgets."""
+    
+    async def test_multiple_filelinks(self, sample_files):
+        """Test multiple FileLink widgets in a single app."""
+        links = [FileLink(f) for f in sample_files]
+        app = IntegrationTestApp(links)
+        
+        async with app.run_test() as pilot:
+            # All links should be present
+            assert len(list(app.query(FileLink))) == len(sample_files)
+    
+    async def test_multiple_toggleable_filelinks(self, sample_files):
+        """Test multiple ToggleableFileLink widgets."""
+        links = [
+            ToggleableFileLink(f, show_toggle=True, show_remove=True)
+            for f in sample_files
+        ]
+        app = IntegrationTestApp(links)
+        
+        async with app.run_test() as pilot:
+            # All links should be present
+            assert len(list(app.query(ToggleableFileLink))) == len(sample_files)
+            
+            # Toggle first link
+            first_link = links[0]
+            await pilot.click(first_link.query_one("#toggle"))
+            await pilot.pause()
+            
+            assert first_link.is_toggled is True
+            assert len([e for e in app.events if e[0] == "toggled"]) == 1
+    
+    async def test_mixed_filelink_types(self, sample_files):
+        """Test mixing FileLink and ToggleableFileLink."""
+        links = [
+            FileLink(sample_files[0]),
+            ToggleableFileLink(sample_files[1]),
+            FileLink(sample_files[2]),
+        ]
+        app = IntegrationTestApp(links)
+        
+        async with app.run_test() as pilot:
+            assert len(list(app.query(FileLink))) == 3  # 2 FileLink + 1 inside ToggleableFileLink
+            assert len(list(app.query(ToggleableFileLink))) == 1
+    
+    async def test_toggle_multiple_links(self, sample_files):
+        """Test toggling multiple links independently."""
+        links = [
+            ToggleableFileLink(f, show_toggle=True)
+            for f in sample_files[:3]
+        ]
+        app = IntegrationTestApp(links)
+        
+        async with app.run_test() as pilot:
+            # Toggle all links
+            toggleables = list(app.query(ToggleableFileLink))
+            for link in toggleables:
+                await pilot.click(link.query_one("#toggle"))
+                await pilot.pause()
+            
+            # All should be toggled
+            assert all(link.is_toggled for link in links)
+            assert len([e for e in app.events if e[0] == "toggled"]) == 3
+    
+    async def test_status_icons_on_multiple_links(self, sample_files):
+        """Test different status icons on multiple links."""
+        icons = ["✓", "⚠", "✗", "⏳", "🔥"]
+        links = [
+            ToggleableFileLink(f, status_icon=icons[i % len(icons)])
+            for i, f in enumerate(sample_files)
+        ]
+        app = IntegrationTestApp(links)
+        
+        async with app.run_test() as pilot:
+            # Each link should have its assigned icon
+            for i, link in enumerate(links):
+                assert link.status_icon == icons[i % len(icons)]
+    
+    async def test_remove_multiple_links(self, sample_files):
+        """Test removing multiple links."""
+        links = [
+            ToggleableFileLink(f, show_remove=True)
+            for f in sample_files[:3]
+        ]
+        app = IntegrationTestApp(links)
+        
+        async with app.run_test() as pilot:
+            # Remove all links
+            toggleables = list(app.query(ToggleableFileLink))
+            for link in toggleables:
+                await pilot.click(link.query_one("#remove"))
+                await pilot.pause()
+            
+            # Should have 3 remove events
+            assert len([e for e in app.events if e[0] == "removed"]) == 3
+    
+    async def test_long_filename_rendering(self, long_filename, get_rendered_text):
+        """Test rendering of very long filenames."""
+        link = FileLink(long_filename)
+        app = IntegrationTestApp([link])
+        
+        async with app.run_test() as pilot:
+            # Should render without error
+            assert get_rendered_text(link) == long_filename.name
+    
+    async def test_special_chars_filename(self, special_char_filename, get_rendered_text):
+        """Test filenames with special characters."""
+        link = ToggleableFileLink(
+            special_char_filename,
+            show_toggle=True,
+            show_remove=True
+        )
+        app = IntegrationTestApp([link])
+        
+        async with app.run_test() as pilot:
+            # Should handle special characters
+            file_link = link.query_one(FileLink)
+            assert get_rendered_text(file_link) == special_char_filename.name
+            
+            # Should be clickable
+            await pilot.click(link.query_one("#toggle"))
+            await pilot.pause()
+            assert link.is_toggled is True
+    
+    async def test_unicode_filename(self, unicode_filename, get_rendered_text):
+        """Test filenames with unicode characters."""
+        link = ToggleableFileLink(unicode_filename, status_icon="🌟")
+        app = IntegrationTestApp([link])
+        
+        async with app.run_test() as pilot:
+            # Should handle unicode in filename and icon
+            file_link = link.query_one(FileLink)
+            assert get_rendered_text(file_link) == unicode_filename.name
+            assert link.status_icon == "🌟"
+    
+    async def test_disable_on_untoggle_interaction(self, sample_files):
+        """Test disable_on_untoggle affects click behavior."""
+        link = ToggleableFileLink(
+            sample_files[0],
+            initial_toggle=False,
+            disable_on_untoggle=True,
+            show_toggle=True
+        )
+        app = IntegrationTestApp([link])
+        
+        async with app.run_test() as pilot:
+            # Try clicking disabled link
+            file_link = link.query_one(FileLink)
+            await pilot.click(file_link)
+            await pilot.pause()
+            
+            # Click should be blocked
+            assert len([e for e in app.events if e[0] == "clicked"]) == 0
+            
+            # Enable by toggling
+            await pilot.click(link.query_one("#toggle"))
+            await pilot.pause()
+            
+            # Now click should work
+            await pilot.click(file_link)
+            await pilot.pause()
+            
+            assert len([e for e in app.events if e[0] == "clicked"]) == 1
+    
+    async def test_all_features_combined(self, sample_files):
+        """Test all features working together."""
+        link = ToggleableFileLink(
+            sample_files[0],
+            initial_toggle=True,
+            show_toggle=True,
+            show_remove=True,
+            status_icon="✓",
+            line=42,
+            column=10,
+            disable_on_untoggle=False
+        )
+        app = IntegrationTestApp([link])
+        
+        async with app.run_test() as pilot:
+            # Should start toggled
+            assert link.is_toggled is True
+            assert link.status_icon == "✓"
+            
+            # Change status icon
+            link.set_status_icon("⚠")
+            await pilot.pause()
+            assert link.status_icon == "⚠"
+            
+            # Click the file
+            await pilot.click(FileLink)
+            await pilot.pause()
+            
+            clicked_events = [e for e in app.events if e[0] == "clicked"]
+            assert len(clicked_events) == 1
+            assert clicked_events[0][1].line == 42
+            assert clicked_events[0][1].column == 10
+            
+            # Toggle off
+            await pilot.click(link.query_one("#toggle"))
+            await pilot.pause()
+            assert link.is_toggled is False
+            
+            # Remove
+            await pilot.click(link.query_one("#remove"))
+            await pilot.pause()
+            
+            removed_events = [e for e in app.events if e[0] == "removed"]
+            assert len(removed_events) == 1
+=-=-=-=-=-=-=-= End File: 'test_integration.py' =-=-=-=-=-=-=-=
+=-=-=-=-=-=-=-= Begin File: 'test_toggleable_file_link.py' =-=-=-=-=-=-=-=
+# Fixed test_toggleable_file_link.py
+import pytest
+from pathlib import Path
+from textual.app import App, ComposeResult
+from textual.widgets import Static
+
+from textual_filelink import FileLink, ToggleableFileLink
+
+
+class ToggleableFileLinkTestApp(App):
+    """Test app for ToggleableFileLink."""
+    
+    def __init__(self, widget):
+        super().__init__()
+        self.widget = widget
+        self.toggled_events = []
+        self.removed_events = []
+        self.clicked_events = []
+    
+    def compose(self) -> ComposeResult:
+        yield self.widget
+    
+    def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
+        self.toggled_events.append(event)
+    
+    def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
+        self.removed_events.append(event)
+    
+    def on_file_link_clicked(self, event: FileLink.Clicked):
+        self.clicked_events.append(event)
+
+
+@pytest.fixture
+def temp_file(tmp_path):
+    """Create a temporary file for testing."""
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("test content")
+    return test_file
+
+
+class TestToggleableFileLink:
+    """Test suite for ToggleableFileLink widget."""
+    
+    async def test_initialization_default(self, temp_file):
+        """Test ToggleableFileLink initializes with default values."""
+        link = ToggleableFileLink(temp_file)
+        
+        assert link.path == temp_file
+        assert link.is_toggled is False
+        assert link.status_icon is None
+    
+    async def test_initialization_with_toggle(self, temp_file):
+        """Test ToggleableFileLink initializes with toggle state."""
+        link = ToggleableFileLink(temp_file, initial_toggle=True)
+        
+        assert link.is_toggled is True
+    
+    async def test_initialization_with_status_icon(self, temp_file):
+        """Test ToggleableFileLink initializes with status icon."""
+        link = ToggleableFileLink(temp_file, status_icon="✓")
+        
+        assert link.status_icon == "✓"
+    
+    async def test_toggle_click_changes_state(self, temp_file):
+        """Test clicking toggle changes state."""
+        link = ToggleableFileLink(temp_file, initial_toggle=False, show_toggle=True)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            assert link.is_toggled is False
+            
+            await pilot.click("#toggle")
+            await pilot.pause()
+            
+            assert link.is_toggled is True
+            assert len(app.toggled_events) == 1
+            assert app.toggled_events[0].is_toggled is True
+    
+    async def test_toggle_click_twice(self, temp_file):
+        """Test clicking toggle twice returns to original state."""
+        link = ToggleableFileLink(temp_file, initial_toggle=False, show_toggle=True)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            await pilot.click("#toggle")
+            await pilot.pause()
+            await pilot.click("#toggle")
+            await pilot.pause()
+            
+            assert link.is_toggled is False
+            assert len(app.toggled_events) == 2
+            assert app.toggled_events[0].is_toggled is True
+            assert app.toggled_events[1].is_toggled is False
+    
+    async def test_toggle_visual_update(self, temp_file, get_rendered_text):
+        """Test toggle visual updates correctly."""
+        link = ToggleableFileLink(temp_file, initial_toggle=False, show_toggle=True)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            toggle_widget = link.query_one("#toggle", Static)
+            assert get_rendered_text(toggle_widget) == "☐"
+            
+            await pilot.click("#toggle")
+            await pilot.pause()
+            
+            assert get_rendered_text(toggle_widget) == "✓"
+    
+    async def test_remove_click_posts_message(self, temp_file):
+        """Test clicking remove button posts Removed message."""
+        link = ToggleableFileLink(temp_file, show_remove=True)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            await pilot.click("#remove")
+            await pilot.pause()
+            
+            assert len(app.removed_events) == 1
+            assert app.removed_events[0].path == temp_file
+    
+    async def test_toggle_only_layout(self, temp_file):
+        """Test layout with toggle only (no remove)."""
+        link = ToggleableFileLink(
+            temp_file, 
+            show_toggle=True, 
+            show_remove=False
+        )
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            # Should have toggle
+            assert link.query_one("#toggle", Static)
+            
+            # Should not have remove
+            with pytest.raises(Exception):
+                link.query_one("#remove", Static)
+    
+    async def test_remove_only_layout(self, temp_file):
+        """Test layout with remove only (no toggle)."""
+        link = ToggleableFileLink(
+            temp_file,
+            show_toggle=False,
+            show_remove=True
+        )
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            # Should not have toggle
+            with pytest.raises(Exception):
+                link.query_one("#toggle", Static)
+            
+            # Should have remove
+            assert link.query_one("#remove", Static)
+    
+    async def test_no_controls_layout(self, temp_file):
+        """Test layout with no controls."""
+        link = ToggleableFileLink(
+            temp_file,
+            show_toggle=False,
+            show_remove=False
+        )
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            # Should not have toggle or remove
+            with pytest.raises(Exception):
+                link.query_one("#toggle", Static)
+            with pytest.raises(Exception):
+                link.query_one("#remove", Static)
+    
+    async def test_status_icon_displayed(self, temp_file, get_rendered_text):
+        """Test status icon is displayed when provided."""
+        link = ToggleableFileLink(temp_file, status_icon="⚠")
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            status_widget = link.query_one("#status-icon", Static)
+            assert get_rendered_text(status_widget) == "⚠"
+    
+    async def test_set_status_icon(self, temp_file, get_rendered_text):
+        """Test updating status icon after creation."""
+        link = ToggleableFileLink(temp_file, status_icon="✓")
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            assert link.status_icon == "✓"
+            
+            link.set_status_icon("⚠")
+            await pilot.pause()
+            
+            assert link.status_icon == "⚠"
+            status_widget = link.query_one("#status-icon", Static)
+            assert get_rendered_text(status_widget) == "⚠"
+    
+    async def test_set_status_icon_to_none(self, temp_file):
+        """Test hiding status icon by setting to None."""
+        link = ToggleableFileLink(temp_file, status_icon="✓")
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            link.set_status_icon(None)
+            await pilot.pause()
+            
+            assert link.status_icon is None
+            status_widget = link.query_one("#status-icon", Static)
+            assert status_widget.display is False
+    
+    async def test_disable_on_untoggle(self, temp_file):
+        """Test disable_on_untoggle adds disabled class."""
+        link = ToggleableFileLink(
+            temp_file,
+            initial_toggle=False,
+            disable_on_untoggle=True,
+            show_toggle=True
+        )
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            # Should start disabled
+            assert "disabled" in link.classes
+            
+            # Toggle on
+            await pilot.click("#toggle")
+            await pilot.pause()
+            
+            # Should no longer be disabled
+            assert "disabled" not in link.classes
+            
+            # Toggle off
+            await pilot.click("#toggle")
+            await pilot.pause()
+            
+            # Should be disabled again
+            assert "disabled" in link.classes
+    
+    async def test_file_link_click_bubbles(self, temp_file):
+        """Test FileLink click events bubble up from ToggleableFileLink."""
+        link = ToggleableFileLink(temp_file, line=10, column=5)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            # Click on the FileLink component
+            file_link = link.query_one(FileLink)
+            await pilot.click(file_link)
+            await pilot.pause()
+            
+            assert len(app.clicked_events) == 1
+            event = app.clicked_events[0]
+            assert event.path == temp_file
+            assert event.line == 10
+            assert event.column == 5
+    
+    async def test_file_link_click_blocked_when_disabled(self, temp_file):
+        """Test FileLink click is blocked when disable_on_untoggle is active."""
+        link = ToggleableFileLink(
+            temp_file,
+            initial_toggle=False,
+            disable_on_untoggle=True,
+            show_toggle=True
+        )
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            # Try to click FileLink while disabled
+            await pilot.click(FileLink)
+            await pilot.pause()
+            
+            # Click should be blocked
+            assert len(app.clicked_events) == 0
+            
+            # Toggle on
+            await pilot.click("#toggle")
+            await pilot.pause()
+            
+            # Now click should work
+            await pilot.click(FileLink)
+            await pilot.pause()
+            
+            assert len(app.clicked_events) == 1
+    
+    async def test_command_builder_passed_to_filelink(self, temp_file):
+        """Test command_builder is passed to internal FileLink."""
+        def custom_builder(path, line, column):
+            return ["custom", str(path)]
+        
+        link = ToggleableFileLink(temp_file, command_builder=custom_builder)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            file_link = link.query_one(FileLink)
+            assert file_link._command_builder == custom_builder
+    
+    async def test_line_and_column_passed_to_filelink(self, temp_file):
+        """Test line and column are passed to internal FileLink."""
+        link = ToggleableFileLink(temp_file, line=42, column=7)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            file_link = link.query_one(FileLink)
+            assert file_link.line == 42
+            assert file_link.column == 7
+    
+    async def test_path_property(self, temp_file):
+        """Test path property returns correct path."""
+        link = ToggleableFileLink(temp_file)
+        
+        assert link.path == temp_file
+    
+    async def test_is_toggled_property(self, temp_file):
+        """Test is_toggled property reflects current state."""
+        link = ToggleableFileLink(temp_file, initial_toggle=True)
+        
+        assert link.is_toggled is True
+    
+    async def test_status_icon_property(self, temp_file):
+        """Test status_icon property reflects current icon."""
+        link = ToggleableFileLink(temp_file, status_icon="🔥")
+        
+        assert link.status_icon == "🔥"
+    
+    async def test_multiple_status_icon_updates(self, temp_file):
+        """Test multiple status icon updates work correctly."""
+        link = ToggleableFileLink(temp_file)
+        app = ToggleableFileLinkTestApp(link)
+        
+        async with app.run_test() as pilot:
+            icons = ["⏳", "✓", "⚠", "✗", None, "🔥"]
+            
+            for icon in icons:
+                link.set_status_icon(icon)
+                await pilot.pause()
+                assert link.status_icon == icon
+=-=-=-=-=-=-=-= End File: 'test_toggleable_file_link.py' =-=-=-=-=-=-=-=

@@ -50,6 +50,40 @@ class CommandLink(ToggleableFileLink):
     # Spinner frames for animation
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
+    @staticmethod
+    def sanitize_id(name: str) -> str:
+        """Convert command name to valid widget ID.
+
+        Sanitizes the name for use as a Textual widget ID by converting to
+        lowercase, replacing spaces with hyphens, and removing invalid characters.
+
+        Parameters
+        ----------
+        name : str
+            Command name (can contain spaces, special characters, etc.)
+
+        Returns
+        -------
+        str
+            Sanitized ID containing only alphanumeric characters, hyphens, and underscores.
+
+        Examples
+        --------
+        >>> CommandLink.sanitize_id("Format Code")
+        'format-code'
+        >>> CommandLink.sanitize_id("Run Tests")
+        'run-tests'
+        >>> CommandLink.sanitize_id("Build-Project!")
+        'build-project-'
+        """
+        # Convert to lowercase and replace spaces with hyphens
+        sanitized = name.lower().replace(" ", "-")
+        # Keep only alphanumeric, hyphens, and underscores
+        return "".join(
+            char if char.isalnum() or char in ("-", "_") else "-"
+            for char in sanitized
+        )
+
     class PlayClicked(Message):
         """Posted when play button is clicked.
 
@@ -229,6 +263,10 @@ class CommandLink(ToggleableFileLink):
         # Use command name as display text (parent will show path.name)
         display_path = Path(name)
 
+        # Sanitize command name for use as widget ID
+        # (converts spaces to hyphens, removes invalid characters)
+        sanitized_id = CommandLink.sanitize_id(name)
+
         # Initialize parent
         super().__init__(
             display_path,
@@ -240,7 +278,7 @@ class CommandLink(ToggleableFileLink):
             remove_tooltip=remove_tooltip,
             command_builder=command_builder,
             disable_on_untoggle=disable_on_untoggle,
-            id=name,  # Use name as ID for easy lookup
+            id=sanitized_id,  # Use sanitized name as ID for easy lookup
             name=None,  # Don't set Widget.name, we use our own _name
         )
 

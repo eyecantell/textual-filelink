@@ -174,8 +174,9 @@ class CommandLinkSimpleApp(App):
         2. Start a timer for simulated work
         3. Show notification that command started
         """
-        # Find the command link widget
-        link = self.query_one(f"#{event.name}", CommandLink)
+        # Find the command link widget (use sanitized ID)
+        sanitized_id = CommandLink.sanitize_id(event.name)
+        link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         # Update status to show running
         link.set_status(running=True, tooltip=f"Running {event.name}...")
@@ -194,8 +195,9 @@ class CommandLinkSimpleApp(App):
         2. Update status to show it was cancelled
         3. Show notification
         """
-        # Find the command link widget
-        link = self.query_one(f"#{event.name}", CommandLink)
+        # Find the command link widget (use sanitized ID)
+        sanitized_id = CommandLink.sanitize_id(event.name)
+        link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         # Cancel the timer if it's running
         if event.name in self.command_timers:
@@ -228,7 +230,9 @@ class CommandLinkSimpleApp(App):
         3. Update running state to show it's done
         4. Show notification
         """
-        link = self.query_one(f"#{name}", CommandLink)
+        # Find the command link widget (use sanitized ID)
+        sanitized_id = CommandLink.sanitize_id(name)
+        link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         # Random success/failure for variety (70% success rate)
         success = random.random() > 0.3
