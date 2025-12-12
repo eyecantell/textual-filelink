@@ -270,6 +270,22 @@ class AsyncCommandApp(App):
         if event.name in self.states:
             self.states[event.name].status = "stopped"
 
+    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked) -> None:
+        """Handle settings icon click.
+
+        In this simplified demo, we just show a notification.
+        In a real app, you might open a settings dialog to configure:
+        - Command timeout duration
+        - Output file location
+        - Retry behavior
+        - Notification preferences
+        """
+        self.notify(
+            f"⚙️ Settings for {event.name} (not implemented in demo)",
+            severity="information",
+            timeout=2,
+        )
+
     def on_toggleable_file_link_removed(self, event) -> None:
         """Handle remove button clicks.
 
