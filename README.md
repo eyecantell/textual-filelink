@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
 
 ✅ ▶️ Build   ⚙️ ×   - last run successful, play button ot start again, command name ("Build"), settings icon, remove icon
-❌ ▶️ Build   ⚙️ ×   - last run failed, play button to start again, command name ("Build"), settings icon, remove icon
+❌ ▶️ Build   ⚙️ ×   - last run failed, play button to start agai1n, command name ("Build"), settings icon, remove icon
 ⠧  ⏹️ Build   ⚙️ ×   - spinner, stop button to cancel run, command name ("Build"), settings icon, remove icon
 
 
