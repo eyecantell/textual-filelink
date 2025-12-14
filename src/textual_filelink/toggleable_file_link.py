@@ -31,7 +31,7 @@ class IconConfig:
     tooltip: str | None = None
 
 
-class ToggleableFileLink(Widget):
+class ToggleableFileLink(Widget, can_focus=True):
     """A FileLink with optional toggle (☐/☑) on the left, multiple status icons, and optional remove (×) on the right.
 
     Event Bubbling Policy
@@ -46,6 +46,11 @@ class ToggleableFileLink(Widget):
         height: auto;
         width: auto;
         min-width: 100%;
+    }
+
+    ToggleableFileLink:focus {
+        background: $accent 20%;
+        border: tall $accent;
     }
 
     ToggleableFileLink Horizontal {

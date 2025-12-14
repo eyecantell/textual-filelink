@@ -10,7 +10,7 @@ from textual.message import Message
 from textual.widgets import Static
 
 
-class FileLink(Static):
+class FileLink(Static, can_focus=True):
     """Clickable filename that opens the real file using a configurable command.
 
     Event Bubbling Policy
@@ -33,6 +33,10 @@ class FileLink(Static):
     FileLink:hover {
         text-style: bold underline;
         background: $boost;
+    }
+    FileLink:focus {
+        background: $accent 20%;
+        border: tall $accent;
     }
     """
 

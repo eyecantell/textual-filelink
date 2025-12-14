@@ -126,6 +126,13 @@ Icons are dynamically rendered based on configuration state:
 
 ## Important Implementation Details
 
+### Keyboard Accessibility (Focus Support)
+- All three widget classes have `can_focus=True` enabled, making them tabbable
+- FileLink (Static, can_focus=True), ToggleableFileLink (Widget, can_focus=True), CommandLink inherits from ToggleableFileLink
+- Focus indicator CSS uses `:focus` pseudo-class with accent color background and border
+- Tab navigation works automatically when widgets are focusable
+- **Future Enhancement**: Keyboard bindings (Enter, Space) for activating widgets will be added in a follow-up phase with proper override mechanism
+
 ### Event Handling
 - All click handlers call `event.stop()` to prevent event bubbling at interaction points
 - Widget-specific messages bubble up by default, allowing parent containers to handle them

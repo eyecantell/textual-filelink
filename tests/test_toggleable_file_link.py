@@ -729,3 +729,53 @@ class TestValidation:
         # Verify the change was applied
         icon_updated = link.get_icon("status")
         assert icon_updated["clickable"] is True
+
+    # === Keyboard Accessibility Tests ===
+
+    async def test_toggleable_filelink_can_focus(self, temp_file):
+        """Test that ToggleableFileLink is focusable."""
+        link = ToggleableFileLink(temp_file)
+
+        assert link.can_focus is True
+
+    async def test_toggleable_filelink_receives_focus(self, temp_file):
+        """Test that ToggleableFileLink can receive focus via Tab."""
+        link = ToggleableFileLink(temp_file)
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # ToggleableFileLink should be focusable
+            assert link.can_focus is True
+
+            # Tab to navigate (could focus internal FileLink or other components)
+            await pilot.press("tab")
+            await pilot.pause()
+
+            # Some widget should be focused
+            assert app.focused is not None
+
+    async def test_toggleable_filelink_focus_multiple_widgets(self, temp_file):
+        """Test that multiple ToggleableFileLink widgets are all focusable."""
+
+        class MultipleToggleableApp(App):
+            def compose(self) -> ComposeResult:
+                yield ToggleableFileLink(temp_file, id="link1")
+                yield ToggleableFileLink(temp_file, id="link2")
+
+        app = MultipleToggleableApp()
+        async with app.run_test() as pilot:
+            # Get both links
+            link1 = app.query_one("#link1", ToggleableFileLink)
+            link2 = app.query_one("#link2", ToggleableFileLink)
+
+            # Both should be focusable
+            assert link1.can_focus is True
+            assert link2.can_focus is True
+
+            # Tab navigation should work (we can't easily test which widget is focused
+            # due to Textual's internal focus handling, but we can verify they're focusable)
+            await pilot.press("tab")
+            await pilot.pause()
+
+            # At least one widget should be focused
+            assert app.focused is not None

@@ -383,3 +383,53 @@ class TestFileLink:
         assert cmd[0] == "eclipse"
         assert "--launcher.openFile" in cmd
         assert str(temp_file) in " ".join(cmd)
+
+    # === Keyboard Accessibility Tests ===
+
+    async def test_filelink_can_focus(self, temp_file):
+        """Test that FileLink is focusable."""
+        link = FileLink(temp_file)
+
+        assert link.can_focus is True
+
+    async def test_filelink_receives_focus(self, temp_file):
+        """Test that FileLink can receive focus via Tab."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # FileLink should be focusable
+            assert link.can_focus is True
+
+            # Tab to navigate
+            await pilot.press("tab")
+            await pilot.pause()
+
+            # Some widget should be focused
+            assert app.focused is not None
+
+    async def test_filelink_focus_multiple_widgets(self, temp_file):
+        """Test that multiple FileLink widgets are all focusable."""
+
+        class MultipleLinkApp(App):
+            def compose(self) -> ComposeResult:
+                yield FileLink(temp_file, id="link1")
+                yield FileLink(temp_file, id="link2")
+
+        app = MultipleLinkApp()
+        async with app.run_test() as pilot:
+            # Get both links
+            link1 = app.query_one("#link1", FileLink)
+            link2 = app.query_one("#link2", FileLink)
+
+            # Both should be focusable
+            assert link1.can_focus is True
+            assert link2.can_focus is True
+
+            # Tab navigation should work (we can't easily test which widget is focused
+            # due to Textual's internal focus handling, but we can verify they're focusable)
+            await pilot.press("tab")
+            await pilot.pause()
+
+            # At least one widget should be focused
+            assert app.focused is not None

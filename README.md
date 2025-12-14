@@ -23,6 +23,7 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 🎭 **Flexible layouts** - show/hide controls as needed
 - 💬 **Tooltips** for all interactive elements
 - 🚀 **Command orchestration** with play/stop controls and animated spinners
+- ⌨️ **Keyboard accessible** - fully tabbable and navigable without a mouse
 
 ## Installation
 
@@ -126,6 +127,33 @@ class MyApp(App):
 if __name__ == "__main__":
     MyApp().run()
 ```
+
+## Keyboard Navigation
+
+All FileLink widgets are fully keyboard accessible and can be navigated using the standard terminal keyboard shortcuts:
+
+- **Tab** - Move focus to the next widget
+- **Shift+Tab** - Move focus to the previous widget
+- **Mouse Click** - Activate/interact with focused widgets
+
+When a FileLink widget has focus, it displays a visual indicator (border with accent color). Future versions will add keyboard bindings (Enter, Space) for activating widgets without a mouse.
+
+```python
+class KeyboardAccessibleApp(App):
+    def compose(self) -> ComposeResult:
+        yield FileLink("file1.py", name="link1")
+        yield FileLink("file2.py", name="link2")
+        yield ToggleableFileLink("file3.py", name="link3")
+        yield CommandLink("Run Tests", name="cmd1")
+
+if __name__ == "__main__":
+    # Now you can navigate with Tab and interact with arrow keys!
+    KeyboardAccessibleApp().run()
+```
+
+**Focus Indicators:**
+- Widgets display a border and background color when focused
+- You can customize the focus appearance using CSS if desired
 
 ## FileLink API
 

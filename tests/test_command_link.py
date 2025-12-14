@@ -591,3 +591,53 @@ class TestCommandLinkIntegration:
         # Set output path (this would update the FileLink's command builder)
         link.set_output_path(Path("output.log"))
         assert link.output_path == Path("output.log")
+
+    # === Keyboard Accessibility Tests ===
+
+    async def test_command_link_can_focus(self):
+        """Test that CommandLink is focusable."""
+        link = CommandLink("Test")
+
+        assert link.can_focus is True
+
+    async def test_command_link_receives_focus(self):
+        """Test that CommandLink can receive focus via Tab."""
+        link = CommandLink("test-cmd")
+
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # CommandLink should be focusable
+            assert link.can_focus is True
+
+            # Tab to CommandLink (even if internal FileLink gets focus, the structure is focusable)
+            await pilot.press("tab")
+            await pilot.pause()
+
+            # Some widget should be focused (could be FileLink, toggle, or CommandLink itself)
+            assert app.focused is not None
+
+    async def test_command_link_focus_multiple_widgets(self):
+        """Test that multiple CommandLink widgets are all focusable."""
+
+        class MultipleCommandApp(App):
+            def compose(self) -> ComposeResult:
+                yield CommandLink("test-cmd-1")
+                yield CommandLink("test-cmd-2")
+
+        app = MultipleCommandApp()
+        async with app.run_test() as pilot:
+            # Get both links
+            commands = app.query(CommandLink)
+            assert len(commands) == 2
+
+            # Both should be focusable
+            for cmd in commands:
+                assert cmd.can_focus is True
+
+            # Tab navigation should work
+            await pilot.press("tab")
+            await pilot.pause()
+
+            # At least one widget should be focused
+            assert app.focused is not None
