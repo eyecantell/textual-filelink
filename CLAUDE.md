@@ -126,12 +126,107 @@ Icons are dynamically rendered based on configuration state:
 
 ## Important Implementation Details
 
-### Keyboard Accessibility (Focus Support)
+### Keyboard Accessibility
+
+**Focus Support:**
 - All three widget classes have `can_focus=True` enabled, making them tabbable
-- FileLink (Static, can_focus=True), ToggleableFileLink (Widget, can_focus=True), CommandLink inherits from ToggleableFileLink
+- FileLink receives `_embedded=True` parameter from parent widgets (ToggleableFileLink/CommandLink) to disable focus and prevent "focus stealing"
+- When `_embedded=False` (default), FileLink is a standalone focusable widget
 - Focus indicator CSS uses `:focus` pseudo-class with accent color background and border
-- Tab navigation works automatically when widgets are focusable
-- **Future Enhancement**: Keyboard bindings (Enter, Space) for activating widgets will be added in a follow-up phase with proper override mechanism
+- Tab/Shift+Tab navigation works automatically for all focusable widgets
+
+**Keyboard Bindings:**
+- Implemented using Textual's `BINDINGS` class variable (list of `Binding` objects)
+- Each binding maps: `Binding(key, action_name, description, show=False)`
+- Actions are defined as `action_*` methods in the widget class
+- Bindings use `show=False` to hide from help screen (keyboard shortcuts are context-specific)
+- Customizable by subclassing and overriding `BINDINGS`:
+
+```python
+from textual.binding import Binding
+from textual_filelink import FileLink
+
+class CustomFileLink(FileLink):
+    BINDINGS = [
+        Binding("enter", "open_file", "Open"),      # Use Enter instead of 'o'
+        Binding("ctrl+o", "open_file", "Open"),     # Add Ctrl+O
+    ]
+```
+
+**Widget-Level Actions:**
+
+*FileLink:*
+- `action_open_file()` - Opens file in configured editor (default: VSCode)
+
+*ToggleableFileLink:*
+- `action_open_file()` - Delegates to child FileLink
+- `action_toggle()` - Toggles checkbox, posts `Toggled` message
+- `action_remove()` - Posts `Removed` message if removal enabled
+- `action_icon_1()` through `action_icon_9()` - Activates clickable icons by index (1st through 9th)
+  - Uses helper method `_activate_icon_by_index()` to find and activate icons
+  - Only activates icons with `clickable=True`
+  - Posts `IconClicked` message with icon name and content
+
+*CommandLink:*
+- `action_open_output()` - Opens output file if it exists
+- `action_play_stop()` - Toggles between play/stop states
+  - Posts `PlayClicked` if not running, `StopClicked` if running
+- `action_settings()` - Opens settings, posts `SettingsClicked` message
+- `action_toggle()` - Inherited from ToggleableFileLink (uses `priority=True` binding)
+- `action_remove()` - Inherited from ToggleableFileLink (uses `priority=True` binding)
+
+**Built-in Bindings:**
+
+*FileLink:*
+- `o` - Open file
+
+*ToggleableFileLink:*
+- `o` - Open file
+- `space`, `t` - Toggle checkbox
+- `delete`, `x` - Remove widget
+- `1`-`9` - Activate clickable icons (1st through 9th)
+
+*CommandLink:*
+- `o` - Open output file
+- `space`, `p` - Play/Stop command
+- `s` - Settings dialog
+- `t`, `delete`, `x` - Toggle/Remove (inherited, with priority override)
+
+**App-Level Dynamic Bindings:**
+
+Widgets don't know their position in a list, so apps should handle positional key bindings:
+
+```python
+from textual.app import App
+from textual import events
+from textual_filelink import CommandLink
+
+class MyApp(App):
+    def compose(self):
+        with ScrollableContainer():
+            yield CommandLink("Build")   # Press 1
+            yield CommandLink("Test")    # Press 2
+            yield CommandLink("Deploy")  # Press 3
+
+    def on_key(self, event: events.Key) -> None:
+        """Route number keys 1-9 to activate specific commands."""
+        if event.key.isdigit():
+            num = int(event.key)
+            commands = list(self.query(CommandLink))
+            if 0 < num <= len(commands):
+                cmd = commands[num - 1]
+                # Trigger play action
+                cmd.action_play_stop()
+                event.prevent_default()
+```
+
+**Design Notes:**
+- `o` for open instead of Enter/Space to avoid conflicts with scrolling/form submission
+- `space`/`t` for toggle gives users flexibility (Space is standard, t is mnemonic)
+- `delete`/`x` for remove gives users two options
+- Number keys 1-9 limited to 9 icons per widget (standard TUI pattern)
+- Child FileLink in ToggleableFileLink/CommandLink uses `_embedded=True` to avoid focus conflicts
+- `priority=True` binding flag in CommandLink overrides parent class bindings
 
 ### Event Handling
 - All click handlers call `event.stop()` to prevent event bubbling at interaction points

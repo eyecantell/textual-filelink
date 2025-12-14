@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 from textual import on
+from textual.binding import Binding
 from textual.message import Message
 from textual.timer import Timer
 
@@ -46,6 +47,18 @@ class CommandLink(ToggleableFileLink):
         link.set_output_path(Path("test_output.log"))
         ```
     """
+
+    # Keyboard bindings for CommandLink-specific actions
+    BINDINGS = [
+        Binding("o", "open_output", "Open output", show=False),
+        Binding("space", "play_stop", "Play/Stop", show=False),
+        Binding("p", "play_stop", "Play/Stop", show=False),
+        Binding("s", "settings", "Settings", show=False),
+        # Inherit t/x/delete from parent but allow override
+        Binding("t", "toggle", "Toggle", show=False, priority=True),
+        Binding("x", "remove", "Remove", show=False, priority=True),
+        Binding("delete", "remove", "Remove", show=False, priority=True),
+    ]
 
     # Spinner frames for animation
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
@@ -463,6 +476,59 @@ class CommandLink(ToggleableFileLink):
         if self._show_settings:
             with contextlib.suppress(KeyError):
                 self.update_icon("settings", tooltip=tooltip or "Settings")
+
+    # ------------------------------------------------------------------ #
+    # Keyboard handling
+    # ------------------------------------------------------------------ #
+    def action_open_output(self) -> None:
+        """Open output file via keyboard."""
+        if self._output_path:
+            # Delegate to parent's action_open_file
+            super().action_open_file()
+
+    def action_play_stop(self) -> None:
+        """Toggle play/stop via keyboard."""
+        if self._command_running:
+            # Stop command
+            self.post_message(
+                self.StopClicked(
+                    path=self._output_path,
+                    name=self.name,
+                    output_path=self._output_path,
+                    is_toggled=self._is_toggled,
+                )
+            )
+        else:
+            # Play command
+            self.post_message(
+                self.PlayClicked(
+                    path=self._output_path,
+                    name=self.name,
+                    output_path=self._output_path,
+                    is_toggled=self._is_toggled,
+                )
+            )
+
+    def action_settings(self) -> None:
+        """Open settings via keyboard."""
+        if not self._show_settings:
+            return
+        self.post_message(
+            self.SettingsClicked(
+                path=self._output_path,
+                name=self.name,
+                output_path=self._output_path,
+                is_toggled=self._is_toggled,
+            )
+        )
+
+    def action_toggle(self) -> None:
+        """Toggle via keyboard - call parent implementation."""
+        super().action_toggle()
+
+    def action_remove(self) -> None:
+        """Remove via keyboard - call parent implementation."""
+        super().action_remove()
 
     def on_unmount(self) -> None:
         """Clean up spinner timer when widget is unmounted."""

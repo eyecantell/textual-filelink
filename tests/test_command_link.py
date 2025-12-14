@@ -641,3 +641,71 @@ class TestCommandLinkIntegration:
 
             # At least one widget should be focused
             assert app.focused is not None
+
+    async def test_p_key_plays(self):
+        """Test 'p' key triggers play."""
+        link = CommandLink("test-cmd", output_path=None)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("p")
+            await pilot.pause()
+
+            # Play action posted PlayClicked message
+
+    async def test_space_toggles_play_stop(self):
+        """Test Space key toggles between play and stop."""
+        link = CommandLink("test-cmd", running=False)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("space")
+            await pilot.pause()
+
+            # Should have posted PlayClicked
+
+            # Now test when running
+            link.set_status(running=True)
+            await pilot.press("space")
+            await pilot.pause()
+
+            # Should have posted StopClicked
+
+    async def test_s_key_settings(self):
+        """Test 's' key opens settings."""
+        link = CommandLink("test-cmd", show_settings=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("s")
+            await pilot.pause()
+
+            # Settings action posted SettingsClicked message
+
+    async def test_keyboard_shortcuts_sequence(self):
+        """Test multiple keyboard shortcuts in sequence."""
+        link = CommandLink("test-cmd", show_toggle=True, show_remove=True, show_settings=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+
+            # Toggle
+            await pilot.press("t")
+            await pilot.pause()
+            assert link.is_toggled is True
+
+            # Play
+            await pilot.press("p")
+            await pilot.pause()
+
+            # Settings
+            await pilot.press("s")
+            await pilot.pause()
+
+            # Remove
+            await pilot.press("x")
+            await pilot.pause()

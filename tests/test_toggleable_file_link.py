@@ -779,3 +779,80 @@ class TestValidation:
 
             # At least one widget should be focused
             assert app.focused is not None
+
+    async def test_space_key_toggles(self, temp_file):
+        """Test Space key toggles checkbox."""
+        link = ToggleableFileLink(temp_file, initial_toggle=False)
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            assert link.is_toggled is False
+
+            link.focus()
+            await pilot.press("space")
+            await pilot.pause()
+
+            assert link.is_toggled is True
+
+    async def test_t_key_toggles(self, temp_file):
+        """Test 't' key also toggles checkbox."""
+        link = ToggleableFileLink(temp_file, initial_toggle=True)
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            assert link.is_toggled is True
+
+            link.focus()
+            await pilot.press("t")
+            await pilot.pause()
+
+            assert link.is_toggled is False
+
+    async def test_x_key_removes(self, temp_file):
+        """Test 'x' key removes widget."""
+        link = ToggleableFileLink(temp_file)
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("x")
+            await pilot.pause()
+
+            # The widget posts a Removed message
+
+    async def test_delete_key_removes(self, temp_file):
+        """Test Delete key also removes widget."""
+        link = ToggleableFileLink(temp_file)
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("delete")
+            await pilot.pause()
+
+    async def test_number_key_activates_icon(self, temp_file):
+        """Test number keys activate clickable icons."""
+        link = ToggleableFileLink(
+            temp_file,
+            icons=[
+                {"name": "edit", "icon": "✏", "clickable": True},
+                {"name": "view", "icon": "👁", "clickable": True},
+            ],
+        )
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("1")  # First icon
+            await pilot.pause()
+
+            # The widget posts an IconClicked message
+
+    async def test_child_filelink_not_focusable(self, temp_file):
+        """Test internal FileLink cannot receive focus."""
+        link = ToggleableFileLink(temp_file)
+        app = ToggleableFileLinkTestApp(link)
+
+        async with app.run_test():
+            file_link = link.query_one(FileLink)
+            assert file_link.can_focus is False

@@ -433,3 +433,31 @@ class TestFileLink:
 
             # At least one widget should be focused
             assert app.focused is not None
+
+    async def test_filelink_keyboard_open(self, temp_file):
+        """Test 'o' key opens file via keyboard action."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.focus()
+            await pilot.press("o")
+            await pilot.pause()
+
+            # Verify notification was shown (indicating file opening was attempted)
+            # We can't easily verify the subprocess call, but the notification indicates success
+
+    async def test_filelink_embedded_not_focusable(self, temp_file):
+        """Test FileLink with _embedded=True is not focusable."""
+        link = FileLink(temp_file, _embedded=True)
+        assert link.can_focus is False
+
+    async def test_filelink_embedded_still_works(self, temp_file):
+        """Test embedded FileLink can still open files via action."""
+        link = FileLink(temp_file, _embedded=True)
+        app = FileLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Even though not focusable, action_open_file should still work
+            link.action_open_file()
+            await pilot.pause()

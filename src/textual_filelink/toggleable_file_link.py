@@ -8,6 +8,7 @@ from typing import Callable, Literal
 
 from textual import events, on
 from textual.app import ComposeResult
+from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.message import Message
 from textual.widget import Widget
@@ -40,6 +41,23 @@ class ToggleableFileLink(Widget, can_focus=True):
     - Widget-specific messages (Toggled, Removed, IconClicked) bubble up by default
     - Parent containers can handle or stop these messages as needed
     """
+
+    BINDINGS = [
+        Binding("o", "open_file", "Open file", show=False),
+        Binding("space", "toggle", "Toggle", show=False),
+        Binding("t", "toggle", "Toggle", show=False),
+        Binding("delete", "remove", "Remove", show=False),
+        Binding("x", "remove", "Remove", show=False),
+        Binding("1", "icon_1", "Icon 1", show=False),
+        Binding("2", "icon_2", "Icon 2", show=False),
+        Binding("3", "icon_3", "Icon 3", show=False),
+        Binding("4", "icon_4", "Icon 4", show=False),
+        Binding("5", "icon_5", "Icon 5", show=False),
+        Binding("6", "icon_6", "Icon 6", show=False),
+        Binding("7", "icon_7", "Icon 7", show=False),
+        Binding("8", "icon_8", "Icon 8", show=False),
+        Binding("9", "icon_9", "Icon 9", show=False),
+    ]
 
     DEFAULT_CSS = """
     ToggleableFileLink {
@@ -350,13 +368,14 @@ class ToggleableFileLink(Widget, can_focus=True):
                 if icon_config.visible:
                     yield self._create_icon_static(icon_config)
 
-            # FileLink
+            # FileLink (with _embedded=True to prevent focus stealing)
             yield FileLink(
                 self._path,
                 line=self._line,
                 column=self._column,
                 command_builder=self._command_builder,
                 classes="file-link-container",
+                _embedded=True,
             )
 
             # Icons after filename
@@ -650,6 +669,79 @@ class ToggleableFileLink(Widget, can_focus=True):
         if self._disable_on_untoggle and not self._is_toggled:
             event.stop()
         # Otherwise let it bubble up
+
+    # ------------------------------------------------------------------ #
+    # Keyboard handling
+    # ------------------------------------------------------------------ #
+    def action_open_file(self) -> None:
+        """Open file via keyboard - delegate to child FileLink."""
+        file_link = self.query_one(FileLink)
+        file_link.action_open_file()
+
+    def action_toggle(self) -> None:
+        """Toggle via keyboard - reuse click logic."""
+        if not self._show_toggle:
+            return
+        self._is_toggled = not self._is_toggled
+
+        # Update static content
+        toggle_static = self.query_one("#toggle", Static)
+        toggle_static.update("☑" if self._is_toggled else "☐")
+
+        # Update disabled state
+        self._update_disabled_state()
+
+        # Post message
+        self.post_message(self.Toggled(self._path, self._is_toggled))
+
+    def action_remove(self) -> None:
+        """Remove via keyboard."""
+        if not self._show_remove:
+            return
+        self.post_message(self.Removed(self._path))
+
+    def action_icon_1(self) -> None:
+        """Activate first clickable icon via keyboard."""
+        self._activate_icon_by_index(0)
+
+    def action_icon_2(self) -> None:
+        """Activate second clickable icon via keyboard."""
+        self._activate_icon_by_index(1)
+
+    def action_icon_3(self) -> None:
+        """Activate third clickable icon via keyboard."""
+        self._activate_icon_by_index(2)
+
+    def action_icon_4(self) -> None:
+        """Activate fourth clickable icon via keyboard."""
+        self._activate_icon_by_index(3)
+
+    def action_icon_5(self) -> None:
+        """Activate fifth clickable icon via keyboard."""
+        self._activate_icon_by_index(4)
+
+    def action_icon_6(self) -> None:
+        """Activate sixth clickable icon via keyboard."""
+        self._activate_icon_by_index(5)
+
+    def action_icon_7(self) -> None:
+        """Activate seventh clickable icon via keyboard."""
+        self._activate_icon_by_index(6)
+
+    def action_icon_8(self) -> None:
+        """Activate eighth clickable icon via keyboard."""
+        self._activate_icon_by_index(7)
+
+    def action_icon_9(self) -> None:
+        """Activate ninth clickable icon via keyboard."""
+        self._activate_icon_by_index(8)
+
+    def _activate_icon_by_index(self, index: int) -> None:
+        """Helper to activate Nth clickable icon."""
+        clickable_icons = [ic for ic in self._icons if ic.clickable and ic.visible]
+        if 0 <= index < len(clickable_icons):
+            icon_config = clickable_icons[index]
+            self.post_message(self.IconClicked(self._path, icon_config.name, icon_config.icon))
 
     @property
     def is_toggled(self) -> bool:

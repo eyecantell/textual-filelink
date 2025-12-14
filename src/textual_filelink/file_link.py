@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Callable
 
 from textual import events
+from textual.binding import Binding
 from textual.message import Message
 from textual.widgets import Static
 
@@ -19,6 +20,10 @@ class FileLink(Static, can_focus=True):
     - Widget-specific messages (Clicked) bubble up by default
     - Parent containers can handle or stop these messages as needed
     """
+
+    BINDINGS = [
+        Binding("o", "open_file", "Open file", show=False),
+    ]
 
     DEFAULT_CSS = """
     FileLink {
@@ -72,6 +77,7 @@ class FileLink(Static, can_focus=True):
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
+        _embedded: bool = False,
     ) -> None:
         """
         Parameters
@@ -84,6 +90,8 @@ class FileLink(Static, can_focus=True):
             Function that takes (path, line, column) and returns a list of command arguments.
             If None, uses the class-level default_command_builder.
             If that's also None, uses VSCode's 'code --goto' command.
+        _embedded : bool
+            Internal use only. If True, disables focus to prevent stealing focus from parent widget.
         """
         self._path = Path(path).resolve()
         self._line = line
@@ -98,6 +106,17 @@ class FileLink(Static, can_focus=True):
             classes=classes,
         )
 
+        # Disable focus if embedded in parent widget to prevent focus stealing
+        if _embedded:
+            self.can_focus = False
+
+    # ------------------------------------------------------------------ #
+    # Keyboard handling
+    # ------------------------------------------------------------------ #
+    def action_open_file(self) -> None:
+        """Open file via keyboard (reuses existing click logic)."""
+        self._do_open_file()
+
     # ------------------------------------------------------------------ #
     # Mouse handling for clickability
     # ------------------------------------------------------------------ #
@@ -105,7 +124,10 @@ class FileLink(Static, can_focus=True):
         """Handle click event."""
         event.stop()
         self.post_message(self.Clicked(self._path, self._line, self._column))
+        self._do_open_file()
 
+    def _do_open_file(self) -> None:
+        """Open the file (shared logic for click and keyboard activation)."""
         # Determine which command builder to use
         command_builder = self._command_builder or self.default_command_builder or self.vscode_command
 

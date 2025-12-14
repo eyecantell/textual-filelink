@@ -130,13 +130,80 @@ if __name__ == "__main__":
 
 ## Keyboard Navigation
 
-All FileLink widgets are fully keyboard accessible and can be navigated using the standard terminal keyboard shortcuts:
+### Tab Navigation
+All FileLink widgets are fully keyboard accessible and can be navigated using standard terminal keyboard shortcuts:
 
 - **Tab** - Move focus to the next widget
 - **Shift+Tab** - Move focus to the previous widget
-- **Mouse Click** - Activate/interact with focused widgets
 
-When a FileLink widget has focus, it displays a visual indicator (border with accent color). Future versions will add keyboard bindings (Enter, Space) for activating widgets without a mouse.
+When a FileLink widget has focus, it displays a visual indicator (border with accent color). You can customize the focus appearance using CSS.
+
+### Built-in Keyboard Shortcuts
+
+All FileLink widgets support keyboard activation:
+
+**FileLink:**
+- `o` - Open file in editor
+
+**ToggleableFileLink:**
+- `o` - Open file in editor
+- `Space` or `t` - Toggle checkbox
+- `Delete` or `x` - Remove widget
+- `1-9` - Activate clickable icons (in order of appearance)
+
+**CommandLink:**
+- `o` - Open output file (if path is set)
+- `Space` or `p` - Play/Stop command
+- `s` - Settings
+- `t` - Toggle checkbox
+- `Delete` or `x` - Remove widget
+
+### Customizing Keyboard Shortcuts
+
+Override the `BINDINGS` class variable in a subclass to customize keyboard shortcuts:
+
+```python
+from textual.binding import Binding
+from textual_filelink import FileLink
+
+class MyFileLink(FileLink):
+    BINDINGS = [
+        Binding("enter", "open_file", "Open"),  # Use Enter instead of 'o'
+        Binding("ctrl+o", "open_file", "Open"), # Add Ctrl+O
+    ]
+```
+
+### Dynamic App-Level Bindings
+
+Bind number keys to activate specific widgets in a list (useful for scrollable lists of commands):
+
+```python
+from textual import events
+from textual.app import App, ComposeResult
+from textual.containers import ScrollableContainer
+from textual_filelink import CommandLink
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        with ScrollableContainer():
+            yield CommandLink("Build")   # Press 1 to play
+            yield CommandLink("Test")    # Press 2 to play
+            yield CommandLink("Deploy")  # Press 3 to play
+
+    def on_key(self, event: events.Key) -> None:
+        """Route number keys to commands."""
+        if event.key.isdigit():
+            num = int(event.key)
+            commands = list(self.query(CommandLink))
+            if 0 < num <= len(commands):
+                cmd = commands[num - 1]
+                cmd.post_message(CommandLink.PlayClicked(
+                    cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
+                ))
+                event.prevent_default()
+```
+
+### Complete Example
 
 ```python
 class KeyboardAccessibleApp(App):
@@ -147,13 +214,10 @@ class KeyboardAccessibleApp(App):
         yield CommandLink("Run Tests", name="cmd1")
 
 if __name__ == "__main__":
-    # Now you can navigate with Tab and interact with arrow keys!
+    # Now fully keyboard accessible!
+    # Tab to navigate, o/space/p/etc to activate
     KeyboardAccessibleApp().run()
 ```
-
-**Focus Indicators:**
-- Widgets display a border and background color when focused
-- You can customize the focus appearance using CSS if desired
 
 ## FileLink API
 
