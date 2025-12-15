@@ -175,7 +175,7 @@ class MyFileLink(FileLink):
 
 ### Dynamic App-Level Bindings
 
-Bind number keys to activate specific widgets in a list (useful for scrollable lists of commands):
+Bind number keys to activate specific widgets in a list without requiring focus (useful for scrollable lists of commands):
 
 ```python
 from textual import events
@@ -186,20 +186,87 @@ from textual_filelink import CommandLink
 class MyApp(App):
     def compose(self) -> ComposeResult:
         with ScrollableContainer():
-            yield CommandLink("Build")   # Press 1 to play
-            yield CommandLink("Test")    # Press 2 to play
-            yield CommandLink("Deploy")  # Press 3 to play
+            yield CommandLink("Build")   # Press 1 to toggle play/stop
+            yield CommandLink("Test")    # Press 2 to toggle play/stop
+            yield CommandLink("Deploy")  # Press 3 to toggle play/stop
 
     def on_key(self, event: events.Key) -> None:
-        """Route number keys to commands."""
+        """Route number keys to commands - triggers play/stop toggle."""
         if event.key.isdigit():
             num = int(event.key)
             commands = list(self.query(CommandLink))
             if 0 < num <= len(commands):
                 cmd = commands[num - 1]
+                # Use action method to toggle play/stop automatically
+                cmd.action_play_stop()
+                event.prevent_default()
+```
+
+**How it works:**
+- Number keys work **globally** - no need to Tab to the widget first
+- Pressing '1' toggles the first command between play and stop
+- Pressing '2' toggles the second command, etc.
+- Uses the widget's `action_play_stop()` method which handles state checking internally (checks if running and posts appropriate message)
+
+**Alternative approaches:**
+
+If you need more control over the behavior, you can manually post messages:
+
+```python
+def on_key(self, event: events.Key) -> None:
+    if event.key.isdigit():
+        num = int(event.key)
+        commands = list(self.query(CommandLink))
+        if 0 < num <= len(commands):
+            cmd = commands[num - 1]
+
+            # Option 1: Always play (ignore if already running)
+            cmd.post_message(CommandLink.PlayClicked(
+                cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
+            ))
+
+            # Option 2: Always stop (ignore if not running)
+            cmd.post_message(CommandLink.StopClicked(
+                cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
+            ))
+
+            # Option 3: Custom logic based on state
+            if cmd.is_running:
+                cmd.post_message(CommandLink.StopClicked(
+                    cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
+                ))
+            else:
                 cmd.post_message(CommandLink.PlayClicked(
                     cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
                 ))
+
+            event.prevent_default()
+```
+
+**For ToggleableFileLink:**
+
+The same pattern works for other widget actions:
+
+```python
+from textual_filelink import ToggleableFileLink
+
+class MyApp(App):
+    def on_key(self, event: events.Key) -> None:
+        if event.key.isdigit():
+            num = int(event.key)
+            links = list(self.query(ToggleableFileLink))
+            if 0 < num <= len(links):
+                link = links[num - 1]
+
+                # Open the file
+                link.action_open_file()
+
+                # Or toggle checkbox
+                link.action_toggle()
+
+                # Or remove
+                link.action_remove()
+
                 event.prevent_default()
 ```
 
