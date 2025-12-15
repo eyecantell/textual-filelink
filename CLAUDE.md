@@ -220,6 +220,19 @@ class MyApp(App):
                 event.prevent_default()
 ```
 
+**Tooltip Enhancement:**
+- All tooltips automatically include keyboard shortcut hints for discoverability
+- Format: `"<description> (<key>)"` or `"<description> (<key1>/<key2>)"` for multiple keys
+- Implementation: `_get_keys_for_action()` and `_enhance_tooltip()` helper methods
+- Enhancement happens dynamically based on widget's BINDINGS
+- Respects custom BINDINGS overrides - tooltips automatically adapt when subclassed
+- Examples:
+  - Toggle: "Click to toggle (space/t)"
+  - Remove: "Remove (delete/x)"
+  - Icon 1: "Status (1)"
+  - Settings: "Settings (s)" (special case, uses action name not icon number)
+  - Play/Stop: "Run command (space/p)" or "Stop command (space/p)"
+
 **Design Notes:**
 - `o` for open instead of Enter/Space to avoid conflicts with scrolling/form submission
 - `space`/`t` for toggle gives users flexibility (Space is standard, t is mnemonic)
@@ -227,6 +240,7 @@ class MyApp(App):
 - Number keys 1-9 limited to 9 icons per widget (standard TUI pattern)
 - Child FileLink in ToggleableFileLink/CommandLink uses `_embedded=True` to avoid focus conflicts
 - `priority=True` binding flag in CommandLink overrides parent class bindings
+- Settings and play_stop icons use action names not numbers for tooltip enhancement
 
 ### Event Handling
 - All click handlers call `event.stop()` to prevent event bubbling at interaction points

@@ -78,6 +78,7 @@ class FileLink(Static, can_focus=True):
         id: str | None = None,
         classes: str | None = None,
         _embedded: bool = False,
+        tooltip: str | None = None,
     ) -> None:
         """
         Parameters
@@ -92,6 +93,8 @@ class FileLink(Static, can_focus=True):
             If that's also None, uses VSCode's 'code --goto' command.
         _embedded : bool
             Internal use only. If True, disables focus to prevent stealing focus from parent widget.
+        tooltip : str | None
+            Optional tooltip text. If provided, will be enhanced with keyboard shortcuts.
         """
         self._path = Path(path).resolve()
         self._line = line
@@ -109,6 +112,11 @@ class FileLink(Static, can_focus=True):
         # Disable focus if embedded in parent widget to prevent focus stealing
         if _embedded:
             self.can_focus = False
+        else:
+            # Set enhanced tooltip for standalone FileLink
+            default_tooltip = f"Open {self._path.name}"
+            enhanced = self._enhance_tooltip(tooltip or default_tooltip, "open_file")
+            self.tooltip = enhanced
 
     # ------------------------------------------------------------------ #
     # Keyboard handling
@@ -116,6 +124,57 @@ class FileLink(Static, can_focus=True):
     def action_open_file(self) -> None:
         """Open file via keyboard (reuses existing click logic)."""
         self._do_open_file()
+
+    def _get_keys_for_action(self, action_name: str) -> list[str]:
+        """Get all keys bound to an action.
+
+        Args:
+            action_name: The action name (e.g., 'open_file', 'toggle')
+
+        Returns:
+            List of key names bound to the action (e.g., ['o'], ['space', 't'])
+        """
+        keys = []
+        for binding in self.BINDINGS:
+            if binding.action == action_name:
+                keys.append(binding.key)
+        return keys
+
+    def _enhance_tooltip(self, base_tooltip: str | None, action_name: str) -> str:
+        """Enhance tooltip with keyboard shortcut hints.
+
+        Args:
+            base_tooltip: The base tooltip text (or None)
+            action_name: The action name to get keys for
+
+        Returns:
+            Enhanced tooltip with keyboard shortcuts appended
+
+        Examples:
+            _enhance_tooltip("Click to toggle", "toggle")
+            → "Click to toggle (space/t)"
+
+            _enhance_tooltip(None, "open_file")
+            → "Open file (o)"
+        """
+        keys = self._get_keys_for_action(action_name)
+
+        if not keys:
+            # No keys bound, return base tooltip or empty string
+            return base_tooltip or ""
+
+        # Format keys as "key1/key2/key3"
+        key_hint = "/".join(keys)
+
+        # If no base tooltip, generate sensible default
+        if not base_tooltip:
+            # Convert action_name to readable text
+            # "open_file" → "Open file"
+            # "play_stop" → "Play/Stop"
+            readable = action_name.replace("_", " ").title()
+            base_tooltip = readable
+
+        return f"{base_tooltip} ({key_hint})"
 
     # ------------------------------------------------------------------ #
     # Mouse handling for clickability

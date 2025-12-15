@@ -282,7 +282,7 @@ class TestCommandLinkOutputPath:
         assert link.output_path == temp_output_file
 
     async def test_set_output_path_updates_tooltip(self, temp_output_file):
-        """Test set_output_path updates the file link tooltip."""
+        """Test set_output_path updates the file link tooltip with keyboard shortcut."""
         link = CommandLink("TestCommand")
         app = CommandLinkTestApp(link)
 
@@ -291,7 +291,9 @@ class TestCommandLinkOutputPath:
             await pilot.pause()
 
             file_link = link.file_link
-            assert file_link.tooltip == "Click to view output"
+            # Tooltip should be enhanced with keyboard shortcut
+            assert "Click to view output" in file_link.tooltip
+            assert "(o)" in file_link.tooltip.lower()
 
     async def test_clicking_output_opens_file(self, temp_output_file):
         """Test clicking command name opens output file when set."""

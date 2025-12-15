@@ -219,6 +219,33 @@ if __name__ == "__main__":
     KeyboardAccessibleApp().run()
 ```
 
+### Keyboard Shortcut Discoverability
+
+All interactive elements automatically display their keyboard shortcuts in tooltips. This makes keyboard navigation discoverable without reading documentation.
+
+**Examples:**
+- Toggle checkbox: "Click to toggle (space/t)"
+- Remove button: "Remove (delete/x)"
+- Play button: "Run command (p/space)"
+- Settings: "Settings (s)"
+- Clickable icon 1: "Status (1)"
+
+**How it works:**
+Tooltips are automatically enhanced with keyboard shortcuts based on the widget's BINDINGS. When you hover over or focus on an interactive element, the tooltip displays both the description and the available keyboard shortcuts.
+
+**Custom Bindings:**
+If you override `BINDINGS` in a subclass, tooltips will automatically reflect your custom keys:
+
+```python
+class CustomFileLink(FileLink):
+    BINDINGS = [
+        Binding("enter", "open_file", "Open"),
+    ]
+
+# Tooltip will show "(enter)" instead of "(o)"
+link = CustomFileLink("file.txt")
+```
+
 ## FileLink API
 
 ### Constructor

@@ -292,6 +292,48 @@ class ToggleableFileLink(Widget, can_focus=True):
         if icons:
             self._icons = self._validate_and_convert_icons(icons)
 
+    def _get_keys_for_action(self, action_name: str) -> list[str]:
+        """Get all keys bound to an action.
+
+        Args:
+            action_name: The action name (e.g., 'open_file', 'toggle')
+
+        Returns:
+            List of key names bound to the action (e.g., ['o'], ['space', 't'])
+        """
+        keys = []
+        for binding in self.BINDINGS:
+            if binding.action == action_name:
+                keys.append(binding.key)
+        return keys
+
+    def _enhance_tooltip(self, base_tooltip: str | None, action_name: str) -> str:
+        """Enhance tooltip with keyboard shortcut hints.
+
+        Args:
+            base_tooltip: The base tooltip text (or None)
+            action_name: The action name to get keys for
+
+        Returns:
+            Enhanced tooltip with keyboard shortcuts appended
+        """
+        keys = self._get_keys_for_action(action_name)
+
+        if not keys:
+            # No keys bound, return base tooltip or empty string
+            return base_tooltip or ""
+
+        # Format keys as "key1/key2/key3"
+        key_hint = "/".join(keys)
+
+        # If no base tooltip, generate sensible default
+        if not base_tooltip:
+            # Convert action_name to readable text
+            readable = action_name.replace("_", " ").title()
+            base_tooltip = readable
+
+        return f"{base_tooltip} ({key_hint})"
+
     def _validate_and_convert_icons(self, icons: list[IconConfig | dict]) -> list[IconConfig]:
         """Validate and convert icon configs to IconConfig dataclasses."""
         result = []
@@ -358,8 +400,7 @@ class ToggleableFileLink(Widget, can_focus=True):
                     id="toggle",
                     classes="toggle-static",
                 )
-                if self._toggle_tooltip:
-                    toggle_static.tooltip = self._toggle_tooltip
+                toggle_static.tooltip = self._enhance_tooltip(self._toggle_tooltip, "toggle")
                 yield toggle_static
 
             # Icons before filename
@@ -391,8 +432,7 @@ class ToggleableFileLink(Widget, can_focus=True):
                     id="remove",
                     classes="remove-static",
                 )
-                if self._remove_tooltip:
-                    remove_static.tooltip = self._remove_tooltip
+                remove_static.tooltip = self._enhance_tooltip(self._remove_tooltip, "remove")
                 yield remove_static
 
     def _create_icon_static(self, icon_config: IconConfig) -> Static:
@@ -406,8 +446,30 @@ class ToggleableFileLink(Widget, can_focus=True):
             id=f"icon-{icon_config.name}",
             classes=classes,
         )
-        if icon_config.tooltip:
-            static.tooltip = icon_config.tooltip
+
+        # Enhance tooltip with keyboard shortcut if clickable or special icons
+        if icon_config.name == "settings":
+            # Special case: settings uses 's' key, not a number
+            static.tooltip = self._enhance_tooltip(icon_config.tooltip, "settings")
+        elif icon_config.name == "play_stop":
+            # Special case: play_stop uses 'p' and 'space' keys, not a number
+            static.tooltip = self._enhance_tooltip(icon_config.tooltip, "play_stop")
+        elif icon_config.clickable:
+            # Find which number key activates this icon
+            clickable_icons = [ic for ic in self._icons if ic.clickable and ic.visible]
+            try:
+                icon_index = clickable_icons.index(icon_config)
+                icon_number = icon_index + 1  # 1-indexed
+                if icon_number <= 9:
+                    action_name = f"icon_{icon_number}"
+                    static.tooltip = self._enhance_tooltip(icon_config.tooltip, action_name)
+                else:
+                    # No keyboard shortcut for icons beyond 9
+                    static.tooltip = icon_config.tooltip or ""
+            except ValueError:
+                static.tooltip = icon_config.tooltip or ""
+        else:
+            static.tooltip = icon_config.tooltip or ""
 
         return static
 
@@ -503,7 +565,30 @@ class ToggleableFileLink(Widget, can_focus=True):
                     icon_static.update(kwargs["icon"])
 
                 if "tooltip" in kwargs:
-                    icon_static.tooltip = kwargs["tooltip"] or ""
+                    new_tooltip = kwargs["tooltip"]
+
+                    # Enhance with appropriate action name
+                    if icon_config.name == "settings":
+                        # Special case: settings uses 's' key
+                        icon_static.tooltip = self._enhance_tooltip(new_tooltip, "settings")
+                    elif icon_config.name == "play_stop":
+                        # Special case: play_stop uses 'p' and 'space' keys
+                        icon_static.tooltip = self._enhance_tooltip(new_tooltip, "play_stop")
+                    elif icon_config.clickable:
+                        # Find which number key activates this icon
+                        clickable_icons = [ic for ic in self._icons if ic.clickable and ic.visible]
+                        try:
+                            icon_index = clickable_icons.index(icon_config)
+                            icon_number = icon_index + 1
+                            if icon_number <= 9:
+                                action_name = f"icon_{icon_number}"
+                                icon_static.tooltip = self._enhance_tooltip(new_tooltip, action_name)
+                            else:
+                                icon_static.tooltip = new_tooltip or ""
+                        except ValueError:
+                            icon_static.tooltip = new_tooltip or ""
+                    else:
+                        icon_static.tooltip = new_tooltip or ""
 
                 if "visible" in kwargs:
                     icon_static.display = kwargs["visible"]
@@ -597,7 +682,7 @@ class ToggleableFileLink(Widget, can_focus=True):
         self._toggle_tooltip = tooltip
         try:
             toggle_static = self.query_one("#toggle", Static)
-            toggle_static.tooltip = tooltip or ""
+            toggle_static.tooltip = self._enhance_tooltip(tooltip, "toggle")
         except Exception:
             pass
 
@@ -612,7 +697,7 @@ class ToggleableFileLink(Widget, can_focus=True):
         self._remove_tooltip = tooltip
         try:
             remove_static = self.query_one("#remove", Static)
-            remove_static.tooltip = tooltip or ""
+            remove_static.tooltip = self._enhance_tooltip(tooltip, "remove")
         except Exception:
             pass
 

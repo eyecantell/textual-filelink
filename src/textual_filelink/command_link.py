@@ -241,12 +241,12 @@ class CommandLink(ToggleableFileLink):
 
         # Play/Stop button
         play_stop_icon = "⏹️" if running else "▶️"
-        play_stop_tooltip = "Stop command" if running else "Run command"
+        play_stop_tooltip_base = "Stop command" if running else "Run command"
         icons.append(
             {
                 "name": "play_stop",
                 "icon": play_stop_icon,
-                "tooltip": play_stop_tooltip,
+                "tooltip": play_stop_tooltip_base,  # Will be enhanced with keyboard shortcut
                 "position": "before",
                 "index": 1,
                 "clickable": True,
@@ -329,10 +329,10 @@ class CommandLink(ToggleableFileLink):
             self._command_running = running
             logger.debug(f"CommandLink '{self._name}' running state set to {running}")
 
-            # Update play/stop button
+            # Update play/stop button (tooltip will be enhanced with keyboard shortcut)
             play_stop_icon = "⏹️" if running else "▶️"
-            play_stop_tooltip = "Stop command" if running else "Run command"
-            self.update_icon("play_stop", icon=play_stop_icon, tooltip=play_stop_tooltip)
+            play_stop_tooltip_base = "Stop command" if running else "Run command"
+            self.update_icon("play_stop", icon=play_stop_icon, tooltip=play_stop_tooltip_base)
 
         # Update status icon/spinner
         if icon is not None:
@@ -419,9 +419,9 @@ class CommandLink(ToggleableFileLink):
             else:
                 file_link._command_builder = None  # Use default
 
-            # Update tooltip if provided
+            # Update tooltip if provided (enhance with keyboard shortcut)
             if tooltip is not None:
-                file_link.tooltip = tooltip
+                file_link.tooltip = self._enhance_tooltip(tooltip, "open_output")
         except Exception:
             # Widget not mounted yet, changes will apply when mounted
             pass

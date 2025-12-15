@@ -697,22 +697,28 @@ class TestValidation:
             ToggleableFileLink(temp_file, icons=["not a dict"])
 
     async def test_toggle_tooltip_applied(self, temp_file):
-        """Test toggle tooltip is properly applied."""
+        """Test toggle tooltip is properly applied and enhanced with keyboard shortcut."""
         link = ToggleableFileLink(temp_file, toggle_tooltip="Click to toggle")
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test():
             toggle = link.query_one("#toggle", expect_type=Static)
-            assert toggle.tooltip == "Click to toggle"
+            # Tooltip should be enhanced with keyboard shortcuts
+            assert "Click to toggle" in toggle.tooltip
+            assert "space" in toggle.tooltip.lower()
+            assert "t" in toggle.tooltip.lower()
 
     async def test_remove_tooltip_applied(self, temp_file):
-        """Test remove tooltip is properly applied."""
+        """Test remove tooltip is properly applied and enhanced with keyboard shortcut."""
         link = ToggleableFileLink(temp_file, remove_tooltip="Click to remove")
         app = ToggleableFileLinkTestApp(link)
 
         async with app.run_test():
             remove = link.query_one("#remove", expect_type=Static)
-            assert remove.tooltip == "Click to remove"
+            # Tooltip should be enhanced with keyboard shortcuts
+            assert "Click to remove" in remove.tooltip
+            assert "delete" in remove.tooltip.lower()
+            assert "x" in remove.tooltip.lower()
 
     async def test_icon_clickable_toggle(self, temp_file):
         """Test toggling icon clickable state."""
