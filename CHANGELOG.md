@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-12-16
+
+### Added
+- **Full keyboard accessibility** - All widgets are now fully navigable and operable without a mouse
+  - All three widget classes (`FileLink`, `ToggleableFileLink`, `CommandLink`) now support `can_focus=True` for Tab navigation
+  - Comprehensive keyboard shortcuts via `BINDINGS` class variable
+  - Focus indicators with CSS `:focus` pseudo-class styling (accent color background and border)
+  - `_embedded` parameter for `FileLink` to prevent focus stealing when nested in parent widgets
+- **Keyboard shortcuts for FileLink**:
+  - `o` - Open file in editor
+- **Keyboard shortcuts for ToggleableFileLink**:
+  - `o` - Open file
+  - `space` or `t` - Toggle checkbox
+  - `delete` or `x` - Remove widget
+  - `1-9` - Activate clickable icons (in order of appearance)
+- **Keyboard shortcuts for CommandLink**:
+  - `o` - Open output file
+  - `space` or `p` - Play/Stop command
+  - `s` - Settings dialog
+  - `t` - Toggle checkbox
+  - `delete` or `x` - Remove widget
+- **Automatic tooltip enhancement** - All tooltips now include keyboard shortcut hints for discoverability
+  - Format: `"<description> (<key>)"` or `"<description> (<key1>/<key2>)"` for multiple keys
+  - Dynamically adapts when `BINDINGS` are customized in subclasses
+  - Special handling for settings and play_stop icons
+- **Customizable keyboard shortcuts** - Override `BINDINGS` class variable in subclasses to customize keys
+- **Action methods** for programmatic keyboard action triggering:
+  - `FileLink.action_open_file()`
+  - `ToggleableFileLink.action_open_file()`, `action_toggle()`, `action_remove()`, `action_icon_1()` through `action_icon_9()`
+  - `CommandLink.action_open_output()`, `action_play_stop()`, `action_settings()`, `action_toggle()`, `action_remove()`
+- **Comprehensive test suite** for keyboard accessibility (tests/test_tooltip_enhancement.py with 405 lines)
+- **CLAUDE.md** - Project guidance document for AI assistants with detailed implementation notes
+
+### Changed
+- Test coverage minimum lowered to 90% (from previous threshold)
+- Improved overall test coverage to 94.13%
+- Updated README with comprehensive keyboard accessibility documentation
+- Enhanced tooltips now show keyboard shortcuts automatically
+
+### Fixed
+- CommandLink widget ID validation errors
+- Remove button functionality in demo_07
+- Scrolling issues in demo_07
+- Various edge cases in error handling (non-existent files, permission errors, symlinks, subprocess failures)
+
+[0.3.0]: https://github.com/eyecantell/textual-filelink/compare/v0.2.0...v0.3.0
+
 ## [0.2.0] - 2025-11-28
 
 ### Added
@@ -101,5 +148,6 @@ def on_toggleable_file_link_icon_clicked(self, event):
 - Comprehensive test suite
 - Full documentation and examples
 
+[0.3.0]: https://github.com/eyecantell/textual-filelink/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/eyecantell/textual-filelink/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/eyecantell/textual-filelink/releases/tag/v0.1.0
