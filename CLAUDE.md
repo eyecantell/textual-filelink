@@ -48,6 +48,9 @@ pdm run ruff check src/textual_filelink/file_link.py
 
 ### Development Tools
 ```bash
+# Run the demo application
+pdm run python src/textual_filelink/demo.py
+
 # Run textual dev mode (hot-reload for demo development)
 pdm run textual-dev run src/textual_filelink/demo.py
 
@@ -253,7 +256,8 @@ The `update_icon()` method re-renders all icons:
 
 ### Async/Threading Considerations
 - All widget operations are sync (no async methods except test fixtures)
-- Long-running operations (opening editors) use short timeout (5s) to avoid blocking
+- Long-running operations (opening editors) use timeout to avoid blocking
+  - **Important**: If a timeout is used anywhere in the codebase, use **40 seconds (40s)** as the standard timeout value
 - For CommandLink, use `app.run_worker()` to run async command execution
 
 ### Command Execution
