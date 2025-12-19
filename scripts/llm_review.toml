@@ -1,0 +1,7 @@
+app_module = "demo_commandlink"
+app_class = "CommandOrchestratorApp"
+module_path = "./scripts"
+
+[[step]]
+type = "capture"
+output = "demo_initial"

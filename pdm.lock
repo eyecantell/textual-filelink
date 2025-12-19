@@ -5,7 +5,7 @@
 groups = ["default", "dev", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:7404ac0c2e9103c2ff99314ecb18ea235facd63b2a9885d36d809f4bc0e4371c"
+content_hash = "sha256:64b158c63d7a3592b615732b334db63899859b29e3531b1a694815e978b652cc"
 
 [[metadata.targets]]
 requires_python = ">=3.9"
@@ -1251,6 +1251,21 @@ files = [
 ]
 
 [[package]]
+name = "textual-capture"
+version = "0.2.0"
+requires_python = ">=3.9"
+summary = "Sequenced screen capture for Textual TUI applications. Enables AI assistants to review and test TUIs."
+groups = ["dev"]
+dependencies = [
+    "textual>=6.11.0",
+    "tomli>=2.0.0; python_version < \"3.11\"",
+]
+files = [
+    {file = "textual_capture-0.2.0-py3-none-any.whl", hash = "sha256:cfb18f2c12a6f2720c96238154df5681b2d05dfb890c689f85cb975c8b27a60b"},
+    {file = "textual_capture-0.2.0.tar.gz", hash = "sha256:ac8e594ee0db36fe7cc2d3f34c719348cac9c55546ba38c466329372b1e33c7d"},
+]
+
+[[package]]
 name = "textual-dev"
 version = "1.8.0"
 requires_python = "<4.0,>=3.9"
@@ -1292,7 +1307,7 @@ name = "tomli"
 version = "2.3.0"
 requires_python = ">=3.8"
 summary = "A lil' TOML parser"
-groups = ["test"]
+groups = ["dev", "test"]
 marker = "python_version < \"3.11\""
 files = [
     {file = "tomli-2.3.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:88bd15eb972f3664f5ed4b57c1634a97153b4bac4479dcb6a495f41921eb7f45"},

@@ -135,4 +135,5 @@ ignore_missing_imports = true
 [dependency-groups]
 dev = [
     "textual-dev>=1.8.0",
+    "textual-capture>=0.2.0",
 ]
