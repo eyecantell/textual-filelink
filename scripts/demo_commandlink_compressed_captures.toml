@@ -1,0 +1,44 @@
+app_module = "demo_commandlink_compressed"
+app_class = "CompressedCommandApp"
+module_path = "./scripts"
+
+# Initial state - all commands idle
+[[step]]
+type = "capture"
+
+# Start the first command (Test) by pressing "1"
+[[step]]
+type = "press"
+key = "1"
+
+# Brief delay to see spinner start
+[[step]]
+type = "delay"
+seconds = 0.3
+
+# Capture running state with spinner
+[[step]]
+type = "capture"
+
+# Start the second command (Build) by pressing "2"
+[[step]]
+type = "press"
+key = "2"
+
+# Brief delay
+[[step]]
+type = "delay"
+seconds = 0.3
+
+# Capture with two commands running
+[[step]]
+type = "capture"
+
+# Wait for commands to complete
+[[step]]
+type = "delay"
+seconds = 2.5
+
+# Capture final state with results
+[[step]]
+type = "capture"

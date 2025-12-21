@@ -48,15 +48,73 @@ pdm run ruff check src/textual_filelink/file_link.py
 
 ### Development Tools
 ```bash
-# Run the demo application
-pdm run python src/textual_filelink/demo.py
+# Run demo applications (various examples in scripts/)
+pdm run python scripts/demo_01_basic_filelink.py
+pdm run python scripts/demo_06_commandlink_simple.py
+pdm run python scripts/demo_07_async_orchestration.py
 
 # Run textual dev mode (hot-reload for demo development)
-pdm run textual-dev run src/textual_filelink/demo.py
+pdm run textual-dev run scripts/demo_01_basic_filelink.py
 
 # Build distribution package
 pdm build
 ```
+
+### Screen Captures with textual-capture
+The `textual-capture` tool enables automated TUI screenshot sequences - perfect for LLM-driven review, documentation, and testing.
+
+```bash
+# Run a capture sequence defined in a TOML config
+pdm run textual-capture scripts/demo_commandlink_captures.toml --verbose
+
+# Verbosity options
+pdm run textual-capture config.toml           # Default: quiet mode
+pdm run textual-capture config.toml --verbose # Show all actions
+pdm run textual-capture config.toml --quiet   # Errors only
+```
+
+**TOML Configuration Format**:
+```toml
+# Required fields
+app_module = "demo_commandlink"           # Python module name (without .py)
+app_class = "CommandOrchestratorApp"      # App class to instantiate
+
+# Optional configuration
+screen_width = 100                        # Terminal width (default: 80)
+screen_height = 40                        # Terminal height (default: 40)
+initial_delay = 1.0                       # Wait before first action (default: 1.0)
+scroll_to_top = true                      # Press "home" at start (default: true)
+module_path = "./scripts"                 # Path to add to sys.path for imports
+
+# Action steps - executed in order
+[[step]]
+type = "capture"                          # Take a screenshot
+output = "initial_state"                  # Optional: custom name (saves initial_state.svg + .txt)
+                                          # If omitted: auto-generates capture_001, capture_002, etc.
+
+[[step]]
+type = "delay"
+seconds = 1.0                             # Wait for animations/async operations
+
+[[step]]
+type = "press"
+key = "tab,tab,enter"                     # Comma-separated keys for sequences
+
+[[step]]
+type = "click"
+label = "Run Selected"                    # Click button by label text
+
+[[step]]
+type = "capture"                          # Auto-named: capture_001.svg, capture_001.txt
+```
+
+**Available Step Types**:
+- `capture`: Take screenshot (`.svg` + `.txt`). Use `output` for custom name or omit for auto-sequence
+- `delay`: Wait specified seconds (e.g., `seconds = 1.5`)
+- `press`: Simulate key presses. Comma-separated for sequences (e.g., `key = "tab,down,enter"`)
+- `click`: Click a button by its label text (e.g., `label = "Submit"`)
+
+**LLM Review Workflow**: Generate TOML configs to capture specific UI states, then analyze the `.txt` output to verify layout, button placement, and visual hierarchy without manual intervention
 
 ## Architecture Overview
 
@@ -117,6 +175,7 @@ Icons are dynamically rendered based on configuration state:
 - **tests/test_file_link.py**: FileLink unit tests
 - **tests/test_toggleable_file_link.py**: ToggleableFileLink unit tests
 - **tests/test_command_link.py**: CommandLink unit tests
+- **tests/test_tooltip_enhancement.py**: Tooltip keyboard shortcut enhancement tests
 - **tests/test_integration.py**: Integration tests with mock Textual apps
 
 **Key Testing Pattern**: Tests use `pilot` fixture to simulate user interactions (clicks) and verify message emission.
@@ -277,5 +336,5 @@ The `update_icon()` method re-renders all icons:
 1. **Icon System**: The dynamic icon rendering is complex. Always re-render when icons change via `_render_icons()`.
 2. **Message Handlers**: When adding new message types, remember to initialize their attributes in `__init__()`.
 3. **CSS**: Default CSS is defined in class-level `DEFAULT_CSS` strings. Custom CSS can be set on the app.
-4. **Dependencies**: Keep textual version requirement at `>=6.6.0` to ensure compatibility.
+4. **Dependencies**: Keep textual version requirement at `>=6.11.0` to ensure compatibility.
 5. **Python Version**: Support Python 3.9+ (check in pyproject.toml classifiers).

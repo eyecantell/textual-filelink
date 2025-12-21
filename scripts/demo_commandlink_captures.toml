@@ -4,4 +4,14 @@ module_path = "./scripts"
 
 [[step]]
 type = "capture"
-output = "demo_initial"
+
+[[step]]
+type = "delay"
+seconds = 1.0
+
+[[step]]
+type = "press"
+key = "1"
+
+[[step]]
+type = "capture"

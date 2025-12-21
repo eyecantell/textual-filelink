@@ -175,6 +175,7 @@ class CommandLink(ToggleableFileLink):
         toggle_tooltip: str | None = None,
         settings_tooltip: str | None = None,
         remove_tooltip: str | None = None,
+        link_tooltip: str | None = None,
         command_builder: Callable | None = None,
         disable_on_untoggle: bool = False,
     ) -> None:
@@ -206,6 +207,8 @@ class CommandLink(ToggleableFileLink):
             Tooltip for settings icon.
         remove_tooltip : str | None
             Tooltip for remove button.
+        link_tooltip : str | None
+            Tooltip for the command name itself.
         command_builder : Callable | None
             Custom command builder for opening output files.
         disable_on_untoggle : bool
@@ -286,6 +289,7 @@ class CommandLink(ToggleableFileLink):
             icons=icons,
             toggle_tooltip=toggle_tooltip,
             remove_tooltip=remove_tooltip,
+            link_tooltip=link_tooltip,
             command_builder=command_builder,
             disable_on_untoggle=disable_on_untoggle,
             id=sanitized_id,  # Use sanitized name as ID for easy lookup

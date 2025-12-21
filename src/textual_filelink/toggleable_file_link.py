@@ -207,6 +207,7 @@ class ToggleableFileLink(Widget, can_focus=True):
         disable_on_untoggle: bool = False,
         toggle_tooltip: str | None = None,
         remove_tooltip: str | None = None,
+        link_tooltip: str | None = None,
         # Deprecated parameters for backwards compatibility
         status_icon: str | None = None,
         status_icon_clickable: bool = False,
@@ -245,6 +246,8 @@ class ToggleableFileLink(Widget, can_focus=True):
             Tooltip text for the toggle button.
         remove_tooltip : str | None
             Tooltip text for the remove button.
+        link_tooltip : str | None
+            Tooltip text for the filename/link itself.
         status_icon : str | None
             [DEPRECATED] Use icons parameter instead. Unicode icon to display before filename.
         status_icon_clickable : bool
@@ -263,6 +266,7 @@ class ToggleableFileLink(Widget, can_focus=True):
         self._disable_on_untoggle = disable_on_untoggle
         self._toggle_tooltip = toggle_tooltip
         self._remove_tooltip = remove_tooltip
+        self._link_tooltip = link_tooltip
         logger.debug(
             f"ToggleableFileLink initialized with path: {self._path}, initial_toggle: {initial_toggle}, show_toggle: {show_toggle}, show_remove: {show_remove}"
         )
@@ -410,6 +414,8 @@ class ToggleableFileLink(Widget, can_focus=True):
                     yield self._create_icon_static(icon_config)
 
             # FileLink (with _embedded=True to prevent focus stealing)
+            # Enhance tooltip with keyboard shortcut for open action
+            enhanced_tooltip = self._enhance_tooltip(self._link_tooltip, "open_file")
             yield FileLink(
                 self._path,
                 line=self._line,
@@ -417,6 +423,7 @@ class ToggleableFileLink(Widget, can_focus=True):
                 command_builder=self._command_builder,
                 classes="file-link-container",
                 _embedded=True,
+                tooltip=enhanced_tooltip if enhanced_tooltip else None,
             )
 
             # Icons after filename
@@ -698,6 +705,21 @@ class ToggleableFileLink(Widget, can_focus=True):
         try:
             remove_static = self.query_one("#remove", Static)
             remove_static.tooltip = self._enhance_tooltip(tooltip, "remove")
+        except Exception:
+            pass
+
+    def set_link_tooltip(self, tooltip: str | None) -> None:
+        """Update the filename/link tooltip.
+
+        Parameters
+        ----------
+        tooltip : str | None
+            New tooltip text, or None to remove tooltip.
+        """
+        self._link_tooltip = tooltip
+        try:
+            file_link = self.query_one(FileLink)
+            file_link.tooltip = self._enhance_tooltip(tooltip, "open_file")
         except Exception:
             pass
 
