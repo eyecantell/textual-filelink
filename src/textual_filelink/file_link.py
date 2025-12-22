@@ -118,6 +118,14 @@ class FileLink(Static, can_focus=True):
         # Store custom open keys if provided
         self._custom_open_keys = open_keys
 
+        # If custom keys provided, override BINDINGS for this instance
+        if open_keys is not None:
+            # Create instance-specific bindings by replacing class-level BINDINGS
+            self.BINDINGS = [
+                Binding(key, "open_file", "Open file", show=False)
+                for key in open_keys
+            ]
+
         # Initialize Static with the display name as content
         super().__init__(
             self._display_name,
@@ -138,13 +146,6 @@ class FileLink(Static, can_focus=True):
     # ------------------------------------------------------------------ #
     # Keyboard handling
     # ------------------------------------------------------------------ #
-    def on_mount(self) -> None:
-        """Set up instance-specific bindings after mount."""
-        # If custom keys were provided, set up dynamic bindings
-        if self._custom_open_keys is not None:
-            for key in self._custom_open_keys:
-                self.bind(key, "open_file", description="Open file", show=False)
-
     def action_open_file(self) -> None:
         """Open file via keyboard (reuses existing click logic)."""
         self._do_open_file()
