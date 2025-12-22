@@ -48,13 +48,13 @@ class FileLink(Static, can_focus=True):
     # Class-level default command builder
     default_command_builder: Callable | None = None
 
-    class Clicked(Message):
-        """Posted when the link is activated.
+    class Opened(Message):
+        """Posted after the file is opened.
 
         Attributes
         ----------
         path : Path
-            The file path that was clicked.
+            The file path that was opened.
         line : int | None
             The line number to navigate to, or None.
         column : int | None
@@ -67,13 +67,21 @@ class FileLink(Static, can_focus=True):
             self.line = line
             self.column = column
 
+    # Backwards compatibility (will be removed in future versions)
+    Clicked = Opened
+
+    # Class-level default open keys
+    DEFAULT_OPEN_KEYS = ["enter", "o"]
+
     def __init__(
         self,
         path: Path | str,
+        display_name: str | None = None,
         *,
         line: int | None = None,
         column: int | None = None,
         command_builder: Callable | None = None,
+        open_keys: list[str] | None = None,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
@@ -85,25 +93,34 @@ class FileLink(Static, can_focus=True):
         ----------
         path : Path | str
             Full path to the file.
+        display_name : str | None
+            Text to display for the link. If None, defaults to the filename (path.name).
         line, column : int | None
             Optional cursor position to jump to.
         command_builder : Callable | None
             Function that takes (path, line, column) and returns a list of command arguments.
             If None, uses the class-level default_command_builder.
             If that's also None, uses VSCode's 'code --goto' command.
+        open_keys : list[str] | None
+            Custom keyboard shortcuts for opening the file. If None, uses DEFAULT_OPEN_KEYS.
+            Example: ["f2"] or ["ctrl+o", "enter"]
         _embedded : bool
             Internal use only. If True, disables focus to prevent stealing focus from parent widget.
         tooltip : str | None
             Optional tooltip text. If provided, will be enhanced with keyboard shortcuts.
         """
         self._path = Path(path).resolve()
+        self._display_name = display_name or self._path.name
         self._line = line
         self._column = column
         self._command_builder = command_builder
 
-        # Initialize Static with the filename as content
+        # Store custom open keys if provided
+        self._custom_open_keys = open_keys
+
+        # Initialize Static with the display name as content
         super().__init__(
-            self._path.name,
+            self._display_name,
             name=name,
             id=id,
             classes=classes,
@@ -121,9 +138,17 @@ class FileLink(Static, can_focus=True):
     # ------------------------------------------------------------------ #
     # Keyboard handling
     # ------------------------------------------------------------------ #
+    def on_mount(self) -> None:
+        """Set up instance-specific bindings after mount."""
+        # If custom keys were provided, set up dynamic bindings
+        if self._custom_open_keys is not None:
+            for key in self._custom_open_keys:
+                self.bind(key, "open_file", description="Open file", show=False)
+
     def action_open_file(self) -> None:
         """Open file via keyboard (reuses existing click logic)."""
         self._do_open_file()
+        self.post_message(self.Opened(self._path, self._line, self._column))
 
     def _get_keys_for_action(self, action_name: str) -> list[str]:
         """Get all keys bound to an action.
@@ -134,6 +159,11 @@ class FileLink(Static, can_focus=True):
         Returns:
             List of key names bound to the action (e.g., ['o'], ['space', 't'])
         """
+        # For open_file action, return custom keys if set
+        if action_name == "open_file" and hasattr(self, '_custom_open_keys') and self._custom_open_keys is not None:
+            return self._custom_open_keys
+
+        # Otherwise, use class-level BINDINGS
         keys = []
         for binding in self.BINDINGS:
             if binding.action == action_name:
@@ -182,8 +212,8 @@ class FileLink(Static, can_focus=True):
     def on_click(self, event: events.Click) -> None:
         """Handle click event."""
         event.stop()
-        self.post_message(self.Clicked(self._path, self._line, self._column))
         self._do_open_file()
+        self.post_message(self.Opened(self._path, self._line, self._column))
 
     def _do_open_file(self) -> None:
         """Open the file (shared logic for click and keyboard activation)."""
@@ -295,6 +325,11 @@ class FileLink(Static, can_focus=True):
     def path(self) -> Path:
         """Get the file path."""
         return self._path
+
+    @property
+    def display_name(self) -> str:
+        """Get the display name."""
+        return self._display_name
 
     @property
     def line(self) -> int | None:
