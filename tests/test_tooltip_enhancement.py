@@ -227,14 +227,12 @@ async def test_toggleable_no_tooltip_generates_default_with_keys(temp_file):
 
 async def test_commandlink_play_tooltip_includes_shortcuts(temp_file):
     """Test play button tooltip includes 'p' and 'space' keys."""
-    link = CommandLink("Build", temp_file)
+    link = CommandLink("Build", output_path=temp_file)
     app = CommandLinkTestApp(link)
 
     async with app.run_test():
-        # Find play_stop icon Static widget - this has the enhanced tooltip
-        play_icon_static = link.query_one("#icon-play_stop", Static)
-        assert play_icon_static is not None
-        tooltip = play_icon_static.tooltip
+        # Check play/stop button widget tooltip
+        tooltip = link._play_stop_widget.tooltip
         assert tooltip is not None
         assert "p" in tooltip.lower()
         assert "space" in tooltip.lower()
@@ -242,26 +240,26 @@ async def test_commandlink_play_tooltip_includes_shortcuts(temp_file):
 
 async def test_commandlink_settings_tooltip_includes_shortcut(temp_file):
     """Test settings tooltip includes 's' key."""
-    link = CommandLink("Build", temp_file)
+    link = CommandLink("Build", output_path=temp_file, show_settings=True)
     app = CommandLinkTestApp(link)
 
     async with app.run_test():
-        # Find settings icon Static widget - this has the enhanced tooltip
-        settings_icon_static = link.query_one("#icon-settings", Static)
-        assert settings_icon_static is not None
-        tooltip = settings_icon_static.tooltip
+        # Check settings widget tooltip
+        tooltip = link._settings_widget.tooltip
         assert tooltip is not None
         assert "(s)" in tooltip.lower()
 
 
 async def test_commandlink_stop_tooltip_includes_shortcuts(temp_file):
     """Test stop button tooltip includes shortcut keys."""
-    link = CommandLink("Build", temp_file, running=True)
+    link = CommandLink("Build", output_path=temp_file)
     app = CommandLinkTestApp(link)
 
     async with app.run_test():
-        play_icon_static = link.query_one("#icon-play_stop", Static)
-        tooltip = play_icon_static.tooltip
+        # Set to running state
+        link.set_status(running=True)
+
+        tooltip = link._play_stop_widget.tooltip
         assert tooltip is not None
         assert "Stop" in tooltip
         assert "p" in tooltip.lower()
@@ -270,15 +268,14 @@ async def test_commandlink_stop_tooltip_includes_shortcuts(temp_file):
 
 async def test_commandlink_dynamic_tooltip_update_enhances(temp_file):
     """Test CommandLink dynamic status updates enhance tooltips."""
-    link = CommandLink("Build", temp_file, running=False)
+    link = CommandLink("Build", output_path=temp_file)
     app = CommandLinkTestApp(link)
 
     async with app.run_test():
         # Start running
         link.set_status(running=True)
 
-        play_icon_static = link.query_one("#icon-play_stop", Static)
-        tooltip = play_icon_static.tooltip
+        tooltip = link._play_stop_widget.tooltip
         assert tooltip is not None
         assert "Stop" in tooltip
         # Should have the p key in there (might be space/p or p/space depending on binding order)
@@ -364,12 +361,11 @@ async def test_icon_beyond_9th_position_no_key(temp_file):
 
 async def test_settings_icon_special_case(temp_file):
     """Test settings icon uses 's' key not a number."""
-    link = CommandLink("Build", temp_file)
+    link = CommandLink("Build", output_path=temp_file, show_settings=True)
     app = CommandLinkTestApp(link)
 
     async with app.run_test():
-        settings_icon_static = link.query_one("#icon-settings", Static)
-        tooltip = settings_icon_static.tooltip
+        tooltip = link._settings_widget.tooltip
 
         # Should use 's' key, not a number like (1)
         assert "(s)" in tooltip.lower()
@@ -380,15 +376,18 @@ async def test_tooltip_format_consistency(temp_file):
     """Test tooltip format is consistent across all widgets."""
     link1 = FileLink(temp_file)
     link2 = ToggleableFileLink(temp_file)
-    link3 = CommandLink("Build", temp_file)
+    link3 = CommandLink("Build", output_path=temp_file)
 
     app = FileLinkTestApp(link1)
     async with app.run_test():
-        # All should have parentheses format
+        # FileLink should have tooltip with parentheses format
         assert "(" in link1.tooltip and ")" in link1.tooltip
 
+        # Other widgets should exist
         assert link2 is not None
         assert link3 is not None
+        # CommandLink tooltips are on child widgets
+        assert "(" in link3._play_stop_widget.tooltip and ")" in link3._play_stop_widget.tooltip
 
 
 async def test_empty_keys_returns_base_tooltip(temp_file):

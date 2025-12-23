@@ -135,7 +135,7 @@ class CommandOrchestratorApp(App):
         # - event.output_path: Output file path
         # - event.is_toggled: Whether command is selected for batch run
 
-        sanitized_id = CommandLink.sanitize_id(event.name)
+        sanitized_id = sanitize_id(event.name)
         link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         # Track start time for elapsed time display
@@ -164,7 +164,7 @@ class CommandOrchestratorApp(App):
         """
         self.notify(f"⚠ Stopping {event.name}...", severity="warning")
         # Event context available: event.name, event.path, event.output_path, event.is_toggled
-        sanitized_id = CommandLink.sanitize_id(event.name)
+        sanitized_id = sanitize_id(event.name)
         link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         # Stop the elapsed time timer
@@ -201,7 +201,7 @@ class CommandOrchestratorApp(App):
 
         elapsed = int(time.time() - self.command_start_times[name])
         try:
-            sanitized_id = CommandLink.sanitize_id(name)
+            sanitized_id = sanitize_id(name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
             link.set_status(tooltip=f"Running {name}... ({elapsed}s)")
         except Exception:
@@ -303,7 +303,7 @@ class CommandOrchestratorApp(App):
 
         # Query for the CommandLink by its ID (which is set to the command name)
         try:
-            sanitized_id = CommandLink.sanitize_id(command_name)
+            sanitized_id = sanitize_id(command_name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
         except Exception:
             # Widget not found
@@ -357,7 +357,7 @@ class CommandOrchestratorApp(App):
                 self.command_elapsed_timers[name].stop()
                 del self.command_elapsed_timers[name]
 
-            sanitized_id = CommandLink.sanitize_id(name)
+            sanitized_id = sanitize_id(name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
 
             # Simulate success/failure
@@ -421,7 +421,7 @@ class CommandOrchestratorApp(App):
         self.notify(f"▶ Running {len(selected)} selected command(s)...")
 
         for name in selected:
-            sanitized_id = CommandLink.sanitize_id(name)
+            sanitized_id = sanitize_id(name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
             link.set_status(running=True, tooltip=f"Running {name}...")
             self.running_commands.add(name)
@@ -449,7 +449,7 @@ class CommandOrchestratorApp(App):
                 del self.command_tasks[name]
 
             try:
-                sanitized_id = CommandLink.sanitize_id(name)
+                sanitized_id = sanitize_id(name)
                 link = self.query_one(f"#{sanitized_id}", CommandLink)
                 link.set_status(icon="⚠", running=False, tooltip="Stopped by user")
             except Exception:

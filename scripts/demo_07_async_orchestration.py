@@ -217,7 +217,7 @@ class AsyncCommandApp(App):
         duration = durations.get(event.name, 3.0)
 
         # Get the CommandLink widget
-        sanitized_id = CommandLink.sanitize_id(event.name)
+        sanitized_id = sanitize_id(event.name)
         link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         # Store start time for elapsed time calculation
@@ -259,7 +259,7 @@ class AsyncCommandApp(App):
             del self.tasks[event.name]
 
         # Get the CommandLink widget and update UI
-        sanitized_id = CommandLink.sanitize_id(event.name)
+        sanitized_id = sanitize_id(event.name)
         link = self.query_one(f"#{sanitized_id}", CommandLink)
         link.set_status(icon="⏸️", running=False, tooltip="Stopped by user")
 
@@ -300,7 +300,7 @@ class AsyncCommandApp(App):
 
         # Get the CommandLink widget using sanitized ID
         try:
-            sanitized_id = CommandLink.sanitize_id(command_name)
+            sanitized_id = sanitize_id(command_name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
         except Exception:
             # Widget not found, already removed
@@ -365,7 +365,7 @@ class AsyncCommandApp(App):
                 del self.timers[name]
 
             # Get CommandLink widget
-            sanitized_id = CommandLink.sanitize_id(name)
+            sanitized_id = sanitize_id(name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
 
             # For this demo, all commands succeed (70% success in real app)
@@ -412,7 +412,7 @@ class AsyncCommandApp(App):
 
         elapsed = int(time.time() - self.start_times[name])
         try:
-            sanitized_id = CommandLink.sanitize_id(name)
+            sanitized_id = sanitize_id(name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
             link.set_status(tooltip=f"Running {name}... ({elapsed}s)")
         except Exception:
@@ -484,7 +484,7 @@ Simulated command output for demonstration purposes.
 
         # Run each selected command
         for name in selected:
-            link = self.query_one(f"#{CommandLink.sanitize_id(name)}", CommandLink)
+            link = self.query_one(f"#{sanitize_id(name)}", CommandLink)
             link.set_status(running=True, tooltip=f"Running {name}...")
             # Trigger play clicked event for each
             link.post_message(

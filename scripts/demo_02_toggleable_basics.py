@@ -1,11 +1,11 @@
-"""Demo 2: ToggleableFileLink - Add Selection Controls
+"""Demo 2: FileLinkList - Add Selection Controls
 
-This demo introduces ToggleableFileLink, which builds on FileLink by adding:
+This demo introduces FileLinkList, which provides uniform controls for file links:
 - Toggle (checkbox) controls for selecting/deselecting files
 - Remove (delete) buttons for removing files from the list
 - Show/hide controls to customize the UI
 - Event handling for toggle and remove actions
-- The disable_on_untoggle feature for graying out unselected items
+- Batch operations on selected items
 
 This is useful for building file selection interfaces where users need to:
 - Choose which files to work with
@@ -13,7 +13,7 @@ This is useful for building file selection interfaces where users need to:
 - Provide feedback about selection state
 
 We compare four different configurations side-by-side so you can see how
-the show_toggle and show_remove parameters affect the UI.
+the show_toggles and show_remove parameters affect the UI.
 """
 
 from pathlib import Path
@@ -22,13 +22,13 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Footer, Header, Static
 
-from textual_filelink import ToggleableFileLink
+from textual_filelink import FileLink, FileLinkList
 
 
-class ToggleableBasicsApp(App):
-    """Demonstrate different ToggleableFileLink configurations."""
+class FileLinkListBasicsApp(App):
+    """Demonstrate different FileLinkList configurations."""
 
-    TITLE = "Demo 2: ToggleableFileLink - Selection Controls"
+    TITLE = "Demo 2: FileLinkList - Selection Controls"
     BINDINGS = [("q", "quit", "Quit")]
 
     CSS = """
@@ -72,8 +72,10 @@ class ToggleableBasicsApp(App):
         height: auto;
     }
 
-    ToggleableFileLink {
+    FileLinkList {
         margin: 0 0 1 0;
+        height: auto;
+        border: none;
     }
     """
 
@@ -82,125 +84,88 @@ class ToggleableBasicsApp(App):
         yield Header()
 
         # Title
-        yield Static("☑️ ToggleableFileLink - Compare Configurations", id="title")
+        yield Static("☑️ FileLinkList - Compare Configurations", id="title")
 
         # Four columns showing different configurations
         with Horizontal(id="columns"):
             # Column 1: Toggle only
             with Vertical(classes="column"):
                 yield Static("Toggle Only", classes="column-title")
-                yield Static("show_toggle=True, show_remove=False", classes="column-desc")
-                yield ToggleableFileLink(
-                    Path("sample_files/example.py"),
-                    show_toggle=True,
-                    show_remove=False,
-                    toggle_tooltip="Select this file",
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/config.json"),
-                    show_toggle=True,
-                    show_remove=False,
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/data.csv"),
-                    show_toggle=True,
-                    show_remove=False,
-                )
+                yield Static("show_toggles=True, show_remove=False", classes="column-desc")
+
+                list1 = FileLinkList(show_toggles=True, show_remove=False, id="list1")
+                list1.add_item(FileLink(Path("sample_files/example.py"), id="list1-item1"))
+                list1.add_item(FileLink(Path("sample_files/config.json"), id="list1-item2"))
+                list1.add_item(FileLink(Path("sample_files/data.csv"), id="list1-item3"))
+                yield list1
 
             # Column 2: Remove only
             with Vertical(classes="column"):
                 yield Static("Remove Only", classes="column-title")
-                yield Static("show_toggle=False, show_remove=True", classes="column-desc")
-                yield ToggleableFileLink(
-                    Path("sample_files/notes.txt"),
-                    show_toggle=False,
-                    show_remove=True,
-                    remove_tooltip="Remove this file",
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/Makefile"),
-                    show_toggle=False,
-                    show_remove=True,
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/LICENSE"),
-                    show_toggle=False,
-                    show_remove=True,
-                )
+                yield Static("show_toggles=False, show_remove=True", classes="column-desc")
+
+                list2 = FileLinkList(show_toggles=False, show_remove=True, id="list2")
+                list2.add_item(FileLink(Path("sample_files/notes.txt"), id="list2-item1"))
+                list2.add_item(FileLink(Path("sample_files/Makefile"), id="list2-item2"))
+                list2.add_item(FileLink(Path("sample_files/LICENSE"), id="list2-item3"))
+                yield list2
 
             # Column 3: Both controls
             with Vertical(classes="column"):
                 yield Static("Both Controls", classes="column-title")
-                yield Static("show_toggle=True, show_remove=True", classes="column-desc")
-                yield ToggleableFileLink(
-                    Path("sample_files/example.py"),
-                    initial_toggle=True,
-                    show_toggle=True,
-                    show_remove=True,
-                    toggle_tooltip="Select",
-                    remove_tooltip="Delete",
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/config.json"),
-                    show_toggle=True,
-                    show_remove=True,
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/data.csv"),
-                    show_toggle=True,
-                    show_remove=True,
-                )
+                yield Static("show_toggles=True, show_remove=True", classes="column-desc")
 
-            # Column 4: Disable on untoggle
+                list3 = FileLinkList(show_toggles=True, show_remove=True, id="list3")
+                list3.add_item(FileLink(Path("sample_files/example.py"), id="list3-item1"), toggled=True)
+                list3.add_item(FileLink(Path("sample_files/config.json"), id="list3-item2"))
+                list3.add_item(FileLink(Path("sample_files/data.csv"), id="list3-item3"))
+                yield list3
+
+            # Column 4: Batch operations
             with Vertical(classes="column"):
-                yield Static("Disable When Unselected", classes="column-title")
-                yield Static("disable_on_untoggle=True", classes="column-desc")
-                yield ToggleableFileLink(
-                    Path("sample_files/notes.txt"),
-                    initial_toggle=True,
-                    show_toggle=True,
-                    show_remove=False,
-                    disable_on_untoggle=True,
-                    toggle_tooltip="Unchecking grays this out",
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/Makefile"),
-                    initial_toggle=True,
-                    show_toggle=True,
-                    show_remove=False,
-                    disable_on_untoggle=True,
-                )
-                yield ToggleableFileLink(
-                    Path("sample_files/LICENSE"),
-                    show_toggle=True,
-                    show_remove=False,
-                    disable_on_untoggle=True,
-                )
+                yield Static("Batch Operations", classes="column-title")
+                yield Static("Press 'a' to select all, 'd' to remove selected", classes="column-desc")
+
+                list4 = FileLinkList(show_toggles=True, show_remove=True, id="list4")
+                list4.add_item(FileLink(Path("sample_files/notes.txt"), id="list4-item1"), toggled=True)
+                list4.add_item(FileLink(Path("sample_files/Makefile"), id="list4-item2"), toggled=True)
+                list4.add_item(FileLink(Path("sample_files/LICENSE"), id="list4-item3"))
+                yield list4
 
         yield Footer()
 
-    def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled) -> None:
+    def on_file_link_list_item_toggled(self, event: FileLinkList.ItemToggled) -> None:
         """Handle when a file's toggle state changes."""
         state = "✓ selected" if event.is_toggled else "○ deselected"
         self.notify(
-            f"{event.path.name} {state}",
+            f"{event.item.path.name} {state}",
             title="Toggle",
             timeout=1.5,
         )
 
-    def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed) -> None:
-        """Handle when the remove button is clicked.
-
-        Note: This demo doesn't actually remove widgets, just shows a notification.
-        In a real app, you'd remove the widget or update your data model here.
-        """
+    def on_file_link_list_item_removed(self, event: FileLinkList.ItemRemoved) -> None:
+        """Handle when an item is removed."""
         self.notify(
-            f"🗑️ Marked for removal: {event.path.name}",
+            f"🗑️ Removed: {event.item.path.name}",
             severity="warning",
             timeout=2,
         )
 
+    def key_a(self) -> None:
+        """Select all items in list 4."""
+        list4 = self.query_one("#list4", FileLinkList)
+        list4.toggle_all(True)
+        self.notify("✓ Selected all files in list 4", timeout=1.5)
+
+    def key_d(self) -> None:
+        """Remove selected items from list 4."""
+        list4 = self.query_one("#list4", FileLinkList)
+        count = len(list4.get_toggled_items())
+        list4.remove_selected()
+        if count > 0:
+            self.notify(f"🗑️ Removed {count} file(s) from list 4", severity="warning", timeout=2)
+
 
 if __name__ == "__main__":
-    app = ToggleableBasicsApp()
+    app = FileLinkListBasicsApp()
     app.run()

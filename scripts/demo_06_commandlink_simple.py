@@ -10,7 +10,7 @@ This is the simplest CommandLink example. It demonstrates:
 This demo is intentionally simple to introduce CommandLink without overwhelming
 complexity. Key simplifications:
 - Synchronous operation (no async/await)
-- No batch operations (no toggle controls)
+- No batch operations (use FileLinkList for that)
 - No output file generation (just simulate)
 - No elapsed time tracking
 - Just play/stop, status updates, notifications
@@ -19,7 +19,7 @@ CommandLink is a specialized widget for managing commands. When clicked, it emit
 events that your app handles to run commands and update status. This demo shows
 the fundamental patterns before more complex examples.
 
-See demo_05_state_management.py for state patterns, and demo_07_commandlink_advanced.py
+See demo_05_state_management.py for state patterns, and demo_07_async_orchestration.py
 for async execution and batch operations.
 """
 
@@ -30,7 +30,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Footer, Header, Static
 
-from textual_filelink import CommandLink
+from textual_filelink import CommandLink, sanitize_id
 
 
 class CommandLinkSimpleApp(App):
@@ -119,12 +119,8 @@ class CommandLinkSimpleApp(App):
             yield Static("Basic Command", classes="section-title")
             yield CommandLink(
                 "Format Code",
-                output_path=None,
                 initial_status_icon="❓",
                 initial_status_tooltip="Not run yet",
-                show_toggle=False,
-                show_settings=False,
-                show_remove=False,
             )
             yield Static(
                 "Simple command: click play → 2 second simulation → ✅ or ❌",
@@ -138,9 +134,6 @@ class CommandLinkSimpleApp(App):
                 output_path=Path("sample_files/example.py"),
                 initial_status_icon="🧪",
                 initial_status_tooltip="Tests not run",
-                show_toggle=False,
-                show_settings=False,
-                show_remove=False,
             )
             yield Static(
                 "Has output file (sample_files/example.py). Click the command name to open it.",
@@ -151,12 +144,9 @@ class CommandLinkSimpleApp(App):
             yield Static("Command with Settings Button", classes="section-title")
             yield CommandLink(
                 "Build Project",
-                output_path=None,
                 initial_status_icon="🔨",
                 initial_status_tooltip="Not built",
-                show_toggle=False,
                 show_settings=True,  # This one has settings
-                show_remove=False,
             )
             yield Static(
                 "Click settings icon to show notification. Settings would configure command options in a real app.",
@@ -169,13 +159,13 @@ class CommandLinkSimpleApp(App):
         """Handle play button click - start simulated command.
 
         When the user clicks play, we:
-        1. Update status to show running (either with spinner or icon)
+        1. Update status to show running (with spinner)
         2. Start a timer for simulated work
         3. Show notification that command started
         """
         # Find the command link widget (use sanitized ID)
-        sanitized_id = CommandLink.sanitize_id(event.name)
-        link = self.query_one(f"#{sanitized_id}", CommandLink)
+        link_id = sanitize_id(event.name)
+        link = self.query_one(f"#{link_id}", CommandLink)
 
         # Update status to show running
         link.set_status(running=True, tooltip=f"Running {event.name}...")
@@ -195,8 +185,8 @@ class CommandLinkSimpleApp(App):
         3. Show notification
         """
         # Find the command link widget (use sanitized ID)
-        sanitized_id = CommandLink.sanitize_id(event.name)
-        link = self.query_one(f"#{sanitized_id}", CommandLink)
+        link_id = sanitize_id(event.name)
+        link = self.query_one(f"#{link_id}", CommandLink)
 
         # Cancel the timer if it's running
         if event.name in self.command_timers:
@@ -228,8 +218,8 @@ class CommandLinkSimpleApp(App):
         4. Show notification
         """
         # Find the command link widget (use sanitized ID)
-        sanitized_id = CommandLink.sanitize_id(name)
-        link = self.query_one(f"#{sanitized_id}", CommandLink)
+        link_id = sanitize_id(name)
+        link = self.query_one(f"#{link_id}", CommandLink)
 
         # Random success/failure for variety (70% success rate)
         success = random.random() > 0.3

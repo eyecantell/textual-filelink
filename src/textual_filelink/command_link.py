@@ -141,6 +141,11 @@ class CommandLink(Horizontal, can_focus=True):
             super().__init__()
             self.output_path = output_path
 
+    # Default keyboard shortcuts
+    DEFAULT_OPEN_KEYS = ["o"]
+    DEFAULT_PLAY_STOP_KEYS = ["space", "p"]
+    DEFAULT_SETTINGS_KEYS = ["s"]
+
     def __init__(
         self,
         name: str,
@@ -150,6 +155,9 @@ class CommandLink(Horizontal, can_focus=True):
         initial_status_icon: str = "❓",
         initial_status_tooltip: str | None = None,
         show_settings: bool = False,
+        open_keys: list[str] | None = None,
+        play_stop_keys: list[str] | None = None,
+        settings_keys: list[str] | None = None,
         id: str | None = None,
         classes: str | None = None,
     ) -> None:
@@ -168,20 +176,31 @@ class CommandLink(Horizontal, can_focus=True):
             Initial tooltip for status icon.
         show_settings : bool
             Whether to show settings icon (default: False).
+        open_keys : list[str] | None
+            Custom keyboard shortcuts for opening output. If None, uses DEFAULT_OPEN_KEYS.
+        play_stop_keys : list[str] | None
+            Custom keyboard shortcuts for play/stop. If None, uses DEFAULT_PLAY_STOP_KEYS.
+        settings_keys : list[str] | None
+            Custom keyboard shortcuts for settings. If None, uses DEFAULT_SETTINGS_KEYS.
         id : str | None
             Widget ID. If None, auto-generated from name via sanitize_id().
         classes : str | None
             CSS classes.
         """
-        self._name = name
+        self._command_name = name
         self._output_path = Path(output_path).resolve() if output_path else None
         self._command_builder = command_builder
         self._show_settings = show_settings
 
+        # Store custom keyboard shortcuts
+        self._custom_open_keys = open_keys
+        self._custom_play_stop_keys = play_stop_keys
+        self._custom_settings_keys = settings_keys
+
         # Status state
         self._status_icon = initial_status_icon
         self._status_tooltip = initial_status_tooltip
-        self._running = False
+        self._command_running = False
 
         # Spinner state
         self._spinner_frame_index = 0
@@ -189,15 +208,6 @@ class CommandLink(Horizontal, can_focus=True):
 
         # Auto-generate ID if not provided
         widget_id = id or sanitize_id(name)
-
-        # Set up keyboard bindings
-        self.BINDINGS = [
-            Binding("o", "open_output", "Open output", show=False),
-            Binding("space", "play_stop", "Play/Stop", show=False),
-            Binding("p", "play_stop", "Play/Stop", show=False),
-        ]
-        if show_settings:
-            self.BINDINGS.append(Binding("s", "settings", "Settings", show=False))
 
         # Initialize container
         super().__init__(
@@ -219,12 +229,12 @@ class CommandLink(Horizontal, can_focus=True):
         if self._output_path:
             self._name_widget = FileLink(
                 self._output_path,
-                display_name=self._name,
+                display_name=self._command_name,
                 command_builder=self._command_builder,
                 _embedded=True,
             )
         else:
-            self._name_widget = Static(self._name)
+            self._name_widget = Static(self._command_name)
 
         # Settings icon (optional)
         if self._show_settings:
@@ -239,20 +249,48 @@ class CommandLink(Horizontal, can_focus=True):
         if self._show_settings:
             yield self._settings_widget
 
+    def on_mount(self) -> None:
+        """Set up runtime keyboard bindings."""
+        # Open output bindings
+        open_keys = self._custom_open_keys if self._custom_open_keys is not None else self.DEFAULT_OPEN_KEYS
+        for key in open_keys:
+            self._bindings.bind(key, "open_output", "Open output", show=False)
+
+        # Play/stop bindings
+        play_stop_keys = (
+            self._custom_play_stop_keys if self._custom_play_stop_keys is not None else self.DEFAULT_PLAY_STOP_KEYS
+        )
+        for key in play_stop_keys:
+            self._bindings.bind(key, "play_stop", "Play/Stop", show=False)
+
+        # Settings bindings (if enabled)
+        if self._show_settings:
+            settings_keys = (
+                self._custom_settings_keys if self._custom_settings_keys is not None else self.DEFAULT_SETTINGS_KEYS
+            )
+            for key in settings_keys:
+                self._bindings.bind(key, "settings", "Settings", show=False)
+
     def on_click(self, event) -> None:
         """Handle clicks on child widgets."""
         event.stop()
 
         # Play/stop button
         if hasattr(event.widget, "_is_play_button"):
-            if self._running:
-                self.post_message(self.StopClicked(self._name, self._output_path))
+            if self._command_running:
+                self.post_message(self.StopClicked(self._command_name, self._output_path))
             else:
-                self.post_message(self.PlayClicked(self._name, self._output_path))
+                self.post_message(self.PlayClicked(self._command_name, self._output_path))
 
         # Settings icon
         elif event.widget == self._settings_widget if self._show_settings else False:
-            self.post_message(self.SettingsClicked(self._name, self._output_path))
+            self.post_message(self.SettingsClicked(self._command_name, self._output_path))
+
+    def on_file_link_opened(self, event: FileLink.Opened) -> None:
+        """Handle FileLink.Opened from embedded name widget."""
+        # Re-post as OutputClicked for consistency
+        if self._output_path:
+            self.post_message(self.OutputClicked(self._output_path))
 
     # ------------------------------------------------------------------ #
     # Keyboard actions
@@ -264,15 +302,15 @@ class CommandLink(Horizontal, can_focus=True):
 
     def action_play_stop(self) -> None:
         """Toggle play/stop."""
-        if self._running:
-            self.post_message(self.StopClicked(self._name, self._output_path))
+        if self._command_running:
+            self.post_message(self.StopClicked(self._command_name, self._output_path))
         else:
-            self.post_message(self.PlayClicked(self._name, self._output_path))
+            self.post_message(self.PlayClicked(self._command_name, self._output_path))
 
     def action_settings(self) -> None:
         """Open settings."""
         if self._show_settings:
-            self.post_message(self.SettingsClicked(self._name, self._output_path))
+            self.post_message(self.SettingsClicked(self._command_name, self._output_path))
 
     # ------------------------------------------------------------------ #
     # Public API
@@ -302,14 +340,16 @@ class CommandLink(Horizontal, can_focus=True):
         """
         if icon is not None:
             self._status_icon = icon
+            # Update widget display (spinner will override if running)
+            self._status_widget.update(icon)
 
         if tooltip is not None:
             self._status_tooltip = tooltip
             self._status_widget.tooltip = tooltip
 
         if running is not None:
-            was_running = self._running
-            self._running = running
+            was_running = self._command_running
+            self._command_running = running
 
             # Update play/stop button
             if running:
@@ -347,7 +387,7 @@ class CommandLink(Horizontal, can_focus=True):
             self._name_widget.remove()
             self._name_widget = FileLink(
                 self._output_path,
-                display_name=self._name,
+                display_name=self._command_name,
                 command_builder=self._command_builder,
                 _embedded=True,
             )
@@ -359,7 +399,7 @@ class CommandLink(Horizontal, can_focus=True):
 
     def _animate_spinner(self) -> None:
         """Animate the spinner (called by timer)."""
-        if self._running:
+        if self._command_running:
             frame = self.SPINNER_FRAMES[self._spinner_frame_index]
             self._status_widget.update(frame)
             self._spinner_frame_index = (self._spinner_frame_index + 1) % len(self.SPINNER_FRAMES)
@@ -370,7 +410,7 @@ class CommandLink(Horizontal, can_focus=True):
     @property
     def name(self) -> str:
         """Get command name."""
-        return self._name
+        return self._command_name
 
     @property
     def output_path(self) -> Path | None:
@@ -380,4 +420,4 @@ class CommandLink(Horizontal, can_focus=True):
     @property
     def is_running(self) -> bool:
         """Check if command is currently running."""
-        return self._running
+        return self._command_running

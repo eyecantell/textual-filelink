@@ -109,7 +109,7 @@ class CompressedCommandApp(App):
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
         """Start the command."""
         self.notify(f"Starting {event.name}...")
-        sanitized_id = CommandLink.sanitize_id(event.name)
+        sanitized_id = sanitize_id(event.name)
         link = self.query_one(f"#{sanitized_id}", CommandLink)
         link.set_status(running=True, tooltip=f"Running {event.name}...")
         self.running_commands.add(event.name)
@@ -120,7 +120,7 @@ class CompressedCommandApp(App):
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
         """Stop the command."""
         self.notify(f"Stopping {event.name}...", severity="warning")
-        sanitized_id = CommandLink.sanitize_id(event.name)
+        sanitized_id = sanitize_id(event.name)
         link = self.query_one(f"#{sanitized_id}", CommandLink)
 
         if event.name in self.command_tasks:
@@ -137,7 +137,7 @@ class CompressedCommandApp(App):
     def on_toggleable_file_link_removed(self, event):
         """Remove the command."""
         command_name = event.path.name
-        sanitized_id = CommandLink.sanitize_id(command_name)
+        sanitized_id = sanitize_id(command_name)
 
         try:
             link = self.query_one(f"#{sanitized_id}", CommandLink)
@@ -155,7 +155,7 @@ class CompressedCommandApp(App):
         try:
             await asyncio.sleep(2.0)
 
-            sanitized_id = CommandLink.sanitize_id(name)
+            sanitized_id = sanitize_id(name)
             link = self.query_one(f"#{sanitized_id}", CommandLink)
 
             import random
