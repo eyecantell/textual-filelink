@@ -42,10 +42,22 @@ Demonstrates FileLinkWithIcons - file links with visual status and metadata icon
 
 **Run:** `python demo_02_filelink_with_icons.py`
 
+### demo_03_filelink_list.py
+Demonstrates FileLinkList - a container for managing file link widgets with batch operations.
+
+**Features:**
+- Toggle checkboxes for selection
+- Remove buttons for deletion
+- Batch operations (toggle all, remove selected, clear all)
+- ID validation (required and unique)
+- Mixed widget types (FileLink + FileLinkWithIcons)
+- Live statistics and event handling
+
+**Run:** `python demo_03_filelink_list.py`
+
 ---
 
 More examples coming soon:
-- `demo_03_filelink_list.py` - FileLinkList container with batch operations
 - `demo_04_commandlink.py` - CommandLink for command orchestration
 
 ## Sample Files

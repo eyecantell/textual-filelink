@@ -7,7 +7,7 @@ from typing import Iterable
 from textual.containers import Horizontal, VerticalScroll
 from textual.message import Message
 from textual.widget import Widget
-from textual.widgets import Checkbox, Static
+from textual.widgets import Static
 
 
 class FileLinkListItem(Horizontal):
@@ -22,10 +22,15 @@ class FileLinkListItem(Horizontal):
         height: auto;
         padding: 0;
     }
-    FileLinkListItem > .toggle-checkbox {
+    FileLinkListItem > .toggle-icon {
         width: auto;
         height: 1;
         padding: 0 1;
+        color: $primary;
+    }
+    FileLinkListItem > .toggle-icon:hover {
+        text-style: bold;
+        background: $boost;
     }
     FileLinkListItem > .remove-button {
         width: auto;
@@ -66,9 +71,11 @@ class FileLinkListItem(Horizontal):
         self._show_remove = show_remove
         self._is_toggled = initial_toggle
 
-        # Create toggle checkbox if enabled
+        # Create toggle icon if enabled
         if self._show_toggle:
-            self._toggle_checkbox = Checkbox(value=initial_toggle, classes="toggle-checkbox")
+            icon = "☑" if initial_toggle else "☐"
+            self._toggle_icon = Static(icon, classes="toggle-icon")
+            self._toggle_icon.tooltip = "Toggle selection"
 
         # Create remove button if enabled
         if self._show_remove:
@@ -78,23 +85,20 @@ class FileLinkListItem(Horizontal):
     def compose(self):
         """Compose the wrapper layout."""
         if self._show_toggle:
-            yield self._toggle_checkbox
+            yield self._toggle_icon
         yield self._item
         if self._show_remove:
             yield self._remove_button
 
-    def on_checkbox_changed(self, event: Checkbox.Changed) -> None:
-        """Handle toggle checkbox changes."""
-        if self._show_toggle and event.checkbox == self._toggle_checkbox:
-            self._is_toggled = event.value
-            # Bubble up to FileLinkList
-            event.stop()
-
     def on_click(self, event) -> None:
-        """Handle clicks on remove button."""
-        if self._show_remove and event.widget == self._remove_button:
-            event.stop()
-            # Post removal message
+        """Handle clicks on toggle icon and remove button."""
+        # Handle toggle icon click - update visual state
+        if self._show_toggle and event.widget == self._toggle_icon:
+            self._is_toggled = not self._is_toggled
+            self._toggle_icon.update("☑" if self._is_toggled else "☐")
+            # Don't stop - let it bubble to FileLinkList for ItemToggled message
+
+        # For remove button, don't stop - let it bubble to FileLinkList for removal
 
     @property
     def item(self) -> Widget:
@@ -110,7 +114,7 @@ class FileLinkListItem(Horizontal):
         """Set toggle state."""
         if self._show_toggle:
             self._is_toggled = value
-            self._toggle_checkbox.value = value
+            self._toggle_icon.update("☑" if value else "☐")
 
 
 class FileLinkList(VerticalScroll):
@@ -355,24 +359,22 @@ class FileLinkList(VerticalScroll):
     # ------------------------------------------------------------------ #
     # Event handlers for wrapper events
     # ------------------------------------------------------------------ #
-    def on_file_link_list_item_checkbox_changed(self, event: Checkbox.Changed) -> None:
-        """Handle toggle changes from wrapper items."""
-        # Find the wrapper that contains this checkbox
+    def on_click(self, event) -> None:
+        """Handle clicks on toggle icons and remove buttons in wrapper items."""
+        # Check each wrapper for toggle icon or remove button clicks
         for wrapper in self._wrappers.values():
-            if self._show_toggles and hasattr(wrapper, "_toggle_checkbox"):
-                if wrapper._toggle_checkbox == event.checkbox:
+            # Handle toggle icon click
+            if self._show_toggles and hasattr(wrapper, "_toggle_icon"):
+                if wrapper._toggle_icon == event.widget:
                     # Post ItemToggled message
-                    self.post_message(self.ItemToggled(wrapper.item, event.value))
+                    self.post_message(self.ItemToggled(wrapper.item, wrapper.is_toggled))
                     event.stop()
-                    break
+                    return
 
-    def on_file_link_list_item_click(self, event) -> None:
-        """Handle clicks on remove buttons in wrapper items."""
-        # Find the wrapper that contains this remove button
-        for wrapper in self._wrappers.values():
+            # Handle remove button click
             if self._show_remove and hasattr(wrapper, "_remove_button"):
                 if wrapper._remove_button == event.widget:
                     # Remove the item
                     self.remove_item(wrapper.item)
                     event.stop()
-                    break
+                    return
