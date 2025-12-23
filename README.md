@@ -24,6 +24,7 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 💬 **Tooltips** for all interactive elements
 - 🚀 **Command orchestration** with play/stop controls and animated spinners
 - ⌨️ **Keyboard accessible** - fully tabbable and navigable without a mouse
+- 🔑 **Customizable keyboard shortcuts** - configure your own key bindings
 
 ## Installation
 
@@ -50,7 +51,7 @@ class MyApp(App):
     def compose(self) -> ComposeResult:
         yield FileLink("README.md", line=10, column=5)
     
-    def on_file_link_clicked(self, event: FileLink.Clicked):
+    def on_file_link_opened(self, event: FileLink.Opened):
         self.notify(f"Opened {event.path.name} at line {event.line}")
 
 if __name__ == "__main__":
@@ -101,8 +102,7 @@ if __name__ == "__main__":
 
 ✅ ▶️ Build  ⚙️   - last run successful, play button ot start again, command name ("Build"), settings icon
 ❌ ▶️ Build  ⚙️   - last run failed, play button to start aga1n, command name ("Build"), settings icon
-⠧  ⏹️ Build  ⚙️   - spinner, stop button to cancel run, command name ("Build"), settings icon
-
+⠧  ⏹️ Build  ⚙️   - spinner shows command running, stop button to cancel run, command name ("Build"), settings icon
 
 ```python
 from textual_filelink import CommandLink
@@ -111,18 +111,74 @@ class MyApp(App):
     def compose(self) -> ComposeResult:
         yield CommandLink(
             "Run Tests",
-            initial_status_icon="❓",
+            output_path="test_output.log",
+            initial_status_icon="○",
             initial_status_tooltip="Not run yet",
+            show_settings=True,
         )
 
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
-        link = self.query_one(f"#{event.name}", CommandLink)
-        link.set_status(running=True, tooltip="Running...")
+        link = self.query_one(CommandLink)
+        link.set_status(running=True, tooltip="Running tests...")
         # Start your command here
 
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
-        link = self.query_one(f"#{event.name}", CommandLink)
+        link = self.query_one(CommandLink)
         link.set_status(icon="⏹", running=False, tooltip="Stopped")
+
+    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
+        self.notify(f"Settings for {event.name}")
+
+if __name__ == "__main__":
+    MyApp().run()
+```
+
+### FileLinkList for Managing Collections
+
+```python
+from textual_filelink import FileLinkList, FileLink
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        file_list = FileLinkList(show_toggles=True, show_remove=True)
+        
+        # Add items (all items must have explicit IDs)
+        file_list.add_item(FileLink("test.py", id="test-py"), toggled=True)
+        file_list.add_item(FileLink("main.py", id="main-py"))
+        
+        yield file_list
+    
+    def on_file_link_list_item_toggled(self, event: FileLinkList.ItemToggled):
+        self.notify(f"Toggled: {event.item.path}")
+    
+    def on_file_link_list_item_removed(self, event: FileLinkList.ItemRemoved):
+        self.notify(f"Removed: {event.item.path}")
+
+if __name__ == "__main__":
+    MyApp().run()
+```
+
+### FileLinkWithIcons for Composable File Links
+
+```python
+from textual_filelink import FileLinkWithIcons, Icon
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield FileLinkWithIcons(
+            "script.py",
+            line=42,
+            icons_before=[
+                Icon(name="status", icon="✅", tooltip="Validated"),
+                Icon(name="type", icon="🐍", tooltip="Python file"),
+            ],
+            icons_after=[
+                Icon(name="lock", icon="🔒", clickable=True, key="l", tooltip="Toggle lock"),
+            ],
+        )
+    
+    def on_file_link_with_icons_icon_clicked(self, event: FileLinkWithIcons.IconClicked):
+        self.notify(f"Clicked icon: {event.icon_name}")
 
 if __name__ == "__main__":
     MyApp().run()
@@ -143,34 +199,41 @@ When a FileLink widget has focus, it displays a visual indicator (border with ac
 All FileLink widgets support keyboard activation:
 
 **FileLink:**
-- `o` - Open file in editor
+- `enter` or `o` - Open file in editor
 
 **ToggleableFileLink:**
-- `o` - Open file in editor
-- `Space` or `t` - Toggle checkbox
-- `Delete` or `x` - Remove widget
+- `enter` or `o` - Open file in editor
+- `space` or `t` - Toggle checkbox
+- `delete` or `x` - Remove widget
 - `1-9` - Activate clickable icons (in order of appearance)
 
 **CommandLink:**
-- `o` - Open output file (if path is set)
-- `Space` or `p` - Play/Stop command
-- `s` - Settings
-- `t` - Toggle checkbox
-- `Delete` or `x` - Remove widget
+- `enter` or `o` - Open output file (if path is set)
+- `space` or `p` - Play/Stop command
+- `s` - Settings (if show_settings=True)
+
+**FileLinkWithIcons:**
+- `enter` or `o` - Open file in editor
+- Custom keys - If icons have `key` parameter set
 
 ### Customizing Keyboard Shortcuts
 
-Override the `BINDINGS` class variable in a subclass to customize keyboard shortcuts:
+You can customize keyboard shortcuts per-widget using the `open_keys`, `play_stop_keys`, and `settings_keys` parameters:
 
 ```python
-from textual.binding import Binding
-from textual_filelink import FileLink
+# FileLink with custom open keys
+link = FileLink(
+    "file.py",
+    open_keys=["f2", "ctrl+o"]  # Override default "enter"/"o"
+)
 
-class MyFileLink(FileLink):
-    BINDINGS = [
-        Binding("enter", "open_file", "Open"),  # Use Enter instead of 'o'
-        Binding("ctrl+o", "open_file", "Open"), # Add Ctrl+O
-    ]
+# CommandLink with custom shortcuts
+cmd = CommandLink(
+    "Build",
+    open_keys=["enter"],
+    play_stop_keys=["f5", "ctrl+r"],
+    settings_keys=["f2"]
+)
 ```
 
 ### Dynamic App-Level Bindings
@@ -186,9 +249,9 @@ from textual_filelink import CommandLink
 class MyApp(App):
     def compose(self) -> ComposeResult:
         with ScrollableContainer():
-            yield CommandLink("Build")   # Press 1 to toggle play/stop
-            yield CommandLink("Test")    # Press 2 to toggle play/stop
-            yield CommandLink("Deploy")  # Press 3 to toggle play/stop
+            yield CommandLink("Build", id="cmd-1")
+            yield CommandLink("Test", id="cmd-2")
+            yield CommandLink("Deploy", id="cmd-3")
 
     def on_key(self, event: events.Key) -> None:
         """Route number keys to commands - triggers play/stop toggle."""
@@ -202,90 +265,6 @@ class MyApp(App):
                 event.prevent_default()
 ```
 
-**How it works:**
-- Number keys work **globally** - no need to Tab to the widget first
-- Pressing '1' toggles the first command between play and stop
-- Pressing '2' toggles the second command, etc.
-- Uses the widget's `action_play_stop()` method which handles state checking internally (checks if running and posts appropriate message)
-
-**Alternative approaches:**
-
-If you need more control over the behavior, you can manually post messages:
-
-```python
-def on_key(self, event: events.Key) -> None:
-    if event.key.isdigit():
-        num = int(event.key)
-        commands = list(self.query(CommandLink))
-        if 0 < num <= len(commands):
-            cmd = commands[num - 1]
-
-            # Option 1: Always play (ignore if already running)
-            cmd.post_message(CommandLink.PlayClicked(
-                cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
-            ))
-
-            # Option 2: Always stop (ignore if not running)
-            cmd.post_message(CommandLink.StopClicked(
-                cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
-            ))
-
-            # Option 3: Custom logic based on state
-            if cmd.is_running:
-                cmd.post_message(CommandLink.StopClicked(
-                    cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
-                ))
-            else:
-                cmd.post_message(CommandLink.PlayClicked(
-                    cmd.output_path, cmd.name, cmd.output_path, cmd.is_toggled
-                ))
-
-            event.prevent_default()
-```
-
-**For ToggleableFileLink:**
-
-The same pattern works for other widget actions:
-
-```python
-from textual_filelink import ToggleableFileLink
-
-class MyApp(App):
-    def on_key(self, event: events.Key) -> None:
-        if event.key.isdigit():
-            num = int(event.key)
-            links = list(self.query(ToggleableFileLink))
-            if 0 < num <= len(links):
-                link = links[num - 1]
-
-                # Open the file
-                link.action_open_file()
-
-                # Or toggle checkbox
-                link.action_toggle()
-
-                # Or remove
-                link.action_remove()
-
-                event.prevent_default()
-```
-
-### Complete Example
-
-```python
-class KeyboardAccessibleApp(App):
-    def compose(self) -> ComposeResult:
-        yield FileLink("file1.py", name="link1")
-        yield FileLink("file2.py", name="link2")
-        yield ToggleableFileLink("file3.py", name="link3")
-        yield CommandLink("Run Tests", name="cmd1")
-
-if __name__ == "__main__":
-    # Now fully keyboard accessible!
-    # Tab to navigate, o/space/p/etc to activate
-    KeyboardAccessibleApp().run()
-```
-
 ### Keyboard Shortcut Discoverability
 
 All interactive elements automatically display their keyboard shortcuts in tooltips. This makes keyboard navigation discoverable without reading documentation.
@@ -293,25 +272,9 @@ All interactive elements automatically display their keyboard shortcuts in toolt
 **Examples:**
 - Toggle checkbox: "Click to toggle (space/t)"
 - Remove button: "Remove (delete/x)"
-- Play button: "Run command (p/space)"
+- Play button: "Run command (space/p)"
 - Settings: "Settings (s)"
 - Clickable icon 1: "Status (1)"
-
-**How it works:**
-Tooltips are automatically enhanced with keyboard shortcuts based on the widget's BINDINGS. When you hover over or focus on an interactive element, the tooltip displays both the description and the available keyboard shortcuts.
-
-**Custom Bindings:**
-If you override `BINDINGS` in a subclass, tooltips will automatically reflect your custom keys:
-
-```python
-class CustomFileLink(FileLink):
-    BINDINGS = [
-        Binding("enter", "open_file", "Open"),
-    ]
-
-# Tooltip will show "(enter)" instead of "(o)"
-link = CustomFileLink("file.txt")
-```
 
 ## FileLink API
 
@@ -320,37 +283,66 @@ link = CustomFileLink("file.txt")
 ```python
 FileLink(
     path: Path | str,
+    display_name: str | None = None,
     *,
     line: int | None = None,
     column: int | None = None,
     command_builder: Callable | None = None,
+    open_keys: list[str] | None = None,
     name: str | None = None,
     id: str | None = None,
     classes: str | None = None,
+    _embedded: bool = False,
+    tooltip: str | None = None,
 )
 ```
 
 **Parameters:**
 - `path`: Full path to the file
+- `display_name`: Text to display for the link. If None, defaults to the filename
 - `line`: Optional line number to jump to
 - `column`: Optional column number to jump to
 - `command_builder`: Custom function to build the editor command
+- `open_keys`: Custom keyboard shortcuts for opening (default: ["enter", "o"])
+- `name`: Widget name
+- `id`: Widget ID
+- `classes`: CSS classes
+- `_embedded`: Internal use only. If True, disables focus
+- `tooltip`: Optional tooltip text
 
 ### Properties
 
 - `path: Path` - The file path
+- `display_name: str` - The display name
 - `line: int | None` - The line number
 - `column: int | None` - The column number
 
+### Methods
+
+#### `open_file()`
+Open the file in the configured editor (can be called programmatically).
+
 ### Messages
 
-#### `FileLink.Clicked`
-Posted when the link is clicked.
+#### `FileLink.Opened`
+Posted when the link is clicked or opened via keyboard.
 
 **Attributes:**
 - `path: Path`
 - `line: int | None`
 - `column: int | None`
+
+**Note:** `FileLink.Clicked` is deprecated but still available for backwards compatibility. Use `FileLink.Opened` instead.
+
+### Class-Level Configuration
+
+```python
+# Set default command builder for all FileLink instances
+FileLink.default_command_builder = FileLink.vim_command
+
+# Set default open keys for all FileLink instances
+FileLink.DEFAULT_OPEN_KEYS = ["enter", "f2"]
+```
 
 ## ToggleableFileLink API
 
@@ -370,6 +362,7 @@ ToggleableFileLink(
     disable_on_untoggle: bool = False,
     toggle_tooltip: str | None = None,
     remove_tooltip: str | None = None,
+    link_tooltip: str | None = None,
     name: str | None = None,
     id: str | None = None,
     classes: str | None = None,
@@ -388,6 +381,7 @@ ToggleableFileLink(
 - `disable_on_untoggle`: If True, dim/disable the link when untoggled
 - `toggle_tooltip`: Optional tooltip text for the toggle button
 - `remove_tooltip`: Optional tooltip text for the remove button
+- `link_tooltip`: Optional tooltip text for the filename/link
 
 ### IconConfig
 
@@ -455,6 +449,9 @@ Update the toggle button tooltip.
 #### `set_remove_tooltip(tooltip: str | None)`
 Update the remove button tooltip.
 
+#### `set_link_tooltip(tooltip: str | None)`
+Update the filename/link tooltip.
+
 ### Messages
 
 #### `ToggleableFileLink.Toggled`
@@ -480,7 +477,17 @@ Posted when a clickable icon is clicked.
 
 ## CommandLink API
 
-`CommandLink` is a specialized widget for command orchestration and status display, extending `ToggleableFileLink`. It's designed for single-instance commands (not multiple concurrent runs of the same command).
+`CommandLink` is a widget for command orchestration and status display. It provides play/stop controls, animated spinner, status icons, and optional settings.
+
+### Architecture
+
+CommandLink is a standalone widget (extends `Horizontal`, not `ToggleableFileLink`). It has a flat composition:
+- Status icon (or animated spinner when running)
+- Play/stop button (▶️/⏸️)
+- Command name (clickable FileLink if output_path is set)
+- Settings icon (optional, if show_settings=True)
+
+**Note:** Toggle and remove controls are NOT part of CommandLink. If you need those, add the CommandLink to a FileLinkList with `show_toggles=True` and `show_remove=True`.
 
 ### Quick Start
 
@@ -492,32 +499,27 @@ class MyApp(App):
         yield CommandLink(
             "Run Tests",
             output_path="test_output.log",
-            initial_status_icon="❓",
+            initial_status_icon="○",
             initial_status_tooltip="Not run yet",
-            show_toggle=True,
             show_settings=True,
-            show_remove=True,
         )
 
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
-        # Event provides full context: name, path, output_path, is_toggled
-        link = self.query_one(f"#{event.name}", CommandLink)
+        link = self.query_one(CommandLink)
         link.set_status(running=True, tooltip="Running tests...")
         self.run_worker(self.run_tests(link))
 
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
-        # Event provides full context including toggle state
-        self.notify(f"Stopping {event.name}")
+        link = self.query_one(CommandLink)
+        link.set_status(icon="⏹", running=False, tooltip="Stopped")
 
     def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
-        # Event provides full context for configuration
         self.notify(f"Settings for {event.name}")
 
     async def run_tests(self, link: CommandLink):
         # Simulate test run
         await asyncio.sleep(2)
         link.set_status(icon="✅", running=False, tooltip="All tests passed")
-        link.set_output_path(Path("test_output.log"), tooltip="Click to view results")
 ```
 
 ### Constructor
@@ -525,64 +527,53 @@ class MyApp(App):
 ```python
 CommandLink(
     name: str,
-    output_path: Path | str | None = None,
     *,
-    initial_toggle: bool = False,
-    initial_status_icon: str = "❓",
-    initial_status_tooltip: str | None = None,
-    running: bool = False,
-    show_toggle: bool = True,
-    show_settings: bool = True,
-    show_remove: bool = True,
-    toggle_tooltip: str | None = None,
-    settings_tooltip: str | None = None,
-    remove_tooltip: str | None = None,
+    output_path: Path | str | None = None,
     command_builder: Callable | None = None,
-    disable_on_untoggle: bool = False,
+    initial_status_icon: str = "○",
+    initial_status_tooltip: str | None = None,
+    show_settings: bool = False,
+    open_keys: list[str] | None = None,
+    play_stop_keys: list[str] | None = None,
+    settings_keys: list[str] | None = None,
+    id: str | None = None,
+    classes: str | None = None,
 )
 ```
 
 **Parameters:**
-- `name`: Command display name (also used as widget ID)
-- `output_path`: Path to output file. If None, clicking command name does nothing
-- `initial_toggle`: Whether the command starts toggled/selected
-- `initial_status_icon`: Initial status icon (default: "❓")
-- `initial_status_tooltip`: Initial tooltip for status icon
-- `running`: Whether command is currently running. If True, shows spinner and stop button
-- `show_toggle`: Whether to show the toggle checkbox
-- `show_settings`: Whether to show the settings icon
-- `show_remove`: Whether to show the remove button
-- `toggle_tooltip`: Tooltip for toggle checkbox
-- `settings_tooltip`: Tooltip for settings icon
-- `remove_tooltip`: Tooltip for remove button
+- `name`: Command display name (also used to generate widget ID if not provided)
+- `output_path`: Path to output file. If set, clicking command name opens the file
 - `command_builder`: Custom command builder for opening output files
-- `disable_on_untoggle`: If True, dim/disable when untoggled
+- `initial_status_icon`: Initial status icon (default: "○")
+- `initial_status_tooltip`: Initial tooltip for status icon
+- `show_settings`: Whether to show the settings icon (default: False)
+- `open_keys`: Custom keyboard shortcuts for opening output (default: ["enter", "o"])
+- `play_stop_keys`: Custom keyboard shortcuts for play/stop (default: ["space", "p"])
+- `settings_keys`: Custom keyboard shortcuts for settings (default: ["s"])
+- `id`: Widget ID. If None, auto-generated from name
+- `classes`: CSS classes
 
 ### Layout
 
 ```
-[toggle] [status/spinner] [play/stop] command_name [settings] [remove]
+[status/spinner] [▶️/⏸️] command_name [⚙️]
 ```
 
-- **toggle**: Checkbox for selecting commands (inherited from ToggleableFileLink)
 - **status/spinner**: Shows status icon, or animated spinner when running
-- **play/stop**: ▶ when stopped, ⏹ when running
-- **command_name**: Clickable link to output file (if set)
-- **settings**: ⚙ icon for configuration
-- **remove**: × button (inherited from ToggleableFileLink)
+- **play/stop**: ▶️ when stopped, ⏸️ when running
+- **command_name**: Clickable link to output file (if output_path is set)
+- **settings**: ⚙️ icon (only if show_settings=True)
 
 ### Properties
 
-- `name: str` - The command name (alias for display_name)
-- `display_name: str` - The command display name (e.g., "Test", "Build")
+- `name: str` - The command name
 - `output_path: Path | None` - Current output file path
-- `path: Path | None` - The output file path (returns the actual output path, not a display path)
 - `is_running: bool` - Whether the command is currently running
-- `is_toggled: bool` - Current toggle state (inherited)
 
 ### Methods
 
-#### `set_status(icon: str | None = None, tooltip: str | None = None, running: bool | None = None)`
+#### `set_status(icon: str | None = None, running: bool | None = None, tooltip: str | None = None)`
 Update command status display.
 
 ```python
@@ -599,73 +590,79 @@ link.set_status(icon="❌", running=False, tooltip="3 tests failed")
 link.set_status(tooltip="Still running...")
 ```
 
-#### `set_output_path(path: Path | str | None, tooltip: str | None = None)`
+#### `set_output_path(output_path: Path | str | None)`
 Update the output file path.
 
 ```python
-link.set_output_path(Path("output.log"), tooltip="Click to view output")
+link.set_output_path(Path("output.log"))
 link.set_output_path(None)  # Clear output path
-```
-
-#### `set_toggle(toggled: bool, tooltip: str | None = None)`
-Update toggle state programmatically.
-
-```python
-link.set_toggle(True, tooltip="Selected for batch run")
-link.set_toggle(False)
-```
-
-#### `set_settings_tooltip(tooltip: str | None)`
-Update settings icon tooltip.
-
-```python
-link.set_settings_tooltip("Configure test options")
 ```
 
 ### Messages
 
 #### `CommandLink.PlayClicked`
-Posted when play button (▶) is clicked.
+Posted when play button (▶️) is clicked.
 
 **Attributes:**
 - `name: str` - The command name
-- `path: Path | None` - The output file path (or None if not set)
-- `output_path: Path | None` - The output file path (same as path)
-- `is_toggled: bool` - Whether the command is selected for batch run
+- `output_path: Path | None` - The output file path (or None if not set)
 
 #### `CommandLink.StopClicked`
-Posted when stop button (⏹) is clicked.
+Posted when stop button (⏸️) is clicked.
 
 **Attributes:**
 - `name: str` - The command name
-- `path: Path | None` - The output file path (or None if not set)
-- `output_path: Path | None` - The output file path (same as path)
-- `is_toggled: bool` - Whether the command is selected for batch run
+- `output_path: Path | None` - The output file path (or None if not set)
 
 #### `CommandLink.SettingsClicked`
-Posted when settings icon (⚙) is clicked.
+Posted when settings icon (⚙️) is clicked (only if show_settings=True).
 
 **Attributes:**
 - `name: str` - The command name
-- `path: Path | None` - The output file path (or None if not set)
-- `output_path: Path | None` - The output file path (same as path)
-- `is_toggled: bool` - Whether the command is selected for batch run
+- `output_path: Path | None` - The output file path (or None if not set)
 
-**Inherited Messages:**
-- `ToggleableFileLink.Toggled` - When toggle state changes
-- `ToggleableFileLink.Removed` - When remove button is clicked
+#### `CommandLink.OutputClicked`
+Posted when command name is clicked (opens output file).
+
+**Attributes:**
+- `output_path: Path` - The output file path
 
 ### Status Icons
 
 Common status icons for commands:
 
 ```python
-"❓"  # Not run / Unknown
+"○"  # Not run / Unknown
 "✅"  # Success / Passed
 "❌"  # Failed / Error
 "⚠️"  # Warning
-"⏭️"  # Skipped
+"⭐️"  # Skipped
 "🔄"  # Needs rerun
+"⏹"  # Stopped
+```
+
+### Adding Toggle/Remove to CommandLink
+
+CommandLink doesn't have built-in toggle/remove controls. Use FileLinkList to add them:
+
+```python
+from textual_filelink import FileLinkList, CommandLink
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        file_list = FileLinkList(show_toggles=True, show_remove=True)
+        
+        # Add CommandLinks (must have explicit IDs)
+        file_list.add_item(
+            CommandLink("Build", id="cmd-build"),
+            toggled=True
+        )
+        file_list.add_item(
+            CommandLink("Test", id="cmd-test"),
+            toggled=False
+        )
+        
+        yield file_list
 ```
 
 ### Complete Example
@@ -699,23 +696,26 @@ class CommandRunnerApp(App):
 
             yield CommandLink(
                 "Unit Tests",
-                initial_status_icon="❓",
+                initial_status_icon="○",
                 initial_status_tooltip="Not run",
-                settings_tooltip="Configure test options",
+                show_settings=True,
+                id="unit-tests",
             )
 
             yield CommandLink(
                 "Lint",
-                initial_status_icon="❓",
+                initial_status_icon="○",
                 initial_status_tooltip="Not run",
                 show_settings=False,
+                id="lint",
             )
 
             yield CommandLink(
                 "Build",
-                initial_status_icon="❓",
+                initial_status_icon="○",
                 initial_status_tooltip="Not run",
-                settings_tooltip="Build configuration",
+                show_settings=True,
+                id="build",
             )
 
         yield Footer()
@@ -749,43 +749,488 @@ if __name__ == "__main__":
     CommandRunnerApp().run()
 ```
 
-### Using Enriched Message Properties
+## FileLinkList API
 
-As of version 0.2.0, CommandLink messages include enriched context that eliminates the need to query widgets in event handlers:
+`FileLinkList` is a container for managing collections of file link widgets with uniform controls.
+
+### Features
+- Automatic scrolling via `VerticalScroll`
+- Optional toggle checkboxes for each item
+- Optional remove buttons for each item
+- ID validation (all items must have explicit IDs, no duplicates)
+- Batch operations: `toggle_all()`, `remove_selected()`
+- Works with FileLink, FileLinkWithIcons, CommandLink, and ToggleableFileLink
+
+### Constructor
 
 ```python
-class SmartCommandApp(App):
+FileLinkList(
+    *,
+    show_toggles: bool = False,
+    show_remove: bool = False,
+    id: str | None = None,
+    classes: str | None = None,
+)
+```
+
+**Parameters:**
+- `show_toggles`: Whether to show toggle checkboxes for all items
+- `show_remove`: Whether to show remove buttons for all items
+- `id`: Widget ID
+- `classes`: CSS classes
+
+### Methods
+
+#### `add_item(item: Widget, *, toggled: bool = False)`
+Add an item to the list.
+
+```python
+file_list.add_item(FileLink("test.py", id="test-py"), toggled=True)
+file_list.add_item(CommandLink("Build", id="cmd-build"))
+```
+
+**Raises:**
+- `ValueError` if item has no ID or ID is duplicate
+
+#### `remove_item(item: Widget)`
+Remove an item from the list.
+
+```python
+file_list.remove_item(item)
+```
+
+#### `clear_items()`
+Remove all items from the list.
+
+```python
+file_list.clear_items()
+```
+
+#### `toggle_all(value: bool)`
+Set all toggle checkboxes to the same value.
+
+```python
+file_list.toggle_all(True)   # Check all
+file_list.toggle_all(False)  # Uncheck all
+```
+
+#### `remove_selected()`
+Remove all toggled items from the list.
+
+```python
+file_list.remove_selected()
+```
+
+#### `get_toggled_items() -> list[Widget]`
+Get all currently toggled items.
+
+```python
+selected = file_list.get_toggled_items()
+for item in selected:
+    print(item.path)
+```
+
+#### `get_items() -> list[Widget]`
+Get all items in the list.
+
+```python
+all_items = file_list.get_items()
+```
+
+### Properties
+
+- `len(file_list)` - Number of items in the list
+- `iter(file_list)` - Iterate over items
+
+### Messages
+
+#### `FileLinkList.ItemToggled`
+Posted when an item's toggle state changes.
+
+**Attributes:**
+- `item: Widget` - The item that was toggled
+- `is_toggled: bool` - New toggle state
+
+#### `FileLinkList.ItemRemoved`
+Posted when an item is removed.
+
+**Attributes:**
+- `item: Widget` - The item that was removed
+
+### Example
+
+```python
+from textual_filelink import FileLinkList, FileLink, CommandLink
+
+class MyApp(App):
     def compose(self) -> ComposeResult:
-        yield CommandLink("Tests", initial_status_icon="❓", show_toggle=True)
-        yield CommandLink("Build", initial_status_icon="❓", initial_toggle=True)
+        file_list = FileLinkList(show_toggles=True, show_remove=True)
+        
+        # Mix different widget types (all need IDs)
+        file_list.add_item(FileLink("test.py", id="test-py"), toggled=True)
+        file_list.add_item(FileLink("main.py", id="main-py"))
+        file_list.add_item(CommandLink("Build", id="cmd-build"))
+        
+        yield file_list
+    
+    def on_mount(self):
+        file_list = self.query_one(FileLinkList)
+        
+        # Batch operations
+        file_list.toggle_all(True)
+        
+        selected = file_list.get_toggled_items()
+        self.notify(f"Selected: {len(selected)} items")
+```
+## FileLinkWithIcons API
 
-    def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
-        """Event provides full context about the command."""
-        # Instead of querying: link = self.query_one(f"#{event.name}", CommandLink)
-        # Just use the event properties:
+`FileLinkWithIcons` composes a FileLink with customizable icon indicators before and after the filename.
 
-        self.log(f"Playing {event.name}")
-        self.log(f"Output path: {event.path}")        # Path to output file
-        self.log(f"Is toggled: {event.is_toggled}")   # Selected for batch run?
+### Layout
 
-        # You still need to query for widget methods (like set_status),
-        # but now you have context directly from the message
-        link = self.query_one(f"#{event.name}", CommandLink)
-        link.set_status(running=True, tooltip="Running...")
+```
+[icons_before] FileLink [icons_after]
+```
 
-    def on_command_link_stop_clicked(self, event: CommandLink.StopClicked):
-        """Stop button includes state context."""
-        # All message types (PlayClicked, StopClicked, SettingsClicked)
-        # include: name, path, output_path, is_toggled
-        self.notify(f"Stopping {event.name} (toggled={event.is_toggled})")
+### Constructor
 
-    def on_command_link_settings_clicked(self, event: CommandLink.SettingsClicked):
-        """Settings event has full context."""
-        # Can now make decisions based on command state without querying
-        if event.is_toggled:
-            self.notify(f"Settings for {event.name} (part of batch run)")
-        else:
-            self.notify(f"Settings for {event.name} (standalone)")
+```python
+FileLinkWithIcons(
+    path: Path | str,
+    display_name: str | None = None,
+    *,
+    line: int | None = None,
+    column: int | None = None,
+    command_builder: Callable | None = None,
+    icons_before: list[Icon] | None = None,
+    icons_after: list[Icon] | None = None,
+    name: str | None = None,
+    id: str | None = None,
+    classes: str | None = None,
+    tooltip: str | None = None,
+)
+```
+
+**Parameters:**
+- `path`: Full path to the file
+- `display_name`: Text to display for the link. If None, defaults to filename
+- `line`: Optional line number to jump to
+- `column`: Optional column number to jump to
+- `command_builder`: Function to build the editor command
+- `icons_before`: Icons to display before the filename (order preserved)
+- `icons_after`: Icons to display after the filename (order preserved)
+- `name`: Widget name
+- `id`: Widget ID
+- `classes`: CSS classes
+- `tooltip`: Optional tooltip for the entire widget
+
+### Icon Class
+
+Icons are specified using the `Icon` dataclass:
+
+```python
+from textual_filelink import Icon
+
+Icon(
+    name: str,           # REQUIRED: Unique identifier
+    icon: str,           # REQUIRED: Unicode character
+    tooltip: str | None = None,
+    clickable: bool = False,
+    key: str | None = None,
+    visible: bool = True,
+)
+```
+
+**Icon Properties:**
+- `name` (str, **required**): Unique identifier for this icon within the widget
+- `icon` (str, **required**): Unicode character to display (e.g., "✅", "⚙️", "🔒")
+- `tooltip` (str | None): Optional tooltip text shown on hover
+- `clickable` (bool): Whether clicking this icon emits IconClicked events (default: False)
+- `key` (str | None): Optional keyboard shortcut to trigger this icon (e.g., "1", "s", "ctrl+x")
+- `visible` (bool): Whether the icon is initially visible (default: True)
+
+**Icon Validation:**
+- Duplicate icon names raise `ValueError`
+- Duplicate icon keys raise `ValueError`
+- Icon keys cannot conflict with FileLink bindings ("o", "enter")
+
+### Properties
+
+- `path: Path` - The file path
+- `line: int | None` - The line number
+- `column: int | None` - The column number
+- `file_link: FileLink` - The internal FileLink widget (read-only access)
+
+### Methods
+
+#### `update_icon(name: str, **kwargs)`
+Update an icon's properties.
+
+```python
+widget.update_icon("status", icon="✅", tooltip="Passed")
+widget.update_icon("warning", visible=True)
+widget.update_icon("lock", clickable=True, key="l")
+```
+
+**Updatable properties:** `icon`, `tooltip`, `clickable`, `visible`, `key`
+
+**Raises:**
+- `ValueError` if icon name not found or invalid property provided
+
+#### `set_icon_visible(name: str, visible: bool)`
+Set icon visibility.
+
+```python
+widget.set_icon_visible("warning", True)   # Show
+widget.set_icon_visible("warning", False)  # Hide
+```
+
+**Raises:**
+- `ValueError` if icon name not found
+
+#### `get_icon(name: str) -> Icon | None`
+Get icon by name.
+
+```python
+icon = widget.get_icon("status")
+if icon:
+    print(f"Icon: {icon.icon}, Visible: {icon.visible}")
+```
+
+### Messages
+
+#### `FileLinkWithIcons.IconClicked`
+Posted when a clickable icon is clicked.
+
+**Attributes:**
+- `widget: FileLinkWithIcons` - The widget containing the clicked icon
+- `path: Path` - The file path associated with the FileLink
+- `icon_name: str` - The name identifier of the clicked icon
+- `icon_char: str` - The unicode character displayed for the icon
+
+### Icon Examples
+
+#### Basic Icons
+
+```python
+from textual_filelink import FileLinkWithIcons, Icon
+
+# Icons before filename
+link = FileLinkWithIcons(
+    "script.py",
+    icons_before=[
+        Icon(name="type", icon="🐍", tooltip="Python file"),
+        Icon(name="status", icon="✅", tooltip="Validated"),
+    ]
+)
+# Display: 🐍 ✅ script.py
+
+# Icons after filename
+link = FileLinkWithIcons(
+    "script.py",
+    icons_after=[
+        Icon(name="size", icon="📊", tooltip="Large file"),
+        Icon(name="sync", icon="☁️", tooltip="Synced"),
+    ]
+)
+# Display: script.py 📊 ☁️
+
+# Mixed positions
+link = FileLinkWithIcons(
+    "script.py",
+    icons_before=[
+        Icon(name="type", icon="🐍"),
+    ],
+    icons_after=[
+        Icon(name="lock", icon="🔒"),
+    ]
+)
+# Display: 🐍 script.py 🔒
+```
+
+#### Clickable Icons
+
+```python
+from textual_filelink import FileLinkWithIcons, Icon
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield FileLinkWithIcons(
+            "config.json",
+            icons_before=[
+                Icon(
+                    name="edit",
+                    icon="✏️",
+                    clickable=True,
+                    key="e",
+                    tooltip="Edit"
+                ),
+                Icon(
+                    name="refresh",
+                    icon="🔄",
+                    clickable=True,
+                    key="r",
+                    tooltip="Refresh"
+                ),
+            ]
+        )
+    
+    def on_file_link_with_icons_icon_clicked(
+        self, 
+        event: FileLinkWithIcons.IconClicked
+    ):
+        if event.icon_name == "edit":
+            self.notify(f"Editing {event.path.name}")
+        elif event.icon_name == "refresh":
+            self.notify(f"Refreshing {event.path.name}")
+```
+
+#### Dynamic Icon Updates
+
+```python
+from textual_filelink import FileLinkWithIcons, Icon
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield FileLinkWithIcons(
+            "process.py",
+            id="task-file",
+            icons_before=[
+                Icon(name="status", icon="⏳", tooltip="Pending"),
+            ],
+            icons_after=[
+                Icon(name="result", icon="⚪", visible=False),
+            ]
+        )
+    
+    def on_mount(self):
+        # Simulate processing
+        self.set_timer(2.0, self.complete_task)
+    
+    def complete_task(self):
+        widget = self.query_one("#task-file", FileLinkWithIcons)
+        widget.update_icon("status", icon="✓", tooltip="Complete")
+        widget.set_icon_visible("result", True)
+        widget.update_icon("result", icon="🟢", tooltip="Success")
+```
+
+#### Hidden Icons
+
+```python
+from textual_filelink import FileLinkWithIcons, Icon
+
+# Start with hidden warning icon
+link = FileLinkWithIcons(
+    "data.csv",
+    id="data-file",
+    icons_before=[
+        Icon(name="type", icon="📊"),
+        Icon(name="warning", icon="⚠️", visible=False),  # Hidden initially
+    ]
+)
+
+# Show warning later
+def show_warning():
+    widget = self.query_one("#data-file", FileLinkWithIcons)
+    widget.set_icon_visible("warning", True)
+    widget.update_icon("warning", tooltip="Validation failed!")
+```
+
+### Complete Example
+
+```python
+from pathlib import Path
+from textual.app import App, ComposeResult
+from textual.containers import Vertical
+from textual.widgets import Header, Footer, Static
+from textual_filelink import FileLinkWithIcons, Icon
+
+class IconFileApp(App):
+    CSS = """
+    Screen {
+        align: center middle;
+    }
+    Vertical {
+        width: 80;
+        height: auto;
+        border: solid green;
+        padding: 1;
+    }
+    """
+    
+    def compose(self) -> ComposeResult:
+        yield Header()
+        
+        with Vertical():
+            yield Static("📂 Project Files with Icons")
+            
+            # Python file with status
+            yield FileLinkWithIcons(
+                Path("main.py"),
+                line=42,
+                icons_before=[
+                    Icon(name="type", icon="🐍", tooltip="Python file"),
+                    Icon(name="status", icon="✅", tooltip="All checks passed"),
+                ],
+                icons_after=[
+                    Icon(name="coverage", icon="💯", tooltip="100% coverage"),
+                ]
+            )
+            
+            # Config file with clickable edit icon
+            yield FileLinkWithIcons(
+                Path("config.json"),
+                id="config-file",
+                icons_before=[
+                    Icon(name="type", icon="⚙️", tooltip="Config file"),
+                    Icon(
+                        name="edit",
+                        icon="✏️",
+                        clickable=True,
+                        key="e",
+                        tooltip="Edit config"
+                    ),
+                ],
+                icons_after=[
+                    Icon(name="lock", icon="🔒", tooltip="Read-only"),
+                ]
+            )
+            
+            # Data file with processing status
+            yield FileLinkWithIcons(
+                Path("data.csv"),
+                id="data-file",
+                icons_before=[
+                    Icon(name="type", icon="📊", tooltip="Data file"),
+                    Icon(name="status", icon="⏳", tooltip="Processing..."),
+                ],
+                icons_after=[
+                    Icon(name="result", icon="⚪", visible=False),
+                ]
+            )
+        
+        yield Footer()
+    
+    def on_mount(self):
+        # Simulate processing completion after 3 seconds
+        self.set_timer(3.0, self.complete_processing)
+    
+    def complete_processing(self):
+        widget = self.query_one("#data-file", FileLinkWithIcons)
+        widget.update_icon("status", icon="✓", tooltip="Processing complete")
+        widget.set_icon_visible("result", True)
+        widget.update_icon("result", icon="🟢", tooltip="Success")
+    
+    def on_file_link_with_icons_icon_clicked(
+        self, 
+        event: FileLinkWithIcons.IconClicked
+    ):
+        if event.icon_name == "edit":
+            self.notify(f"✏️ Editing {event.path.name}")
+            # You could open an editor, show a modal, etc.
+
+if __name__ == "__main__":
+    IconFileApp().run()
 ```
 
 ## Custom Editor Commands
@@ -825,147 +1270,6 @@ def my_editor_command(path: Path, line: int | None, column: int | None) -> list[
 link = FileLink(path, command_builder=my_editor_command)
 ```
 
-## Icon Examples
-
-### Icon Positioning
-
-```python
-# Icons before filename
-ToggleableFileLink(
-    path,
-    icons=[
-        {"name": "type", "icon": "🐍", "position": "before"},
-        {"name": "status", "icon": "✓", "position": "before"},
-    ]
-)
-# Display: 🐍 ✓ script.py
-
-# Icons after filename
-ToggleableFileLink(
-    path,
-    icons=[
-        {"name": "size", "icon": "📊", "position": "after"},
-        {"name": "sync", "icon": "☁️", "position": "after"},
-    ]
-)
-# Display: script.py 📊 ☁️
-
-# Mixed positions
-ToggleableFileLink(
-    path,
-    icons=[
-        {"name": "type", "icon": "🐍", "position": "before"},
-        {"name": "sync", "icon": "☁️", "position": "after"},
-    ]
-)
-# Display: 🐍 script.py ☁️
-```
-
-### Icon Ordering
-
-```python
-# Explicit ordering with index
-ToggleableFileLink(
-    path,
-    icons=[
-        {"name": "third", "icon": "3️⃣", "index": 3},
-        {"name": "first", "icon": "1️⃣", "index": 1},
-        {"name": "second", "icon": "2️⃣", "index": 2},
-    ]
-)
-# Display: 1️⃣ 2️⃣ 3️⃣ filename.py
-
-# Auto ordering (maintains list order)
-ToggleableFileLink(
-    path,
-    icons=[
-        {"name": "first", "icon": "A"},
-        {"name": "second", "icon": "B"},
-        {"name": "third", "icon": "C"},
-    ]
-)
-# Display: A B C filename.py
-```
-
-### Dynamic Icon Updates
-
-```python
-class MyApp(App):
-    def compose(self) -> ComposeResult:
-        yield ToggleableFileLink(
-            "process.py",
-            id="task-file",
-            icons=[
-                {"name": "status", "icon": "⏳", "tooltip": "Pending"},
-                {"name": "result", "icon": "⚪", "visible": False},
-            ]
-        )
-    
-    def on_mount(self):
-        # Simulate processing
-        self.set_timer(2.0, self.complete_task)
-    
-    def complete_task(self):
-        link = self.query_one("#task-file", ToggleableFileLink)
-        link.update_icon("status", icon="✓", tooltip="Complete")
-        link.set_icon_visible("result", True)
-        link.update_icon("result", icon="🟢", tooltip="Success")
-```
-
-### Clickable Icons
-
-```python
-class MyApp(App):
-    def compose(self) -> ComposeResult:
-        yield ToggleableFileLink(
-            path,
-            icons=[
-                {"name": "edit", "icon": "✏️", "clickable": True, "tooltip": "Edit settings"},
-                {"name": "refresh", "icon": "🔄", "clickable": True, "tooltip": "Refresh"},
-                {"name": "info", "icon": "ℹ️", "clickable": True, "tooltip": "Show info"},
-            ]
-        )
-    
-    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
-        if event.icon_name == "edit":
-            self.edit_file(event.path)
-        elif event.icon_name == "refresh":
-            self.refresh_file(event.path)
-        elif event.icon_name == "info":
-            self.show_info(event.path)
-```
-
-## Layout Configurations
-
-### Toggle Only
-```python
-ToggleableFileLink(path, show_toggle=True, show_remove=False)
-```
-Display: `☐ filename.txt`
-
-### Remove Only
-```python
-ToggleableFileLink(path, show_toggle=False, show_remove=True)
-```
-Display: `filename.txt ×`
-
-### Both Controls
-```python
-ToggleableFileLink(path, show_toggle=True, show_remove=True)
-```
-Display: `☐ filename.txt ×`
-
-### Plain Link with Icons
-```python
-ToggleableFileLink(
-    path, 
-    show_toggle=False, 
-    show_remove=False,
-    icons=[{"name": "type", "icon": "📄"}]
-)
-```
-Display: `📄 filename.txt`
-
 ## Common Unicode Icons
 
 ```python
@@ -986,6 +1290,9 @@ Display: `📄 filename.txt`
 "🐍"  # Python file
 "📊"  # Data file
 "⚙️"  # Config file
+"🌐"  # Web file
+"🎨"  # Image file
+"📦"  # Package/Archive
 
 # Actions
 "✏️"  # Edit
@@ -993,6 +1300,7 @@ Display: `📄 filename.txt`
 "🗑️"  # Delete
 "💾"  # Save
 "📋"  # Copy
+"🔍"  # Search
 
 # States
 "🟢"  # Success/Green
@@ -1000,117 +1308,29 @@ Display: `📄 filename.txt`
 "🔴"  # Error/Red
 "⚪"  # Neutral/White
 "🟣"  # Info/Purple
+"⚫"  # Disabled/Black
+"💯"  # Perfect score
+"○"   # Empty/Not started
 ```
 
-## Complete Example
+## Utility Functions
+
+### sanitize_id
 
 ```python
-from pathlib import Path
-from textual.app import App, ComposeResult
-from textual.containers import Vertical
-from textual.widgets import Header, Footer, Static
-from textual_filelink import ToggleableFileLink
+from textual_filelink import sanitize_id
 
-class FileManagerApp(App):
-    CSS = """
-    Screen {
-        align: center middle;
-    }
-    Vertical {
-        width: 80;
-        height: auto;
-        border: solid green;
-        padding: 1;
-    }
-    Static {
-        width: 100%;
-        content-align: center middle;
-        text-style: bold;
-    }
-    """
-    
-    def compose(self) -> ComposeResult:
-        yield Header()
-        
-        with Vertical():
-            yield Static("📂 Project Files")
-            
-            # Validated file with multiple icons
-            yield ToggleableFileLink(
-                Path("main.py"),
-                initial_toggle=True,
-                icons=[
-                    {"name": "status", "icon": "✓", "tooltip": "Validated", "clickable": True},
-                    {"name": "type", "icon": "🐍", "tooltip": "Python file"},
-                    {"name": "lock", "icon": "🔒", "position": "after", "tooltip": "Read-only"},
-                ]
-            )
-            
-            # File needing review
-            yield ToggleableFileLink(
-                Path("config.json"),
-                icons=[
-                    {"name": "status", "icon": "⚠", "tooltip": "Needs review", "clickable": True},
-                    {"name": "type", "icon": "⚙️", "tooltip": "Config file"},
-                ]
-            )
-            
-            # File being processed
-            yield ToggleableFileLink(
-                Path("data.csv"),
-                id="processing-file",
-                icons=[
-                    {"name": "status", "icon": "⏳", "tooltip": "Processing...", "clickable": True},
-                    {"name": "type", "icon": "📊", "tooltip": "Data file"},
-                    {"name": "result", "icon": "⚪", "visible": False, "position": "after"},
-                ]
-            )
-        
-        yield Footer()
-    
-    def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
-        state = "selected" if event.is_toggled else "deselected"
-        self.notify(f"📋 {event.path.name} {state}")
-    
-    def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
-        # Remove the widget
-        for child in self.query(ToggleableFileLink):
-            if child.path == event.path:
-                child.remove()
-        self.notify(f"🗑️ Removed {event.path.name}", severity="warning")
-    
-    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
-        # Find the link by path
-        link = None
-        for child in self.query(ToggleableFileLink):
-            if child.path == event.path:
-                link = child
-                break
-        
-        if not link:
-            return
-        
-        if event.icon_name == "status":
-            # Toggle processing status
-            if event.icon == "⏳":
-                # Complete processing
-                link.update_icon("status", icon="✓", tooltip="Complete")
-                # Only update result icon if it exists (for data.csv)
-                if link.get_icon("result"):
-                    link.set_icon_visible("result", True)
-                    link.update_icon("result", icon="🟢", tooltip="Success")
-                self.notify(f"✅ {event.path.name} processing complete")
-            else:
-                # Start processing
-                link.update_icon("status", icon="⏳", tooltip="Processing...")
-                # Only hide result icon if it exists (for data.csv)
-                if link.get_icon("result"):
-                    link.set_icon_visible("result", False)
-                self.notify(f"⏳ Processing {event.path.name}...")
-
-if __name__ == "__main__":
-    FileManagerApp().run()
+# Convert name to valid widget ID
+widget_id = sanitize_id("Run Tests")  # Returns: "run-tests"
+widget_id = sanitize_id("src/main.py")  # Returns: "src-main-py"
+widget_id = sanitize_id("Build Project!")  # Returns: "build-project-"
 ```
+
+**Description:**
+Converts a name to a valid Textual widget ID by:
+- Converting to lowercase
+- Replacing spaces and path separators with hyphens
+- Keeping only alphanumeric characters, hyphens, and underscores
 
 ## Development
 

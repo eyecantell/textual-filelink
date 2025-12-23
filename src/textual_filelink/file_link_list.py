@@ -72,7 +72,7 @@ class FileLinkListItem(Horizontal):
 
         # Create remove button if enabled
         if self._show_remove:
-            self._remove_button = Static("❌", classes="remove-button")
+            self._remove_button = Static("×", classes="remove-button")
             self._remove_button.tooltip = "Remove item"
 
     def compose(self):
