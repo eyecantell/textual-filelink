@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
-from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.message import Message
 from textual.widgets import Static
@@ -14,7 +13,7 @@ from .file_link import FileLink
 from .icon import Icon
 
 
-class FileLinkWithIcons(Horizontal):
+class FileLinkWithIcons(Horizontal, can_focus=True):
     """FileLink with customizable icon indicators before and after the filename.
 
     Composes a FileLink with icon lists using a horizontal layout:
@@ -120,12 +119,7 @@ class FileLinkWithIcons(Horizontal):
         self._line = line
         self._column = column
 
-        # Build icon bindings for keyboard shortcuts
-        icon_bindings = self._build_icon_bindings()
-        if icon_bindings:
-            self.BINDINGS = icon_bindings
-
-        # Initialize container
+        # Initialize container (bindings will be added dynamically in on_mount)
         super().__init__(
             name=name,
             id=id,
@@ -175,20 +169,36 @@ class FileLinkWithIcons(Horizontal):
                     f"Reserved keys: {filelink_keys}"
                 )
 
-    def _build_icon_bindings(self) -> list[Binding]:
-        """Build keyboard bindings for icons with keys."""
-        bindings = []
+    def on_mount(self) -> None:
+        """Create dynamic bindings and action methods after widget is mounted."""
         all_icons = self._icons_before + self._icons_after
 
         for icon in all_icons:
             if icon.key is not None:
                 action_name = f"activate_icon_{icon.name}"
                 description = icon.tooltip or f"Activate {icon.name}"
-                bindings.append(
-                    Binding(icon.key, action_name, description, show=False)
+
+                # Add binding using runtime API
+                self._bindings.bind(
+                    icon.key,
+                    action_name,
+                    description,
+                    show=False,
                 )
 
-        return bindings
+                # Create action method for this icon
+                def make_action(captured_icon):
+                    def action_method():
+                        if captured_icon.clickable:
+                            self.post_message(
+                                self.IconClicked(
+                                    self._path, captured_icon.name, captured_icon.icon
+                                )
+                            )
+                    return action_method
+
+                # Set the action method on this instance
+                setattr(self, f"action_{action_name}", make_action(icon))
 
     def compose(self):
         """Compose the widget layout: [icons_before] FileLink [icons_after]."""
@@ -215,6 +225,7 @@ class FileLinkWithIcons(Horizontal):
         if icon.clickable:
             classes += " clickable"
 
+        # Create widget (no ID needed - we track by name in _icon_widgets dict)
         widget = Static(icon.icon, classes=classes)
 
         # Set tooltip (enhanced with keyboard shortcut if applicable)
@@ -239,27 +250,6 @@ class FileLinkWithIcons(Horizontal):
             icon_name = event.widget._icon_name  # type: ignore
             icon_char = event.widget._icon_char  # type: ignore
             self.post_message(self.IconClicked(self._path, icon_name, icon_char))
-
-    def __getattr__(self, name: str):
-        """Dynamically handle action_activate_icon_* methods."""
-        if name.startswith("action_activate_icon_"):
-            icon_name = name.removeprefix("action_activate_icon_")
-
-            def activate_icon():
-                """Activate the icon (post IconClicked message)."""
-                # Find the icon in our lists
-                all_icons = self._icons_before + self._icons_after
-                for icon in all_icons:
-                    if icon.name == icon_name:
-                        if icon.clickable:
-                            self.post_message(
-                                self.IconClicked(self._path, icon.name, icon.icon)
-                            )
-                        return
-
-            return activate_icon
-
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     # ------------------------------------------------------------------ #
     # Public API - Icon Management

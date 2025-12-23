@@ -1,0 +1,134 @@
+# Test custom keyboard shortcuts for FileLinkWithIcons
+app_module = "test_custom_keys"
+app_class = "CustomKeysTestApp"
+
+screen_width = 100
+screen_height = 50
+initial_delay = 1.0
+scroll_to_top = true
+module_path = "./scripts"
+
+# Capture initial state
+[[step]]
+type = "capture"
+output = "initial"
+
+# Test 1: Press 's' key (should trigger settings icon in test1)
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "press"
+key = "tab"  # Focus first widget
+
+[[step]]
+type = "press"
+key = "s"
+
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "capture"
+output = "after_s_key"
+
+# Test 2: Press '1', '2', '3' keys (should trigger numeric icons in test2)
+[[step]]
+type = "press"
+key = "tab"  # Move to next widget
+
+[[step]]
+type = "press"
+key = "1"
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "after_1_key"
+
+[[step]]
+type = "press"
+key = "2"
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "after_2_key"
+
+[[step]]
+type = "press"
+key = "3"
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "after_3_key"
+
+# Test 3: Press 'a', 'b', 'c' keys (should trigger letter icons in test3)
+[[step]]
+type = "press"
+key = "tab"  # Move to next widget
+
+[[step]]
+type = "press"
+key = "a"
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "after_a_key"
+
+[[step]]
+type = "press"
+key = "b"
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "after_b_key"
+
+# Note: Can't press 'c' as it's bound to clear_log at app level
+# This tests key conflict handling
+
+# Test 4: Press 'x' key (non-clickable icon, should NOT trigger)
+[[step]]
+type = "press"
+key = "tab"  # Move to next widget
+
+[[step]]
+type = "press"
+key = "x"
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "after_x_key"
+
+# Final capture showing full event log
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "capture"
+output = "final"

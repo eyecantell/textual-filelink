@@ -1,0 +1,65 @@
+# Test custom open_keys for FileLink
+app_module = "test_open_keys"
+app_class = "OpenKeysTestApp"
+
+screen_width = 100
+screen_height = 40
+initial_delay = 1.0
+scroll_to_top = true
+module_path = "./scripts"
+
+# Initial state
+[[step]]
+type = "capture"
+output = "open_keys_initial"
+
+# Test 1: Default 'o' key
+[[step]]
+type = "press"
+key = "tab"
+
+[[step]]
+type = "press"
+key = "o"
+
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "capture"
+output = "open_keys_after_o"
+
+# Test 2: Custom key 'enter'
+[[step]]
+type = "press"
+key = "tab"
+
+[[step]]
+type = "press"
+key = "enter"
+
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "capture"
+output = "open_keys_after_enter"
+
+# Test 3: Custom key 'x'
+[[step]]
+type = "press"
+key = "tab"
+
+[[step]]
+type = "press"
+key = "x"
+
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "capture"
+output = "open_keys_final"

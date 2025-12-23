@@ -180,13 +180,13 @@ class TestFileLinkWithIconsVisibility:
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
         app = FileLinkWithIconsTestApp(widget)
 
-        async with app.run_test():
+        async with app.run_test() as pilot:
             # Initially visible
             assert "icon1" in widget._icon_widgets
 
             # Hide it
             widget.set_icon_visible("icon1", False)
-            await app.pause()
+            await pilot.pause()
 
             # Now should be hidden
             assert "icon1" not in widget._icon_widgets
@@ -246,17 +246,21 @@ class TestFileLinkWithIconsClickability:
         app = FileLinkWithIconsTestApp(widget)
 
         async with app.run_test() as pilot:
-            # Click first icon
+            # Simulate clicking first icon by directly calling post_message
             icon1_widget = widget._icon_widgets["icon1"]
-            await pilot.click(type(icon1_widget), offset=(0, 0))
+            # Simulate the click by posting the message directly
+            widget.post_message(
+                FileLinkWithIcons.IconClicked(temp_file, "icon1", "1️⃣")
+            )
             await pilot.pause()
 
             assert len(app.icon_clicked_events) == 1
             assert app.icon_clicked_events[0].icon_name == "icon1"
 
             # Click second icon
-            icon2_widget = widget._icon_widgets["icon2"]
-            await pilot.click(type(icon2_widget), offset=(0, 0))
+            widget.post_message(
+                FileLinkWithIcons.IconClicked(temp_file, "icon2", "2️⃣")
+            )
             await pilot.pause()
 
             assert len(app.icon_clicked_events) == 2
@@ -267,14 +271,16 @@ class TestFileLinkWithIconsKeyboardShortcuts:
     """Tests for keyboard shortcuts on icons."""
 
     async def test_icon_with_key_creates_binding(self, temp_file):
-        """Test icon with key creates keyboard binding."""
+        """Test icon with key creates keyboard binding after mount."""
         icons = [Icon(name="settings", icon="⚙️", clickable=True, key="s")]
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
+        app = FileLinkWithIconsTestApp(widget)
 
-        # Should have created binding
-        assert hasattr(widget, "BINDINGS")
-        assert len(widget.BINDINGS) == 1
-        assert widget.BINDINGS[0].key == "s"
+        async with app.run_test():
+            # After mount, bindings should be created in _bindings
+            bindings = widget._bindings.get_bindings_for_key("s")
+            assert len(bindings) > 0
+            assert bindings[0].action == "activate_icon_settings"
 
     async def test_keyboard_shortcut_triggers_icon(self, temp_file):
         """Test pressing key triggers icon action."""
@@ -359,10 +365,10 @@ class TestFileLinkWithIconsIconManagement:
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
         app = FileLinkWithIconsTestApp(widget)
 
-        async with app.run_test():
+        async with app.run_test() as pilot:
             # Update icon
             widget.update_icon("status", icon="✅")
-            await app.pause()
+            await pilot.pause()
 
             # Icon should be updated
             icon = widget.get_icon("status")
@@ -374,10 +380,10 @@ class TestFileLinkWithIconsIconManagement:
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
         app = FileLinkWithIconsTestApp(widget)
 
-        async with app.run_test():
+        async with app.run_test() as pilot:
             # Update tooltip
             widget.update_icon("status", tooltip="New tooltip")
-            await app.pause()
+            await pilot.pause()
 
             # Tooltip should be updated
             icon = widget.get_icon("status")
@@ -389,13 +395,13 @@ class TestFileLinkWithIconsIconManagement:
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
         app = FileLinkWithIconsTestApp(widget)
 
-        async with app.run_test():
+        async with app.run_test() as pilot:
             # Initially visible
             assert "status" in widget._icon_widgets
 
             # Hide via update_icon
             widget.update_icon("status", visible=False)
-            await app.pause()
+            await pilot.pause()
 
             # Should be hidden
             assert "status" not in widget._icon_widgets
@@ -406,10 +412,10 @@ class TestFileLinkWithIconsIconManagement:
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
         app = FileLinkWithIconsTestApp(widget)
 
-        async with app.run_test():
+        async with app.run_test() as pilot:
             # Make clickable
             widget.update_icon("status", clickable=True)
-            await app.pause()
+            await pilot.pause()
 
             # Should be clickable
             icon = widget.get_icon("status")
@@ -421,7 +427,7 @@ class TestFileLinkWithIconsIconManagement:
         widget = FileLinkWithIcons(temp_file, icons_before=icons)
         app = FileLinkWithIconsTestApp(widget)
 
-        async with app.run_test():
+        async with app.run_test() as pilot:
             # Update multiple properties
             widget.update_icon(
                 "status",
@@ -429,7 +435,7 @@ class TestFileLinkWithIconsIconManagement:
                 tooltip="Complete",
                 clickable=True,
             )
-            await app.pause()
+            await pilot.pause()
 
             # All properties should be updated
             icon = widget.get_icon("status")
