@@ -55,10 +55,22 @@ Demonstrates FileLinkList - a container for managing file link widgets with batc
 
 **Run:** `python demo_03_filelink_list.py`
 
----
+### demo_04_commandlink.py
+Demonstrates CommandLink - specialized widget for command orchestration with status and controls.
 
-More examples coming soon:
-- `demo_04_commandlink.py` - CommandLink for command orchestration
+**Features:**
+- Play/Stop buttons (▶️/⏹️) for command execution
+- Animated spinner during command execution
+- Status indicators (✅/❌/⚠️/❓)
+- Output file linking (click command name when output exists)
+- Optional settings icon (⚙️)
+- Keyboard shortcuts (space/p for play/stop, enter/o for output, s for settings)
+- Async command simulation
+- Batch operations (run all, stop all)
+
+**Run:** `python demo_04_commandlink.py`
+
+---
 
 ## Sample Files
 

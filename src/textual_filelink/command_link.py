@@ -73,7 +73,16 @@ class CommandLink(Horizontal, can_focus=True):
     }
     CommandLink:focus {
         background: $accent 20%;
-        border: tall $accent;
+    }
+    CommandLink > .command-name {
+        width: auto;
+        height: 1;
+        padding: 0 1;
+    }
+    CommandLink > FileLink {
+        width: auto;
+        height: 1;
+        padding: 0 1;
     }
     """
 
@@ -85,14 +94,17 @@ class CommandLink(Horizontal, can_focus=True):
 
         Attributes
         ----------
+        widget : CommandLink
+            The CommandLink widget that was clicked.
         name : str
             Command name.
         output_path : Path | None
             Output file path if set.
         """
 
-        def __init__(self, name: str, output_path: Path | None) -> None:
+        def __init__(self, widget: CommandLink, name: str, output_path: Path | None) -> None:
             super().__init__()
+            self.widget = widget
             self.name = name
             self.output_path = output_path
 
@@ -101,14 +113,17 @@ class CommandLink(Horizontal, can_focus=True):
 
         Attributes
         ----------
+        widget : CommandLink
+            The CommandLink widget that was clicked.
         name : str
             Command name.
         output_path : Path | None
             Output file path if set.
         """
 
-        def __init__(self, name: str, output_path: Path | None) -> None:
+        def __init__(self, widget: CommandLink, name: str, output_path: Path | None) -> None:
             super().__init__()
+            self.widget = widget
             self.name = name
             self.output_path = output_path
 
@@ -117,14 +132,17 @@ class CommandLink(Horizontal, can_focus=True):
 
         Attributes
         ----------
+        widget : CommandLink
+            The CommandLink widget that was clicked.
         name : str
             Command name.
         output_path : Path | None
             Output file path if set.
         """
 
-        def __init__(self, name: str, output_path: Path | None) -> None:
+        def __init__(self, widget: CommandLink, name: str, output_path: Path | None) -> None:
             super().__init__()
+            self.widget = widget
             self.name = name
             self.output_path = output_path
 
@@ -234,7 +252,10 @@ class CommandLink(Horizontal, can_focus=True):
                 _embedded=True,
             )
         else:
-            self._name_widget = Static(self._command_name)
+            self._name_widget = Static(self._command_name, classes="command-name")
+
+        # Set tooltip on name widget with available keyboard shortcuts
+        self._update_name_tooltip()
 
         # Settings icon (optional)
         if self._show_settings:
@@ -278,13 +299,13 @@ class CommandLink(Horizontal, can_focus=True):
         # Play/stop button
         if hasattr(event.widget, "_is_play_button"):
             if self._command_running:
-                self.post_message(self.StopClicked(self._command_name, self._output_path))
+                self.post_message(self.StopClicked(self, self._command_name, self._output_path))
             else:
-                self.post_message(self.PlayClicked(self._command_name, self._output_path))
+                self.post_message(self.PlayClicked(self, self._command_name, self._output_path))
 
         # Settings icon
         elif event.widget == self._settings_widget if self._show_settings else False:
-            self.post_message(self.SettingsClicked(self._command_name, self._output_path))
+            self.post_message(self.SettingsClicked(self, self._command_name, self._output_path))
 
     def on_file_link_opened(self, event: FileLink.Opened) -> None:
         """Handle FileLink.Opened from embedded name widget."""
@@ -303,14 +324,36 @@ class CommandLink(Horizontal, can_focus=True):
     def action_play_stop(self) -> None:
         """Toggle play/stop."""
         if self._command_running:
-            self.post_message(self.StopClicked(self._command_name, self._output_path))
+            self.post_message(self.StopClicked(self, self._command_name, self._output_path))
         else:
-            self.post_message(self.PlayClicked(self._command_name, self._output_path))
+            self.post_message(self.PlayClicked(self, self._command_name, self._output_path))
 
     def action_settings(self) -> None:
         """Open settings."""
         if self._show_settings:
-            self.post_message(self.SettingsClicked(self._command_name, self._output_path))
+            self.post_message(self.SettingsClicked(self, self._command_name, self._output_path))
+
+    # ------------------------------------------------------------------ #
+    # Helper methods
+    # ------------------------------------------------------------------ #
+    def _update_name_tooltip(self) -> None:
+        """Update the name widget's tooltip with available keyboard shortcuts."""
+        shortcuts = []
+
+        # Add output opening if available
+        if self._output_path:
+            shortcuts.append("Open output (enter/o)")
+
+        # Add play/stop
+        shortcuts.append("Play/Stop (space/p)")
+
+        # Add settings if available
+        if self._show_settings:
+            shortcuts.append("Settings (s)")
+
+        # Combine into tooltip
+        tooltip = f"{self._command_name}: " + ", ".join(shortcuts)
+        self._name_widget.tooltip = tooltip
 
     # ------------------------------------------------------------------ #
     # Public API
@@ -396,6 +439,9 @@ class CommandLink(Horizontal, can_focus=True):
                 self.mount(self._name_widget, before=self._settings_widget)
             else:
                 self.mount(self._name_widget)
+
+        # Update tooltip to reflect new output path availability
+        self._update_name_tooltip()
 
     def _animate_spinner(self) -> None:
         """Animate the spinner (called by timer)."""
