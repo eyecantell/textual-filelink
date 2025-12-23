@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "TextualApp",
+    "version": "1.0.0",
+    "debug": true
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "username": "admin"
+  },
+  "features": {
+    "enable_logging": true,
+    "enable_cache": false,
+    "max_connections": 100
+  }
+}

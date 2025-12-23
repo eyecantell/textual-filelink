@@ -1,0 +1,16 @@
+Notes for textual-filelink Demo Examples
+=========================================
+
+This is a sample text file that can be opened by FileLink widgets.
+
+Key Features to Demonstrate:
+- Clickable file links in TUI applications
+- Line and column navigation
+- Status icons and indicators
+- File selection and management
+- Command execution integration
+
+Usage Tips:
+- Start with demo_01 for basics
+- Progress to demo_02 for more features
+- Check demo_03 for icon demonstrations
