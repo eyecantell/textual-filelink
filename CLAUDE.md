@@ -64,110 +64,202 @@ pdm build
 The `textual-capture` tool enables automated TUI screenshot sequences - perfect for LLM-driven review, documentation, and testing.
 
 ```bash
-# Run a capture sequence defined in a TOML config
-pdm run textual-capture scripts/demo_commandlink_captures.toml --verbose
+# Validate config without running (recommended first step)
+pdm run textual-capture config.toml --dry-run
+
+# Run the capture sequence
+pdm run textual-capture config.toml
 
 # Verbosity options
-pdm run textual-capture config.toml           # Default: quiet mode
 pdm run textual-capture config.toml --verbose # Show all actions
 pdm run textual-capture config.toml --quiet   # Errors only
 ```
 
-**TOML Configuration Format**:
+**Basic TOML Configuration**:
 ```toml
 # Required fields
 app_module = "demo_commandlink"           # Python module name (without .py)
 app_class = "CommandOrchestratorApp"      # App class to instantiate
 
-# Optional configuration
+# Output configuration
+output_dir = "./screenshots"              # Where to save files (default: ".")
+formats = ["svg", "txt"]                  # Formats to generate (default: both)
+capture_prefix = "mysequence"             # Prefix for auto-sequenced captures (default: "capture")
+
+# Tooltip capture (enabled by default)
+capture_tooltips = true                   # Auto-capture tooltips with screenshots
+widget_selector = "*"                     # CSS selector for widgets (default: all)
+tooltip_include_empty = false             # Include widgets without tooltips
+
+# Screen and timing
 screen_width = 100                        # Terminal width (default: 80)
 screen_height = 40                        # Terminal height (default: 40)
 initial_delay = 1.0                       # Wait before first action (default: 1.0)
-scroll_to_top = true                      # Press "home" at start (default: true)
-module_path = "./scripts"                 # Path to add to sys.path for imports
 
 # Action steps - executed in order
 [[step]]
-type = "capture"                          # Take a screenshot
-output = "initial_state"                  # Optional: custom name (saves initial_state.svg + .txt)
-                                          # If omitted: auto-generates capture_001, capture_002, etc.
+type = "press"
+keys = ["tab", "tab", "enter"]            # List syntax (preferred)
+pause_between = 0.2                       # Seconds between keys (optional)
 
 [[step]]
 type = "delay"
 seconds = 1.0                             # Wait for animations/async operations
 
 [[step]]
-type = "press"
-key = "tab,tab,enter"                     # Comma-separated keys for sequences
-
-[[step]]
 type = "click"
 label = "Run Selected"                    # Click button by label text
 
 [[step]]
-type = "capture"                          # Auto-named: capture_001.svg, capture_001.txt
+type = "capture"
+output = "after_click"                    # Custom name (optional)
+# Creates: after_click.svg, after_click.txt, after_click_tooltips.txt
 ```
 
 **Available Step Types**:
-- `capture`: Take screenshot (`.svg` + `.txt`). Use `output` for custom name or omit for auto-sequence
+- `capture`: Take screenshot (`.svg` + `.txt` + `_tooltips.txt`). Use `output` for custom name or omit for auto-sequence
+- `press`: Simulate key presses. Use list syntax: `keys = ["tab", "ctrl+s"]` with optional `pause_between`
+- `click`: Click button by label text (e.g., `label = "Submit"`)
 - `delay`: Wait specified seconds (e.g., `seconds = 1.5`)
-- `press`: Simulate key presses. Comma-separated for sequences (e.g., `key = "tab,down,enter"`)
-- `click`: Click a button by its label text (e.g., `label = "Submit"`)
 
-**LLM Review Workflow**: Generate TOML configs to capture specific UI states, then analyze the `.txt` output to verify layout, button placement, and visual hierarchy without manual intervention
+**LLM Review Workflows**:
 
-## Architecture Overview
+*Basic UI Review*:
+```toml
+formats = ["txt"]                         # Text for AI analysis
+capture_tooltips = true                   # Include tooltip data
+
+[[step]]
+type = "capture"
+output = "initial_state"
+```
+
+*Tooltip Audit*:
+```toml
+formats = []                              # Skip visual rendering (faster)
+capture_tooltips = true
+tooltip_include_empty = true              # Show missing tooltips
+
+[[step]]
+type = "capture"
+output = "tooltip_audit"
+```
+
+Check `tooltip_audit_tooltips.txt` for widgets with `(no tooltip)`.
+
+**File Outputs**:
+Each capture creates up to 3 files:
+- `{output}.svg` - Visual screenshot (if `formats` includes "svg")
+- `{output}.txt` - Text representation (if `formats` includes "txt")
+- `{output}_tooltips.txt` - Widget tooltips (if `capture_tooltips = true`)
+
+For LLM analysis, read the `.txt` and `_tooltips.txt` files - they contain structured text perfect for parsing!
+
+## Architecture Overview (v0.4.0)
 
 ### Core Widget Hierarchy
 ```
+v0.4.0 Architecture (Composition over Inheritance):
+
 Static (Textual)
-  └─ FileLink
-       └─ ToggleableFileLink
-            └─ CommandLink
+  └─ FileLink (basic clickable file link)
+
+Horizontal (Textual)
+  └─ FileLinkWithIcons (FileLink + icons via composition)
+
+Horizontal (Textual)
+  └─ CommandLink (flat widget, no inheritance)
+       Uses: FileLink (for name), Static widgets (for controls)
+
+VerticalScroll (Textual)
+  └─ FileLinkList (container for uniform controls)
+       Contains: FileLinkListItem wrappers
+         └─ Any widget (FileLink, FileLinkWithIcons, CommandLink, etc.)
+
+Legacy (backward compatibility):
+  └─ ToggleableFileLink (inheritance-based, deprecated in v0.4.0)
 ```
 
 ### FileLink (src/textual_filelink/file_link.py)
 - **Responsibility**: Render a clickable filename that opens a file in an editor
 - **Key Features**:
-  - Handles click events to open files via subprocess
+  - Custom `display_name` parameter (defaults to filename)
+  - Runtime keyboard bindings via `open_keys` parameter
   - Supports multiple editor command builders (VSCode, Vim, Nano, Eclipse)
-  - Customizable command builder for any editor
   - Shows notifications on success/failure
   - Default is VSCode with `code --goto file:line:column`
-- **Message**: `FileLink.Clicked` (path, line, column)
+- **Message**: `FileLink.Opened` (path, line, column) - **Breaking change**: renamed from `Clicked` in v0.4.0
+- **Keyboard Shortcuts**: Customizable via `open_keys` parameter (default: `["o"]`)
 
-### ToggleableFileLink (src/textual_filelink/toggleable_file_link.py)
-- **Responsibility**: Extend FileLink with toggle checkboxes, custom icons, and removal
+### FileLinkWithIcons (src/textual_filelink/file_link_with_icons.py)
+- **Responsibility**: Compose FileLink with custom icons via composition (not inheritance)
 - **Key Concepts**:
-  - **Icon System**: Flexible icon configuration with positioning (before/after), visibility control, clickability, and ordering by index
-  - **Icon Configuration**: Each icon is a dict with keys: `name`, `icon`, `position`, `index`, `visible`, `clickable`, `tooltip`
-  - **Layout**: `[toggle] [icons...] filename [icons...] [remove]`
-  - Composed using `Horizontal` container with child Static widgets for each icon
+  - Uses `Icon` dataclass for type-safe icon configuration
+  - Icons positioned via `icons_before` and `icons_after` lists
+  - Layout: `[icons_before...] FileLink [icons_after...]`
+  - Dynamic keyboard shortcuts for clickable icons (1-9 keys)
+  - Runtime bindings created in `on_mount()` using `self._bindings.bind()`
 - **Messages**:
-  - `ToggleableFileLink.Toggled` (path, is_toggled)
-  - `ToggleableFileLink.Removed` (path)
-  - `ToggleableFileLink.IconClicked` (path, icon_name, icon)
+  - `FileLinkWithIcons.IconClicked` (path, icon_name, icon_char)
+  - Plus `FileLink.Opened` from embedded FileLink
+- **Properties**: `file_link` property provides access to internal FileLink widget
 
 ### CommandLink (src/textual_filelink/command_link.py)
 - **Responsibility**: Orchestrate command execution with status display and controls
 - **Key Concepts**:
-  - Extends ToggleableFileLink with play/stop buttons and animated spinner
-  - Displays status icon that animates when `running=True`
-  - Uses internal `AnimatedSpinner` widget for animation
-  - Layout: `[toggle] [status/spinner] [play] command_name [settings] [remove]`
-  - Inherits all toggle/icon functionality from ToggleableFileLink
+  - **Flat architecture**: Inherits from `Horizontal`, not from ToggleableFileLink
+  - Builds own layout with child widgets (no inheritance complexity)
+  - Layout: `[status/spinner] [▶️/⏹️] command_name [⚙️?]`
+  - Animated spinner using `set_interval()` when running
+  - Auto-generates widget ID from command name via `sanitize_id()`
+  - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
+  - Internal attribute naming: `_command_running` (not `_running` to avoid Textual's MessagePump conflict)
 - **Messages**:
-  - `CommandLink.PlayClicked` (name, path, output_path, is_toggled)
-  - `CommandLink.StopClicked` (name, path, output_path, is_toggled)
-  - `CommandLink.SettingsClicked` (name, path, output_path, is_toggled)
-  - Plus inherited from ToggleableFileLink
+  - `CommandLink.PlayClicked` (name, output_path)
+  - `CommandLink.StopClicked` (name, output_path)
+  - `CommandLink.SettingsClicked` (name, output_path)
+  - `CommandLink.OutputClicked` (output_path)
+- **Breaking Changes from v0.3.x**:
+  - No `show_toggle` or `show_remove` parameters (use FileLinkList instead)
+  - Constructor signature changed (keyword-only `output_path`)
+  - No inheritance from ToggleableFileLink
 
-### Icon Rendering Pattern
-Icons are dynamically rendered based on configuration state:
-1. Filter icons by visibility
-2. Sort by position (before/after), then by explicit index or list order
-3. Render each as a Static widget with class `status-icon` (and `clickable` if applicable)
-4. Store original configuration in `_icons` list, not widget state
+### FileLinkList (src/textual_filelink/file_link_list.py)
+- **Responsibility**: Container for managing widgets with uniform toggle/remove controls
+- **Key Concepts**:
+  - Inherits from `VerticalScroll` for automatic scrolling
+  - Wraps any widget uniformly: `[toggle?] widget [remove?]`
+  - Enforces explicit IDs on all items (validates uniqueness)
+  - Batch operations: `toggle_all()`, `remove_selected()`, `get_toggled_items()`
+  - Internal `FileLinkListItem` wrapper widget
+- **Messages**:
+  - `FileLinkList.ItemToggled` (item, is_toggled)
+  - `FileLinkList.ItemRemoved` (item)
+- **Methods**:
+  - `add_item(widget, toggled=False)` - Add item (raises ValueError if no ID or duplicate)
+  - `remove_item(widget)` - Remove item
+  - `clear_items()` - Remove all items
+  - `toggle_all(value)` - Set all toggles to value
+  - `remove_selected()` - Remove all toggled items
+  - `get_toggled_items()` - Get list of toggled widgets
+  - `get_items()` - Get all widgets
+  - `__len__()`, `__iter__()` - Standard container protocols
+
+### Icon Dataclass (src/textual_filelink/icon.py)
+```python
+@dataclass
+class Icon:
+    name: str              # Unique identifier
+    icon: str              # Unicode character
+    tooltip: str = ""      # Tooltip text (optional)
+    clickable: bool = True # Whether icon can be clicked
+    key: str | None = None # Keyboard shortcut (optional)
+    visible: bool = True   # Whether icon is displayed
+```
+
+### Utility Functions (src/textual_filelink/utils.py)
+- `sanitize_id(name: str) -> str` - Convert any string to valid widget ID
+  - Lowercases, converts spaces/paths to hyphens, removes special chars
 
 ## Testing Structure
 
