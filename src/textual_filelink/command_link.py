@@ -142,7 +142,7 @@ class CommandLink(Horizontal, can_focus=True):
             self.output_path = output_path
 
     # Default keyboard shortcuts
-    DEFAULT_OPEN_KEYS = ["o"]
+    DEFAULT_OPEN_KEYS = ["enter", "o"]
     DEFAULT_PLAY_STOP_KEYS = ["space", "p"]
     DEFAULT_SETTINGS_KEYS = ["s"]
 

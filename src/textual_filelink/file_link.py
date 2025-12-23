@@ -22,6 +22,7 @@ class FileLink(Static, can_focus=True):
     """
 
     BINDINGS = [
+        Binding("enter", "open_file", "Open file", show=False),
         Binding("o", "open_file", "Open file", show=False),
     ]
 
@@ -145,6 +146,14 @@ class FileLink(Static, can_focus=True):
 
     def action_open_file(self) -> None:
         """Open file via keyboard (reuses existing click logic)."""
+        self.open_file()
+
+    def open_file(self) -> None:
+        """Open the file in the configured editor.
+
+        This is the public API method that can be called programmatically.
+        It opens the file and posts the Opened message.
+        """
         self._do_open_file()
         self.post_message(self.Opened(self._path, self._line, self._column))
 
@@ -210,8 +219,7 @@ class FileLink(Static, can_focus=True):
     def on_click(self, event: events.Click) -> None:
         """Handle click event."""
         event.stop()
-        self._do_open_file()
-        self.post_message(self.Opened(self._path, self._line, self._column))
+        self.open_file()
 
     def _do_open_file(self) -> None:
         """Open the file (shared logic for click and keyboard activation)."""

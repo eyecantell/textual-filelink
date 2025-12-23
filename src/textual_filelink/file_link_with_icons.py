@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.message import Message
 from textual.widgets import Static
@@ -39,6 +40,9 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         padding: 0;
         border: none;
     }
+    FileLinkWithIcons:focus {
+        background: $accent 30%;
+    }
     FileLinkWithIcons > .icon-widget {
         width: auto;
         height: 1;
@@ -55,11 +59,18 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
     }
     """
 
+    BINDINGS = [
+        Binding("enter", "open_file", "Open file", show=False),
+        Binding("o", "open_file", "Open file", show=False),
+    ]
+
     class IconClicked(Message):
         """Posted when a clickable icon is clicked.
 
         Attributes
         ----------
+        widget : FileLinkWithIcons
+            The widget that contains the clicked icon.
         path : Path
             The file path associated with the FileLink.
         icon_name : str
@@ -68,8 +79,15 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             The unicode character displayed for the icon.
         """
 
-        def __init__(self, path: Path, icon_name: str, icon_char: str) -> None:
+        def __init__(
+            self,
+            widget: FileLinkWithIcons,
+            path: Path,
+            icon_name: str,
+            icon_char: str,
+        ) -> None:
             super().__init__()
+            self.widget = widget
             self.path = path
             self.icon_name = icon_name
             self.icon_char = icon_char
@@ -192,7 +210,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
                         if captured_icon.clickable:
                             self.post_message(
                                 self.IconClicked(
-                                    self._path, captured_icon.name, captured_icon.icon
+                                    self, self._path, captured_icon.name, captured_icon.icon
                                 )
                             )
                     return action_method
@@ -249,7 +267,11 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             event.stop()
             icon_name = event.widget._icon_name  # type: ignore
             icon_char = event.widget._icon_char  # type: ignore
-            self.post_message(self.IconClicked(self._path, icon_name, icon_char))
+            self.post_message(self.IconClicked(self, self._path, icon_name, icon_char))
+
+    def action_open_file(self) -> None:
+        """Open the file in the configured editor (keyboard shortcut handler)."""
+        self._file_link.open_file()
 
     # ------------------------------------------------------------------ #
     # Public API - Icon Management

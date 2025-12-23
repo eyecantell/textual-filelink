@@ -43,6 +43,7 @@ class ToggleableFileLink(Widget, can_focus=True):
     """
 
     BINDINGS = [
+        Binding("enter", "open_file", "Open file", show=False),
         Binding("o", "open_file", "Open file", show=False),
         Binding("space", "toggle", "Toggle", show=False),
         Binding("t", "toggle", "Toggle", show=False),

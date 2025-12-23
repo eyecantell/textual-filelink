@@ -6,10 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **textual-filelink** is a Python library providing clickable file link widgets for [Textual](https://github.com/Textualize/textual) TUI applications. It enables opening files in editors directly from terminal UIs with support for line/column navigation, customizable icons, toggle controls, and command orchestration.
 
-The library exports three main widget classes:
+**Current Version**: 0.3.0
+
+The library exports these main widget classes:
 - **FileLink**: Basic clickable filename link
-- **ToggleableFileLink**: FileLink with checkboxes, custom icons, and removal capability
+- **FileLinkWithIcons**: FileLink with customizable icons (composition-based)
+- **ToggleableFileLink**: Legacy widget with checkboxes, icons, and removal (inheritance-based, will be deprecated in v0.4.0)
 - **CommandLink**: Specialized widget for command orchestration with status icons and play/stop controls
+- **FileLinkList**: Container for managing widgets with uniform toggle/remove controls
+- **Icon**: Dataclass for type-safe icon configuration
+- **sanitize_id()**: Utility function for converting strings to valid widget IDs
 
 ## Common Development Commands
 
@@ -48,13 +54,11 @@ pdm run ruff check src/textual_filelink/file_link.py
 
 ### Development Tools
 ```bash
-# Run demo applications (various examples in scripts/)
-pdm run python scripts/demo_01_basic_filelink.py
-pdm run python scripts/demo_06_commandlink_simple.py
-pdm run python scripts/demo_07_async_orchestration.py
+# Run example applications (examples/ directory)
+pdm run python examples/demo_01_filelink.py
 
 # Run textual dev mode (hot-reload for demo development)
-pdm run textual-dev run scripts/demo_01_basic_filelink.py
+pdm run textual-dev run examples/demo_01_filelink.py
 
 # Build distribution package
 pdm build
@@ -155,11 +159,11 @@ Each capture creates up to 3 files:
 
 For LLM analysis, read the `.txt` and `_tooltips.txt` files - they contain structured text perfect for parsing!
 
-## Architecture Overview (v0.4.0)
+## Architecture Overview (Current: v0.3.0)
 
 ### Core Widget Hierarchy
 ```
-v0.4.0 Architecture (Composition over Inheritance):
+Current v0.3.0 Architecture:
 
 Static (Textual)
   └─ FileLink (basic clickable file link)
@@ -168,16 +172,15 @@ Horizontal (Textual)
   └─ FileLinkWithIcons (FileLink + icons via composition)
 
 Horizontal (Textual)
-  └─ CommandLink (flat widget, no inheritance)
-       Uses: FileLink (for name), Static widgets (for controls)
+  └─ ToggleableFileLink (inheritance-based, WILL BE DEPRECATED in v0.4.0)
+       └─ CommandLink (inherits from ToggleableFileLink)
 
 VerticalScroll (Textual)
   └─ FileLinkList (container for uniform controls)
        Contains: FileLinkListItem wrappers
          └─ Any widget (FileLink, FileLinkWithIcons, CommandLink, etc.)
 
-Legacy (backward compatibility):
-  └─ ToggleableFileLink (inheritance-based, deprecated in v0.4.0)
+Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
 ```
 
 ### FileLink (src/textual_filelink/file_link.py)
@@ -188,8 +191,10 @@ Legacy (backward compatibility):
   - Supports multiple editor command builders (VSCode, Vim, Nano, Eclipse)
   - Shows notifications on success/failure
   - Default is VSCode with `code --goto file:line:column`
-- **Message**: `FileLink.Opened` (path, line, column) - **Breaking change**: renamed from `Clicked` in v0.4.0
-- **Keyboard Shortcuts**: Customizable via `open_keys` parameter (default: `["o"]`)
+- **Messages**:
+  - `FileLink.Opened` (path, line, column) - Primary message (v0.3.0+)
+  - `FileLink.Clicked` - Backwards-compatible alias for `Opened` (will be removed in future)
+- **Keyboard Shortcuts**: Customizable via `open_keys` parameter (default: `["enter", "o"]`)
 
 ### FileLinkWithIcons (src/textual_filelink/file_link_with_icons.py)
 - **Responsibility**: Compose FileLink with custom icons via composition (not inheritance)
@@ -204,12 +209,19 @@ Legacy (backward compatibility):
   - Plus `FileLink.Opened` from embedded FileLink
 - **Properties**: `file_link` property provides access to internal FileLink widget
 
+### ToggleableFileLink (src/textual_filelink/toggleable_file_link.py)
+⚠️ **DEPRECATED in v0.4.0**: This widget will be removed. Use `FileLinkWithIcons` + `FileLinkList` instead.
+
+- **Responsibility**: FileLink with checkboxes, custom icons, and removal capability (inheritance-based)
+- **Status**: Legacy widget maintained for backwards compatibility
+- **Migration Path**: Use `FileLinkList` for toggles/remove, `FileLinkWithIcons` for icons
+
 ### CommandLink (src/textual_filelink/command_link.py)
 - **Responsibility**: Orchestrate command execution with status display and controls
+- **Current Design (v0.3.0)**: Inherits from ToggleableFileLink
+- **Future Design (v0.4.0)**: Will be rewritten to inherit from `Horizontal` with flat architecture (see refactor-2025-12-22.md)
 - **Key Concepts**:
-  - **Flat architecture**: Inherits from `Horizontal`, not from ToggleableFileLink
-  - Builds own layout with child widgets (no inheritance complexity)
-  - Layout: `[status/spinner] [▶️/⏹️] command_name [⚙️?]`
+  - Layout: `[toggle?] [status/spinner] [▶️/⏹️] command_name [⚙️?] [remove?]` (v0.3.0)
   - Animated spinner using `set_interval()` when running
   - Auto-generates widget ID from command name via `sanitize_id()`
   - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
@@ -219,10 +231,6 @@ Legacy (backward compatibility):
   - `CommandLink.StopClicked` (name, output_path)
   - `CommandLink.SettingsClicked` (name, output_path)
   - `CommandLink.OutputClicked` (output_path)
-- **Breaking Changes from v0.3.x**:
-  - No `show_toggle` or `show_remove` parameters (use FileLinkList instead)
-  - Constructor signature changed (keyword-only `output_path`)
-  - No inheritance from ToggleableFileLink
 
 ### FileLinkList (src/textual_filelink/file_link_list.py)
 - **Responsibility**: Container for managing widgets with uniform toggle/remove controls
@@ -265,8 +273,10 @@ class Icon:
 
 - **tests/conftest.py**: Shared fixtures for all tests
 - **tests/test_file_link.py**: FileLink unit tests
-- **tests/test_toggleable_file_link.py**: ToggleableFileLink unit tests
+- **tests/test_file_link_with_icons.py**: FileLinkWithIcons unit tests
+- **tests/test_toggleable_file_link.py**: ToggleableFileLink unit tests (legacy)
 - **tests/test_command_link.py**: CommandLink unit tests
+- **tests/test_file_link_list.py**: FileLinkList unit tests
 - **tests/test_tooltip_enhancement.py**: Tooltip keyboard shortcut enhancement tests
 - **tests/test_integration.py**: Integration tests with mock Textual apps
 
@@ -280,11 +290,15 @@ class Icon:
 
 ## Important Implementation Details
 
+### Message Naming Convention
+- **v0.3.0**: `FileLink.Opened` is the primary message, with `FileLink.Clicked` as a backwards-compatible alias
+- **Future**: `FileLink.Clicked` will be removed (use `Opened` for all new code)
+
 ### Keyboard Accessibility
 
 **Focus Support:**
-- All three widget classes have `can_focus=True` enabled, making them tabbable
-- FileLink receives `_embedded=True` parameter from parent widgets (ToggleableFileLink/CommandLink) to disable focus and prevent "focus stealing"
+- All widget classes have `can_focus=True` enabled, making them tabbable
+- FileLink receives `_embedded=True` parameter from parent widgets to disable focus and prevent "focus stealing"
 - When `_embedded=False` (default), FileLink is a standalone focusable widget
 - Focus indicator CSS uses `:focus` pseudo-class with accent color background and border
 - Tab/Shift+Tab navigation works automatically for all focusable widgets
@@ -312,14 +326,15 @@ class CustomFileLink(FileLink):
 *FileLink:*
 - `action_open_file()` - Opens file in configured editor (default: VSCode)
 
+*FileLinkWithIcons:*
+- `action_open_file()` - Delegates to child FileLink
+- `action_icon_1()` through `action_icon_9()` - Activates clickable icons by index (1st through 9th)
+
 *ToggleableFileLink:*
 - `action_open_file()` - Delegates to child FileLink
 - `action_toggle()` - Toggles checkbox, posts `Toggled` message
 - `action_remove()` - Posts `Removed` message if removal enabled
 - `action_icon_1()` through `action_icon_9()` - Activates clickable icons by index (1st through 9th)
-  - Uses helper method `_activate_icon_by_index()` to find and activate icons
-  - Only activates icons with `clickable=True`
-  - Posts `IconClicked` message with icon name and content
 
 *CommandLink:*
 - `action_open_output()` - Opens output file if it exists
@@ -332,16 +347,20 @@ class CustomFileLink(FileLink):
 **Built-in Bindings:**
 
 *FileLink:*
-- `o` - Open file
+- `enter`, `o` - Open file
+
+*FileLinkWithIcons:*
+- `enter`, `o` - Open file
+- `1`-`9` - Activate clickable icons (1st through 9th)
 
 *ToggleableFileLink:*
-- `o` - Open file
+- `enter`, `o` - Open file
 - `space`, `t` - Toggle checkbox
 - `delete`, `x` - Remove widget
 - `1`-`9` - Activate clickable icons (1st through 9th)
 
 *CommandLink:*
-- `o` - Open output file
+- `enter`, `o` - Open output file
 - `space`, `p` - Play/Stop command
 - `s` - Settings dialog
 - `t`, `delete`, `x` - Toggle/Remove (inherited, with priority override)
@@ -384,16 +403,16 @@ class MyApp(App):
   - Toggle: "Click to toggle (space/t)"
   - Remove: "Remove (delete/x)"
   - Icon 1: "Status (1)"
-  - Settings: "Settings (s)" (special case, uses action name not icon number)
+  - Settings: "Settings (s)"
   - Play/Stop: "Run command (space/p)" or "Stop command (space/p)"
 
 **Design Notes:**
-- `o` for open instead of Enter/Space to avoid conflicts with scrolling/form submission
+- `enter`/`o` for open (Enter is standard, o is mnemonic)
 - `space`/`t` for toggle gives users flexibility (Space is standard, t is mnemonic)
 - `delete`/`x` for remove gives users two options
 - Number keys 1-9 limited to 9 icons per widget (standard TUI pattern)
-- Child FileLink in ToggleableFileLink/CommandLink uses `_embedded=True` to avoid focus conflicts
-- `priority=True` binding flag in CommandLink overrides parent class bindings
+- Child FileLink in parent widgets uses `_embedded=True` to avoid focus conflicts
+- `priority=True` binding flag overrides parent class bindings
 - Settings and play_stop icons use action names not numbers for tooltip enhancement
 
 ### Event Handling
@@ -422,6 +441,16 @@ The `update_icon()` method re-renders all icons:
 - **.github/workflows/ci.yml**: CI pipeline (tests on push/PR to main)
 - **.ruff_cache/, htmlcov/**: Generated during development (ignore)
 - **.coverage**: Coverage data file (ignore)
+- **refactor-2025-12-22.md**: Detailed v0.4.0 architecture plan (composition over inheritance)
+
+## Future Architecture (v0.4.0 - Planned)
+
+See `refactor-2025-12-22.md` for the complete v0.4.0 architecture plan. Key changes:
+
+1. **ToggleableFileLink deprecated** - Use `FileLinkWithIcons` + `FileLinkList` instead
+2. **CommandLink rewritten** - Will inherit from `Horizontal` (not ToggleableFileLink) with flat layout
+3. **Composition over inheritance** - Cleaner separation of concerns
+4. **Breaking changes** - Pre-1.0 allows breaking changes for better design
 
 ## Notes for Future Development
 
@@ -430,3 +459,4 @@ The `update_icon()` method re-renders all icons:
 3. **CSS**: Default CSS is defined in class-level `DEFAULT_CSS` strings. Custom CSS can be set on the app.
 4. **Dependencies**: Keep textual version requirement at `>=6.11.0` to ensure compatibility.
 5. **Python Version**: Support Python 3.9+ (check in pyproject.toml classifiers).
+6. **Version Compatibility**: When implementing v0.4.0 changes, maintain backwards compatibility where possible or provide clear migration guides.
