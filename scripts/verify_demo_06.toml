@@ -1,0 +1,45 @@
+# Verify demo_06_commandlink_simple.py
+app_module = "demo_06_commandlink_simple"
+app_class = "CommandLinkSimpleApp"
+
+output_dir = "./screenshots"
+formats = ["txt"]
+capture_tooltips = true
+tooltip_include_empty = false
+
+screen_width = 100
+screen_height = 35
+initial_delay = 0.5
+module_path = "."
+
+[[step]]
+type = "capture"
+output = "demo06_initial"
+
+[[step]]
+type = "press"
+keys = ["tab", "tab"]  # Focus on Format Code command
+
+[[step]]
+type = "delay"
+seconds = 0.2
+
+[[step]]
+type = "press"
+keys = ["space"]  # Play the command
+
+[[step]]
+type = "delay"
+seconds = 0.5
+
+[[step]]
+type = "capture"
+output = "demo06_running"
+
+[[step]]
+type = "delay"
+seconds = 2.0  # Wait for command to complete
+
+[[step]]
+type = "capture"
+output = "demo06_completed"

@@ -79,7 +79,6 @@ class CommandOrchestratorApp(App):
                 output_path=Path("scripts/tests_output.md"),
                 initial_status_icon="🧪",
                 initial_status_tooltip="Not run",
-                toggle_tooltip="Include in batch run",
             )
             yield Static("Run pytest test suite", classes="command-description")
 
@@ -89,8 +88,6 @@ class CommandOrchestratorApp(App):
                 output_path=Path("scripts/build_output.md"),
                 initial_status_icon="🔨",
                 initial_status_tooltip="Not run",
-                initial_toggle=True,
-                toggle_tooltip="Include in batch run",
             )
             yield Static("Compile and bundle application", classes="command-description")
 
@@ -100,7 +97,6 @@ class CommandOrchestratorApp(App):
                 output_path=Path("scripts/lint_output.md"),
                 initial_status_icon="✨",
                 initial_status_tooltip="Not run",
-                toggle_tooltip="Include in batch run",
             )
             yield Static("Check code style with ruff", classes="command-description")
 
@@ -110,7 +106,6 @@ class CommandOrchestratorApp(App):
                 output_path=Path("scripts/deploy_output.md"),
                 initial_status_icon="🚀",
                 initial_status_tooltip="Not run",
-                toggle_tooltip="Include in batch run",
             )
             yield Static("Deploy to production server", classes="command-description")
 

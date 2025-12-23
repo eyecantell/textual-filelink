@@ -1,0 +1,41 @@
+# Verify demo_02_toggleable_basics.py (FileLinkList)
+app_module = "demo_02_toggleable_basics"
+app_class = "FileLinkListBasicsApp"
+
+output_dir = "./screenshots"
+formats = ["txt"]
+capture_tooltips = true
+tooltip_include_empty = true
+
+screen_width = 120
+screen_height = 30
+initial_delay = 0.5
+module_path = "."
+
+[[step]]
+type = "capture"
+output = "demo02_initial"
+
+[[step]]
+type = "press"
+keys = ["a"]  # Select all in list 4
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "demo02_after_select_all"
+
+[[step]]
+type = "press"
+keys = ["d"]  # Remove selected from list 4
+
+[[step]]
+type = "delay"
+seconds = 0.3
+
+[[step]]
+type = "capture"
+output = "demo02_after_remove"

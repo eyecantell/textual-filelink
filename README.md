@@ -99,9 +99,9 @@ if __name__ == "__main__":
 ### CommandLink for Command Orchestration
 
 
-✅ ▶️ Build   ⚙️ ×   - last run successful, play button ot start again, command name ("Build"), settings icon, remove icon
-❌ ▶️ Build   ⚙️ ×   - last run failed, play button to start aga1n, command name ("Build"), settings icon, remove icon
-⠧  ⏹️ Build   ⚙️ ×   - spinner, stop button to cancel run, command name ("Build"), settings icon, remove icon
+✅ ▶️ Build  ⚙️   - last run successful, play button ot start again, command name ("Build"), settings icon
+❌ ▶️ Build  ⚙️   - last run failed, play button to start aga1n, command name ("Build"), settings icon
+⠧  ⏹️ Build  ⚙️   - spinner, stop button to cancel run, command name ("Build"), settings icon
 
 
 ```python

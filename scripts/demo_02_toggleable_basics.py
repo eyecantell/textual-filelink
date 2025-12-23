@@ -92,47 +92,53 @@ class FileLinkListBasicsApp(App):
             with Vertical(classes="column"):
                 yield Static("Toggle Only", classes="column-title")
                 yield Static("show_toggles=True, show_remove=False", classes="column-desc")
-
-                list1 = FileLinkList(show_toggles=True, show_remove=False, id="list1")
-                list1.add_item(FileLink(Path("sample_files/example.py"), id="list1-item1"))
-                list1.add_item(FileLink(Path("sample_files/config.json"), id="list1-item2"))
-                list1.add_item(FileLink(Path("sample_files/data.csv"), id="list1-item3"))
-                yield list1
+                yield FileLinkList(show_toggles=True, show_remove=False, id="list1")
 
             # Column 2: Remove only
             with Vertical(classes="column"):
                 yield Static("Remove Only", classes="column-title")
                 yield Static("show_toggles=False, show_remove=True", classes="column-desc")
-
-                list2 = FileLinkList(show_toggles=False, show_remove=True, id="list2")
-                list2.add_item(FileLink(Path("sample_files/notes.txt"), id="list2-item1"))
-                list2.add_item(FileLink(Path("sample_files/Makefile"), id="list2-item2"))
-                list2.add_item(FileLink(Path("sample_files/LICENSE"), id="list2-item3"))
-                yield list2
+                yield FileLinkList(show_toggles=False, show_remove=True, id="list2")
 
             # Column 3: Both controls
             with Vertical(classes="column"):
                 yield Static("Both Controls", classes="column-title")
                 yield Static("show_toggles=True, show_remove=True", classes="column-desc")
-
-                list3 = FileLinkList(show_toggles=True, show_remove=True, id="list3")
-                list3.add_item(FileLink(Path("sample_files/example.py"), id="list3-item1"), toggled=True)
-                list3.add_item(FileLink(Path("sample_files/config.json"), id="list3-item2"))
-                list3.add_item(FileLink(Path("sample_files/data.csv"), id="list3-item3"))
-                yield list3
+                yield FileLinkList(show_toggles=True, show_remove=True, id="list3")
 
             # Column 4: Batch operations
             with Vertical(classes="column"):
                 yield Static("Batch Operations", classes="column-title")
                 yield Static("Press 'a' to select all, 'd' to remove selected", classes="column-desc")
-
-                list4 = FileLinkList(show_toggles=True, show_remove=True, id="list4")
-                list4.add_item(FileLink(Path("sample_files/notes.txt"), id="list4-item1"), toggled=True)
-                list4.add_item(FileLink(Path("sample_files/Makefile"), id="list4-item2"), toggled=True)
-                list4.add_item(FileLink(Path("sample_files/LICENSE"), id="list4-item3"))
-                yield list4
+                yield FileLinkList(show_toggles=True, show_remove=True, id="list4")
 
         yield Footer()
+
+    def on_mount(self) -> None:
+        """Populate the lists after mounting."""
+        # List 1: Toggle only
+        list1 = self.query_one("#list1", FileLinkList)
+        list1.add_item(FileLink(Path("sample_files/example.py"), id="list1-item1"))
+        list1.add_item(FileLink(Path("sample_files/config.json"), id="list1-item2"))
+        list1.add_item(FileLink(Path("sample_files/data.csv"), id="list1-item3"))
+
+        # List 2: Remove only
+        list2 = self.query_one("#list2", FileLinkList)
+        list2.add_item(FileLink(Path("sample_files/notes.txt"), id="list2-item1"))
+        list2.add_item(FileLink(Path("sample_files/Makefile"), id="list2-item2"))
+        list2.add_item(FileLink(Path("sample_files/LICENSE"), id="list2-item3"))
+
+        # List 3: Both controls
+        list3 = self.query_one("#list3", FileLinkList)
+        list3.add_item(FileLink(Path("sample_files/example.py"), id="list3-item1"), toggled=True)
+        list3.add_item(FileLink(Path("sample_files/config.json"), id="list3-item2"))
+        list3.add_item(FileLink(Path("sample_files/data.csv"), id="list3-item3"))
+
+        # List 4: Batch operations
+        list4 = self.query_one("#list4", FileLinkList)
+        list4.add_item(FileLink(Path("sample_files/notes.txt"), id="list4-item1"), toggled=True)
+        list4.add_item(FileLink(Path("sample_files/Makefile"), id="list4-item2"), toggled=True)
+        list4.add_item(FileLink(Path("sample_files/LICENSE"), id="list4-item3"))
 
     def on_file_link_list_item_toggled(self, event: FileLinkList.ItemToggled) -> None:
         """Handle when a file's toggle state changes."""

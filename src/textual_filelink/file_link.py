@@ -40,8 +40,7 @@ class FileLink(Static, can_focus=True):
         background: $boost;
     }
     FileLink:focus {
-        background: $accent 20%;
-        border: tall $accent;
+        background: $accent 30%;
     }
     """
 
