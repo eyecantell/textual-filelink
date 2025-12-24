@@ -1,9 +1,10 @@
 """Test demo for custom keyboard shortcuts in FileLinkWithIcons."""
 
 from pathlib import Path
+
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
-from textual.widgets import Static, Footer
+from textual.widgets import Footer, Static
 
 from textual_filelink import FileLinkWithIcons
 from textual_filelink.icon import Icon
@@ -55,7 +56,7 @@ class CustomKeysTestApp(App):
                 "Test 1: Icon with key='s' (settings)\n"
                 "Press 's' to trigger icon\n"
                 "Expected: Log should show 'settings' icon clicked",
-                classes="test-section"
+                classes="test-section",
             )
 
             # Test 1: Single icon with custom key
@@ -74,7 +75,7 @@ class CustomKeysTestApp(App):
                 "\nTest 2: Multiple icons with different keys\n"
                 "Press '1' for first icon, '2' for second, '3' for third\n"
                 "Expected: Log shows which icon was clicked",
-                classes="test-section"
+                classes="test-section",
             )
 
             # Test 2: Multiple icons with numeric keys
@@ -94,7 +95,7 @@ class CustomKeysTestApp(App):
                 "\nTest 3: Icons with letter keys\n"
                 "Press 'a', 'b', 'c' for respective icons\n"
                 "Expected: Log shows which icon was clicked",
-                classes="test-section"
+                classes="test-section",
             )
 
             # Test 3: Icons with letter keys
@@ -114,7 +115,7 @@ class CustomKeysTestApp(App):
                 "\nTest 4: Non-clickable icon with key (should do nothing)\n"
                 "Press 'x' - should NOT trigger anything\n"
                 "Expected: No log entry",
-                classes="test-section"
+                classes="test-section",
             )
 
             # Test 4: Non-clickable icon with key

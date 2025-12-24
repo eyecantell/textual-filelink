@@ -1,7 +1,6 @@
 """Tests for FileLinkWithIcons widget."""
 
 import pytest
-from pathlib import Path
 from textual.app import App, ComposeResult
 
 from textual_filelink import FileLink
@@ -246,21 +245,15 @@ class TestFileLinkWithIconsClickability:
         app = FileLinkWithIconsTestApp(widget)
 
         async with app.run_test() as pilot:
-            # Simulate clicking first icon by directly calling post_message
-            icon1_widget = widget._icon_widgets["icon1"]
             # Simulate the click by posting the message directly
-            widget.post_message(
-                FileLinkWithIcons.IconClicked(widget, temp_file, "icon1", "1️⃣")
-            )
+            widget.post_message(FileLinkWithIcons.IconClicked(widget, temp_file, "icon1", "1️⃣"))
             await pilot.pause()
 
             assert len(app.icon_clicked_events) == 1
             assert app.icon_clicked_events[0].icon_name == "icon1"
 
             # Click second icon
-            widget.post_message(
-                FileLinkWithIcons.IconClicked(widget, temp_file, "icon2", "2️⃣")
-            )
+            widget.post_message(FileLinkWithIcons.IconClicked(widget, temp_file, "icon2", "2️⃣"))
             await pilot.pause()
 
             assert len(app.icon_clicked_events) == 2

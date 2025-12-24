@@ -194,9 +194,7 @@ class FileLinkListDemo(App):
             sample_dir / "Makefile",
         ]:
             try:
-                basic_list.add_item(
-                    FileLink(file_path, id=sanitize_id(str(file_path)))
-                )
+                basic_list.add_item(FileLink(file_path, id=sanitize_id(str(file_path))))
             except Exception as e:
                 self.notify(f"Error adding {file_path.name}: {e}", severity="error")
 
@@ -344,6 +342,7 @@ class FileLinkListDemo(App):
 
             # Generate unique ID
             import time
+
             unique_id = sanitize_id(f"{file_name}-{int(time.time() * 1000)}")
 
             try:

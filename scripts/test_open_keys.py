@@ -1,9 +1,10 @@
 """Test demo for custom open_keys in FileLink."""
 
 from pathlib import Path
+
 from textual.app import App, ComposeResult
 from textual.containers import VerticalScroll
-from textual.widgets import Static, Footer
+from textual.widgets import Footer, Static
 
 from textual_filelink import FileLink
 
@@ -51,9 +52,8 @@ class OpenKeysTestApp(App):
             yield Static("=== Custom open_keys Test ===\n", classes="test-section")
 
             yield Static(
-                "Test 1: Default FileLink (press 'o' to open)\n"
-                "Focus and press 'o' - should log 'Opened' event",
-                classes="test-section"
+                "Test 1: Default FileLink (press 'o' to open)\nFocus and press 'o' - should log 'Opened' event",
+                classes="test-section",
             )
 
             # Test 1: Default FileLink with 'o' key
@@ -63,7 +63,7 @@ class OpenKeysTestApp(App):
             yield Static(
                 "\nTest 2: Custom open_keys=['f2', 'enter']\n"
                 "Focus and press 'f2' or 'enter' - should log 'Opened' event",
-                classes="test-section"
+                classes="test-section",
             )
 
             # Test 2: Custom open_keys
@@ -77,7 +77,7 @@ class OpenKeysTestApp(App):
             yield Static(
                 "\nTest 3: Custom open_keys=['x', 'y', 'z']\n"
                 "Focus and press 'x', 'y', or 'z' - should log 'Opened' event",
-                classes="test-section"
+                classes="test-section",
             )
 
             # Test 3: Custom open_keys with multiple keys

@@ -12,7 +12,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Footer, Header, Static
 
-from textual_filelink import CommandLink
+from textual_filelink import CommandLink, sanitize_id
 
 
 class CommandOrchestratorApp(App):

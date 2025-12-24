@@ -172,7 +172,7 @@ class FileLink(Static, can_focus=True):
             List of key names bound to the action (e.g., ['o'], ['space', 't'])
         """
         # For open_file action, return custom keys if set
-        if action_name == "open_file" and hasattr(self, '_custom_open_keys') and self._custom_open_keys is not None:
+        if action_name == "open_file" and hasattr(self, "_custom_open_keys") and self._custom_open_keys is not None:
             return self._custom_open_keys
 
         # Otherwise, use class-level BINDINGS

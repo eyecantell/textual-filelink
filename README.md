@@ -328,9 +328,10 @@ Open the file in the configured editor (can be called programmatically).
 Posted when the link is clicked or opened via keyboard.
 
 **Attributes:**
-- `path: Path`
-- `line: int | None`
-- `column: int | None`
+- `widget: FileLink` - The FileLink widget that was opened
+- `path: Path` - The file path that was opened
+- `line: int | None` - The line number to navigate to (or None)
+- `column: int | None` - The column number to navigate to (or None)
 
 **Note:** `FileLink.Clicked` is deprecated but still available for backwards compatibility. Use `FileLink.Opened` instead.
 
@@ -604,6 +605,7 @@ link.set_output_path(None)  # Clear output path
 Posted when play button (▶️) is clicked.
 
 **Attributes:**
+- `widget: CommandLink` - The CommandLink widget that was clicked
 - `name: str` - The command name
 - `output_path: Path | None` - The output file path (or None if not set)
 
@@ -611,6 +613,7 @@ Posted when play button (▶️) is clicked.
 Posted when stop button (⏸️) is clicked.
 
 **Attributes:**
+- `widget: CommandLink` - The CommandLink widget that was clicked
 - `name: str` - The command name
 - `output_path: Path | None` - The output file path (or None if not set)
 
@@ -618,6 +621,7 @@ Posted when stop button (⏸️) is clicked.
 Posted when settings icon (⚙️) is clicked (only if show_settings=True).
 
 **Attributes:**
+- `widget: CommandLink` - The CommandLink widget that was clicked
 - `name: str` - The command name
 - `output_path: Path | None` - The output file path (or None if not set)
 

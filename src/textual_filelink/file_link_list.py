@@ -311,11 +311,7 @@ class FileLinkList(VerticalScroll):
             return
 
         # Collect items to remove
-        to_remove = [
-            wrapper.item
-            for wrapper in self._wrappers.values()
-            if wrapper.is_toggled
-        ]
+        to_remove = [wrapper.item for wrapper in self._wrappers.values() if wrapper.is_toggled]
 
         # Remove them
         for item in to_remove:
@@ -332,11 +328,7 @@ class FileLinkList(VerticalScroll):
         if not self._show_toggles:
             return []
 
-        return [
-            wrapper.item
-            for wrapper in self._wrappers.values()
-            if wrapper.is_toggled
-        ]
+        return [wrapper.item for wrapper in self._wrappers.values() if wrapper.is_toggled]
 
     def get_items(self) -> list[Widget]:
         """Get all items in the list.
@@ -364,17 +356,15 @@ class FileLinkList(VerticalScroll):
         # Check each wrapper for toggle icon or remove button clicks
         for wrapper in self._wrappers.values():
             # Handle toggle icon click
-            if self._show_toggles and hasattr(wrapper, "_toggle_icon"):
-                if wrapper._toggle_icon == event.widget:
-                    # Post ItemToggled message
-                    self.post_message(self.ItemToggled(wrapper.item, wrapper.is_toggled))
-                    event.stop()
-                    return
+            if self._show_toggles and hasattr(wrapper, "_toggle_icon") and wrapper._toggle_icon == event.widget:
+                # Post ItemToggled message
+                self.post_message(self.ItemToggled(wrapper.item, wrapper.is_toggled))
+                event.stop()
+                return
 
             # Handle remove button click
-            if self._show_remove and hasattr(wrapper, "_remove_button"):
-                if wrapper._remove_button == event.widget:
-                    # Remove the item
-                    self.remove_item(wrapper.item)
-                    event.stop()
-                    return
+            if self._show_remove and hasattr(wrapper, "_remove_button") and wrapper._remove_button == event.widget:
+                # Remove the item
+                self.remove_item(wrapper.item)
+                event.stop()
+                return

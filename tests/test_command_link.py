@@ -1,9 +1,6 @@
 # tests/test_command_link.py
 """Tests for CommandLink widget (flat architecture, v0.4.0)."""
 
-import asyncio
-from pathlib import Path
-
 import pytest
 from textual.app import App, ComposeResult
 

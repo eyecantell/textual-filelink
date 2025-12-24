@@ -1,8 +1,6 @@
 # tests/test_file_link_list.py
 """Tests for FileLinkList widget (v0.4.0)."""
 
-from pathlib import Path
-
 import pytest
 from textual.app import App, ComposeResult
 
@@ -495,3 +493,56 @@ class TestFileLinkListWrapperLayout:
             assert wrapper._show_remove is True
             assert hasattr(wrapper, "_toggle_icon")
             assert hasattr(wrapper, "_remove_button")
+
+
+class TestFileLinkListClicks:
+    """Test suite for FileLinkList click interactions."""
+
+    async def test_clicking_remove_button_removes_item(self, temp_file):
+        """Test clicking remove button removes item from list."""
+        file_list = FileLinkList(show_remove=True)
+        app = FileLinkListTestApp(file_list)
+
+        async with app.run_test() as pilot:
+            link = FileLink(temp_file, id="test-py")
+            file_list.add_item(link)
+
+            # Verify item is in list
+            assert len(file_list) == 1
+
+            # Get the wrapper and remove button
+            wrapper = file_list._wrappers["test-py"]
+            remove_button = wrapper._remove_button
+
+            # Click the remove button
+            await pilot.click(remove_button)
+            await pilot.pause()
+
+            # Verify item was removed
+            assert len(file_list) == 0
+            assert len(app.item_removed_events) == 1
+            assert app.item_removed_events[0].item == link
+
+    async def test_clicking_remove_with_both_controls_enabled(self, temp_file):
+        """Test clicking remove when both toggle and remove are enabled."""
+        file_list = FileLinkList(show_toggles=True, show_remove=True)
+        app = FileLinkListTestApp(file_list)
+
+        async with app.run_test() as pilot:
+            link1 = FileLink(temp_file, id="test-py-1")
+            link2 = FileLink(temp_file, id="test-py-2")
+            file_list.add_item(link1)
+            file_list.add_item(link2)
+
+            # Verify both items are in list
+            assert len(file_list) == 2
+
+            # Remove second item
+            wrapper2 = file_list._wrappers["test-py-2"]
+            await pilot.click(wrapper2._remove_button)
+            await pilot.pause()
+
+            # Verify one item was removed
+            assert len(file_list) == 1
+            assert len(app.item_removed_events) == 1
+            assert app.item_removed_events[0].item == link2

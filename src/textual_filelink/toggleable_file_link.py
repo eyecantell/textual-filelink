@@ -265,7 +265,7 @@ class ToggleableFileLink(Widget, can_focus=True):
             "ToggleableFileLink is deprecated and will be removed in v0.5.0. "
             "Use FileLinkWithIcons for icon support and FileLinkList for toggle/remove controls.",
             DeprecationWarning,
-            stacklevel=2
+            stacklevel=2,
         )
 
         super().__init__(name=name, id=id, classes=classes)

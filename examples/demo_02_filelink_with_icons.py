@@ -27,7 +27,7 @@ from pathlib import Path
 
 from textual import events
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, ScrollableContainer, Vertical
+from textual.containers import Horizontal, ScrollableContainer
 from textual.widgets import Button, Footer, Header, Static
 
 from textual_filelink import FileLinkWithIcons, Icon
@@ -99,8 +99,7 @@ class FileLinkWithIconsDemo(App):
             # Section 1: Basic Icon Positioning
             yield Static("Section 1: Icon Positioning", classes="section-title")
             yield Static(
-                "Icons can be placed before or after the filename. "
-                "Order is preserved from the list.",
+                "Icons can be placed before or after the filename. Order is preserved from the list.",
                 classes="section-description",
             )
 
@@ -312,11 +311,7 @@ class FileLinkWithIconsDemo(App):
                 for icon in widget._icons_after:
                     if icon.name == icon_name:
                         # Post the IconClicked message directly
-                        widget.post_message(
-                            FileLinkWithIcons.IconClicked(
-                                widget, widget._path, icon.name, icon.icon
-                            )
-                        )
+                        widget.post_message(FileLinkWithIcons.IconClicked(widget, widget._path, icon.name, icon.icon))
                         event.prevent_default()
                         break
             except Exception:

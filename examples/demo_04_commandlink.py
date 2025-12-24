@@ -30,9 +30,8 @@ import asyncio
 import random
 from pathlib import Path
 
-from textual import events
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, ScrollableContainer, Vertical
+from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Footer, Header, Label, Static
 
 from textual_filelink import CommandLink
@@ -309,7 +308,7 @@ class CommandLinkDemo(App):
 
     def on_file_link_opened(self, event) -> None:
         """Handle output file opens (bubbled from embedded FileLink)."""
-        if hasattr(event, 'path'):
+        if hasattr(event, "path"):
             self.notify(f"📂 Opening output: {event.path.name}", timeout=2)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

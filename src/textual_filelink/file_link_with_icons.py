@@ -191,8 +191,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         for icon in all_icons:
             if icon.key in filelink_keys:
                 raise ValueError(
-                    f"Icon key '{icon.key}' conflicts with FileLink binding. "
-                    f"Reserved keys: {filelink_keys}"
+                    f"Icon key '{icon.key}' conflicts with FileLink binding. Reserved keys: {filelink_keys}"
                 )
 
     def on_mount(self) -> None:
@@ -217,10 +216,9 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
                     def action_method():
                         if captured_icon.clickable:
                             self.post_message(
-                                self.IconClicked(
-                                    self, self._path, captured_icon.name, captured_icon.icon
-                                )
+                                self.IconClicked(self, self._path, captured_icon.name, captured_icon.icon)
                             )
+
                     return action_method
 
                 # Set the action method on this instance
@@ -372,7 +370,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         self._icon_widgets.clear()
 
         # Re-create visible icons before FileLink
-        for i, icon in enumerate(self._icons_before):
+        for icon in self._icons_before:
             if icon.visible:
                 widget = self._create_icon_widget(icon)
                 self._icon_widgets[icon.name] = widget

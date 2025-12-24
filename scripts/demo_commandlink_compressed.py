@@ -12,7 +12,7 @@ from textual.app import App, ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Footer, Header, Static
 
-from textual_filelink import CommandLink
+from textual_filelink import CommandLink, sanitize_id
 
 
 class CompressedCommandApp(App):
@@ -159,6 +159,7 @@ class CompressedCommandApp(App):
             link = self.query_one(f"#{sanitized_id}", CommandLink)
 
             import random
+
             success = random.random() > 0.3
 
             if success:
