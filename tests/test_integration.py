@@ -29,7 +29,7 @@ class IntegrationTestApp(App):
     def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
         self.events.append(("icon_clicked", event))
 
-    def on_file_link_clicked(self, event):
+    def on_file_link_opened(self, event):
         self.events.append(("clicked", event))
 
 

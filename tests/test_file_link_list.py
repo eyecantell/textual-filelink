@@ -466,7 +466,7 @@ class TestFileLinkListWrapperLayout:
 
             wrapper = file_list._wrappers["test-py"]
             assert wrapper._show_toggle is True
-            assert hasattr(wrapper, "_toggle_checkbox")
+            assert hasattr(wrapper, "_toggle_icon")
 
     async def test_wrapper_with_remove(self, temp_file):
         """Test wrapper layout with remove button enabled."""
@@ -493,5 +493,5 @@ class TestFileLinkListWrapperLayout:
             wrapper = file_list._wrappers["test-py"]
             assert wrapper._show_toggle is True
             assert wrapper._show_remove is True
-            assert hasattr(wrapper, "_toggle_checkbox")
+            assert hasattr(wrapper, "_toggle_icon")
             assert hasattr(wrapper, "_remove_button")

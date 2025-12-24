@@ -250,7 +250,7 @@ class TestFileLinkWithIconsClickability:
             icon1_widget = widget._icon_widgets["icon1"]
             # Simulate the click by posting the message directly
             widget.post_message(
-                FileLinkWithIcons.IconClicked(temp_file, "icon1", "1️⃣")
+                FileLinkWithIcons.IconClicked(widget, temp_file, "icon1", "1️⃣")
             )
             await pilot.pause()
 
@@ -259,7 +259,7 @@ class TestFileLinkWithIconsClickability:
 
             # Click second icon
             widget.post_message(
-                FileLinkWithIcons.IconClicked(temp_file, "icon2", "2️⃣")
+                FileLinkWithIcons.IconClicked(widget, temp_file, "icon2", "2️⃣")
             )
             await pilot.pause()
 

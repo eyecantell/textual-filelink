@@ -10,6 +10,8 @@ from textual.binding import Binding
 from textual.message import Message
 from textual.widgets import Static
 
+from .utils import format_keyboard_shortcuts
+
 
 class FileLink(Static, can_focus=True):
     """Clickable filename that opens the real file using a configurable command.
@@ -53,6 +55,8 @@ class FileLink(Static, can_focus=True):
 
         Attributes
         ----------
+        widget : FileLink
+            The FileLink widget that was opened.
         path : Path
             The file path that was opened.
         line : int | None
@@ -61,8 +65,9 @@ class FileLink(Static, can_focus=True):
             The column number to navigate to, or None.
         """
 
-        def __init__(self, path: Path, line: int | None, column: int | None) -> None:
+        def __init__(self, widget: FileLink, path: Path, line: int | None, column: int | None) -> None:
             super().__init__()
+            self.widget = widget
             self.path = path
             self.line = line
             self.column = column
@@ -155,7 +160,7 @@ class FileLink(Static, can_focus=True):
         It opens the file and posts the Opened message.
         """
         self._do_open_file()
-        self.post_message(self.Opened(self._path, self._line, self._column))
+        self.post_message(self.Opened(self, self._path, self._line, self._column))
 
     def _get_keys_for_action(self, action_name: str) -> list[str]:
         """Get all keys bound to an action.
@@ -200,8 +205,8 @@ class FileLink(Static, can_focus=True):
             # No keys bound, return base tooltip or empty string
             return base_tooltip or ""
 
-        # Format keys as "key1/key2/key3"
-        key_hint = "/".join(keys)
+        # Format keys using centralized utility
+        key_hint = format_keyboard_shortcuts(keys)
 
         # If no base tooltip, generate sensible default
         if not base_tooltip:
@@ -211,7 +216,7 @@ class FileLink(Static, can_focus=True):
             readable = action_name.replace("_", " ").title()
             base_tooltip = readable
 
-        return f"{base_tooltip} ({key_hint})"
+        return f"{base_tooltip} {key_hint}"
 
     # ------------------------------------------------------------------ #
     # Mouse handling for clickability

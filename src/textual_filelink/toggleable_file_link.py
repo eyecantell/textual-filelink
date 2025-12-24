@@ -35,6 +35,10 @@ class IconConfig:
 class ToggleableFileLink(Widget, can_focus=True):
     """A FileLink with optional toggle (☐/☑) on the left, multiple status icons, and optional remove (×) on the right.
 
+    .. deprecated:: 0.4.0
+        ToggleableFileLink is deprecated. Use :class:`FileLinkWithIcons` for icon support
+        and :class:`FileLinkList` for toggle/remove controls instead.
+
     Event Bubbling Policy
     ---------------------
     - Internal click handlers stop event propagation with event.stop()
@@ -256,6 +260,14 @@ class ToggleableFileLink(Widget, can_focus=True):
         status_tooltip : str | None
             [DEPRECATED] Use icons parameter instead.
         """
+        # Emit deprecation warning
+        warnings.warn(
+            "ToggleableFileLink is deprecated and will be removed in v0.5.0. "
+            "Use FileLinkWithIcons for icon support and FileLinkList for toggle/remove controls.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+
         super().__init__(name=name, id=id, classes=classes)
         self._path = Path(path).resolve()
         self._is_toggled = initial_toggle

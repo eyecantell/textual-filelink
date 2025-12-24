@@ -32,7 +32,7 @@ class ToggleableFileLinkTestApp(App):
     def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
         self.icon_clicked_events.append(event)
 
-    def on_file_link_clicked(self, event: FileLink.Clicked):
+    def on_file_link_opened(self, event: FileLink.Opened):
         self.clicked_events.append(event)
 
 

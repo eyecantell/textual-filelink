@@ -11,7 +11,7 @@ from textual.message import Message
 from textual.widgets import Static
 
 from .file_link import FileLink
-from .utils import sanitize_id
+from .utils import format_keyboard_shortcuts, sanitize_id
 
 
 class CommandLink(Horizontal, can_focus=True):
@@ -255,7 +255,7 @@ class CommandLink(Horizontal, can_focus=True):
             self._name_widget = Static(self._command_name, classes="command-name")
 
         # Set tooltip on name widget with available keyboard shortcuts
-        self._update_name_tooltip()
+        self._build_tooltip_with_shortcuts()
 
         # Settings icon (optional)
         if self._show_settings:
@@ -272,10 +272,11 @@ class CommandLink(Horizontal, can_focus=True):
 
     def on_mount(self) -> None:
         """Set up runtime keyboard bindings."""
-        # Open output bindings
-        open_keys = self._custom_open_keys if self._custom_open_keys is not None else self.DEFAULT_OPEN_KEYS
-        for key in open_keys:
-            self._bindings.bind(key, "open_output", "Open output", show=False)
+        # Open output bindings (only if output_path is set)
+        if self._output_path:
+            open_keys = self._custom_open_keys if self._custom_open_keys is not None else self.DEFAULT_OPEN_KEYS
+            for key in open_keys:
+                self._bindings.bind(key, "open_output", "Open output", show=False)
 
         # Play/stop bindings
         play_stop_keys = (
@@ -336,20 +337,23 @@ class CommandLink(Horizontal, can_focus=True):
     # ------------------------------------------------------------------ #
     # Helper methods
     # ------------------------------------------------------------------ #
-    def _update_name_tooltip(self) -> None:
-        """Update the name widget's tooltip with available keyboard shortcuts."""
+    def _build_tooltip_with_shortcuts(self) -> None:
+        """Build and set tooltip on name widget showing all available keyboard shortcuts."""
         shortcuts = []
 
         # Add output opening if available
         if self._output_path:
-            shortcuts.append("Open output (enter/o)")
+            open_keys = self._custom_open_keys or self.DEFAULT_OPEN_KEYS
+            shortcuts.append(f"Open output {format_keyboard_shortcuts(open_keys)}")
 
         # Add play/stop
-        shortcuts.append("Play/Stop (space/p)")
+        play_stop_keys = self._custom_play_stop_keys or self.DEFAULT_PLAY_STOP_KEYS
+        shortcuts.append(f"Play/Stop {format_keyboard_shortcuts(play_stop_keys)}")
 
         # Add settings if available
         if self._show_settings:
-            shortcuts.append("Settings (s)")
+            settings_keys = self._custom_settings_keys or self.DEFAULT_SETTINGS_KEYS
+            shortcuts.append(f"Settings {format_keyboard_shortcuts(settings_keys)}")
 
         # Combine into tooltip
         tooltip = f"{self._command_name}: " + ", ".join(shortcuts)
@@ -441,7 +445,7 @@ class CommandLink(Horizontal, can_focus=True):
                 self.mount(self._name_widget)
 
         # Update tooltip to reflect new output path availability
-        self._update_name_tooltip()
+        self._build_tooltip_with_shortcuts()
 
     def _animate_spinner(self) -> None:
         """Animate the spinner (called by timer)."""

@@ -56,13 +56,13 @@ def temp_file(tmp_path):
 
 
 async def test_filelink_tooltip_includes_shortcut(temp_file):
-    """Test standalone FileLink tooltip includes 'o' key."""
+    """Test standalone FileLink tooltip includes keyboard shortcuts."""
     link = FileLink(temp_file)
     app = FileLinkTestApp(link)
 
     async with app.run_test():
         assert link.tooltip is not None
-        assert "(o)" in link.tooltip.lower()
+        assert "(enter/o)" in link.tooltip.lower()
 
 
 async def test_filelink_embedded_no_tooltip(temp_file):
@@ -84,7 +84,7 @@ async def test_filelink_custom_tooltip_enhanced(temp_file):
     async with app.run_test():
         assert link.tooltip is not None
         assert "My custom file" in link.tooltip
-        assert "(o)" in link.tooltip.lower()
+        assert "(enter/o)" in link.tooltip.lower()
 
 
 async def test_filelink_tooltip_format(temp_file):
@@ -93,9 +93,9 @@ async def test_filelink_tooltip_format(temp_file):
     app = FileLinkTestApp(link)
 
     async with app.run_test():
-        # Should be in format "Open test.txt (o)"
+        # Should be in format "Open test.txt (enter/o)"
         assert link.tooltip.startswith("Open ")
-        assert " (o)" in link.tooltip
+        assert " (enter/o)" in link.tooltip
 
 
 # ============================================================================

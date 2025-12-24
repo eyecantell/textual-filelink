@@ -12,6 +12,7 @@ from textual.widgets import Static
 
 from .file_link import FileLink
 from .icon import Icon
+from .utils import format_keyboard_shortcuts
 
 
 class FileLinkWithIcons(Horizontal, can_focus=True):
@@ -144,9 +145,16 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             classes=classes,
         )
 
-        # Set tooltip if provided
+        # Set enhanced tooltip with keyboard shortcuts
         if tooltip:
-            self.tooltip = tooltip
+            # User provided tooltip - enhance with shortcuts
+            open_keys = ["enter", "o"]  # Default FileLink keys
+            self.tooltip = f"{tooltip} {format_keyboard_shortcuts(open_keys)}"
+        else:
+            # Generate default tooltip
+            default_tooltip = f"Open {self._path.name}"
+            open_keys = ["enter", "o"]
+            self.tooltip = f"{default_tooltip} {format_keyboard_shortcuts(open_keys)}"
 
         # Create internal FileLink (embedded to prevent focus stealing)
         self._file_link = FileLink(

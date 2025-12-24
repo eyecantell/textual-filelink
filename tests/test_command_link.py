@@ -433,9 +433,9 @@ class TestCommandLinkProperties:
 class TestCommandLinkKeyboardBindings:
     """Test suite for CommandLink keyboard binding creation."""
 
-    async def test_runtime_bindings_created(self):
+    async def test_runtime_bindings_created(self, temp_output_file):
         """Test runtime bindings are created in on_mount()."""
-        link = CommandLink("TestCommand", show_settings=True)
+        link = CommandLink("TestCommand", output_path=temp_output_file, show_settings=True)
         app = CommandLinkTestApp(link)
 
         async with app.run_test():
@@ -458,10 +458,11 @@ class TestCommandLinkKeyboardBindings:
             assert len(bindings_s) > 0
             assert bindings_s[0].action == "settings"
 
-    async def test_custom_bindings_created(self):
+    async def test_custom_bindings_created(self, temp_output_file):
         """Test custom keyboard bindings are created correctly."""
         link = CommandLink(
             "TestCommand",
+            output_path=temp_output_file,
             show_settings=True,
             open_keys=["f1", "f2"],
             play_stop_keys=["r"],

@@ -39,3 +39,30 @@ def sanitize_id(name: str) -> str:
 
     # Keep only alphanumeric, hyphens, and underscores
     return "".join(c if c.isalnum() or c in ("-", "_") else "-" for c in sanitized)
+
+
+def format_keyboard_shortcuts(keys: list[str]) -> str:
+    """Format keyboard shortcuts as (key1/key2/key3).
+
+    Parameters
+    ----------
+    keys : list[str]
+        List of keyboard shortcut keys.
+
+    Returns
+    -------
+    str
+        Formatted string like "(enter/o)" or empty string if no keys.
+
+    Examples
+    --------
+    >>> format_keyboard_shortcuts(["enter", "o"])
+    '(enter/o)'
+    >>> format_keyboard_shortcuts(["space", "p"])
+    '(space/p)'
+    >>> format_keyboard_shortcuts([])
+    ''
+    """
+    if not keys:
+        return ""
+    return f"({'/'.join(keys)})"
