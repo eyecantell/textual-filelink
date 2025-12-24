@@ -1,7 +1,7 @@
 [project]
 name = "textual-filelink"
-version = "0.3.0"
-description = "Clickable file links for Textual applications."
+version = "0.4.0"
+description = "Clickable file links with icons, toggles, and command orchestration widget for Textual TUI applications."
 readme = "README.md"
 authors = [
     {name = "eyecantell", email = "paul@pneuma.solutions"},
@@ -18,6 +18,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Terminals",
     "Topic :: Software Development :: User Interfaces",
@@ -33,10 +34,23 @@ keywords = [
     "clickable",
     "file-manager",
     "developer-tools",
+    "command-runner",
+    "keyboard-navigation",
 ]
 requires-python = ">=3.9"
 dependencies = [
     "textual>=6.11.0",
+]
+
+[project.optional-dependencies]
+# For pip users: pip install textual-filelink[dev]
+dev = [
+    "pytest>=7.4.4",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "textual-dev>=1.8.0",
     "textual-capture>=0.3.0",
 ]
 
@@ -55,7 +69,14 @@ build-backend = "pdm.backend"
 distribution = true
 package-dir = "src"
 
-[tool.pdm.dev-dependencies]
+[dependency-groups]
+# PEP 735 dependency groups for PDM
+# Install all dev dependencies: pdm install -G dev -G test -G lint
+# Or install specific groups: pdm install -G test
+dev = [
+    "textual-dev>=1.8.0",
+    "textual-capture>=0.3.0",
+]
 test = [
     "pytest>=7.4.4",
     "pytest-asyncio>=0.21.0",
@@ -68,7 +89,7 @@ lint = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py38"
+target-version = "py39"
 
 [tool.ruff.lint]
 select = [
@@ -91,7 +112,7 @@ ignore = [
 
 [tool.pytest.ini_options]
 addopts = [
-    "--cov=src/textual_filelink",  # Fixed: underscore not hyphen
+    "--cov=src/textual_filelink",
     "--cov-report=term-missing",
     "--cov-report=html",
     "-v",
@@ -132,9 +153,3 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 ignore_missing_imports = true
-
-[dependency-groups]
-dev = [
-    "textual-dev>=1.8.0",
-    "textual-capture>=0.2.0",
-]
