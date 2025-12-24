@@ -5,6 +5,108 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Custom tooltip support** - CommandLink and FileLinkWithIcons now accept a `tooltip` parameter
+  - Custom tooltip text is used as the base description
+  - Keyboard shortcuts are automatically appended to the custom tooltip
+  - If no custom tooltip is provided, defaults to command name (CommandLink) or file name (FileLinkWithIcons)
+- New helper methods for tooltip building:
+  - `_build_tooltip_with_shortcuts()` - Combines custom tooltip with keyboard shortcuts
+  - `_get_shortcuts_string()` - Returns formatted keyboard shortcut string
+
+### Changed
+- Improved FileLinkList error messages for duplicate IDs
+  - More helpful guidance when ID conflicts occur
+  - Suggests using different names or explicit ID parameters
+
+### Fixed
+- Avoided naming conflict with Textual's internal `_tooltip` attribute by using `_custom_tooltip` internally
+
+## [0.4.0] - 2025-12-23
+
+### Added
+- **Complete architecture overhaul** - Composition over inheritance throughout
+- **FileLinkWithIcons** - New widget for FileLink with customizable icons
+  - Icons can be positioned before or after the filename
+  - Supports multiple icons with individual tooltips and keyboard shortcuts
+  - Uses `Icon` dataclass for type-safe configuration
+- **FileLinkList** - New container widget for managing file links
+  - Scrollable container (inherits from VerticalScroll)
+  - Optional uniform toggle/remove controls for all items
+  - Batch operations: `toggle_all()`, `remove_selected()`, `get_toggled_items()`
+  - Requires explicit IDs for all items (fail-fast validation)
+  - Internal `FileLinkListItem` wrapper for layout management
+- **Icon dataclass** - Type-safe icon configuration
+  - Required fields: `name`, `icon`
+  - Optional: `tooltip`, `clickable`, `key`, `visible`
+  - Validation in `__post_init__()`
+- **sanitize_id() utility** - Convert names to valid widget IDs
+  - Lowercases, converts spaces/paths to hyphens
+  - Removes special characters
+  - Used internally by CommandLink for auto-ID generation
+- **Custom keyboard shortcuts per instance**
+  - FileLink: `open_keys` parameter
+  - CommandLink: `open_keys`, `play_stop_keys`, `settings_keys` parameters
+  - FileLinkWithIcons: Icon-level `key` parameter for custom shortcuts
+- **Runtime keyboard binding approach** - Bindings set in `on_mount()` using `self._bindings.bind()`
+- **CommandLink improvements**:
+  - Rewritten as standalone widget (extends Horizontal, not ToggleableFileLink)
+  - Auto-generates ID from command name using `sanitize_id()`
+  - Flat layout: `[status/spinner] [▶️/⏹️] name [⚙️?]`
+  - `show_settings` parameter (defaults to False)
+  - `output_path` parameter for clickable command name
+  - `set_output_path()` method to update output path dynamically
+- **FileLink improvements**:
+  - `display_name` parameter (defaults to filename)
+  - `FileLink.Opened` message (replaces `Clicked` with better semantics)
+  - `_embedded` parameter to disable focus when nested in parent widgets
+  - `tooltip` parameter for custom tooltip text
+- **Demo applications** - New comprehensive examples:
+  - `demo_01_filelink.py` - Basic FileLink usage
+  - `demo_02_filelink_with_icons.py` - Icon configurations
+  - `demo_03_filelink_list.py` - List container with batch operations
+  - `demo_04_commandlink.py` - Command orchestration
+  - `demo_05_dev_orchestration.py` - Complete dev workflow example
+- **Python version support** - Now supports Python 3.9-3.13
+- **Enhanced documentation**:
+  - Complete API reference in README
+  - Architecture documentation in refactor-2025-12-22.md
+  - Comprehensive CLAUDE.md for AI assistance
+
+### Changed
+- **Breaking**: CommandLink no longer inherits from ToggleableFileLink
+  - Now a standalone widget with flat composition
+  - Messages only include `name` and `output_path` (no `is_toggled`)
+  - Toggle/remove controls managed by FileLinkList instead
+- **Breaking**: FileLinkList requires explicit IDs for all items
+  - Raises ValueError if item has no ID
+  - Raises ValueError on duplicate IDs
+  - CommandLink auto-generates IDs, but FileLink requires manual ID
+- **Breaking**: FileLink.Clicked message renamed to FileLink.Opened
+  - FileLink.Clicked kept as backwards-compatible alias (will be removed in future)
+  - Better semantic meaning (file is opened, not just clicked)
+- Reorganized pyproject.toml for better clarity
+- Test coverage maintained at 90%+
+
+### Deprecated
+- `FileLink.Clicked` message - Use `FileLink.Opened` instead (backwards-compatible alias)
+
+### Preserved
+- **ToggleableFileLink** widget - Kept for backwards compatibility (was planned for removal)
+  - Still uses `IconConfig` dataclass (not the new `Icon` class)
+  - Standalone widget with toggle, icons, and remove controls
+  - Useful when FileLinkList is not needed
+
+### Fixed
+- CommandLink widget ID validation errors
+- Scrolling issues in demo applications
+- Various edge cases in error handling
+
+[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/eyecantell/textual-filelink/compare/v0.3.0...v0.4.0
+
 ## [0.3.0] - 2025-12-16
 
 ### Added
@@ -148,6 +250,5 @@ def on_toggleable_file_link_icon_clicked(self, event):
 - Comprehensive test suite
 - Full documentation and examples
 
-[0.3.0]: https://github.com/eyecantell/textual-filelink/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/eyecantell/textual-filelink/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/eyecantell/textual-filelink/releases/tag/v0.1.0
