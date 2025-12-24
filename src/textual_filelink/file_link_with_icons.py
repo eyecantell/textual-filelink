@@ -145,16 +145,8 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             classes=classes,
         )
 
-        # Set enhanced tooltip with keyboard shortcuts
-        if tooltip:
-            # User provided tooltip - enhance with shortcuts
-            open_keys = ["enter", "o"]  # Default FileLink keys
-            self.tooltip = f"{tooltip} {format_keyboard_shortcuts(open_keys)}"
-        else:
-            # Generate default tooltip
-            default_tooltip = f"Open {self._path.name}"
-            open_keys = ["enter", "o"]
-            self.tooltip = f"{default_tooltip} {format_keyboard_shortcuts(open_keys)}"
+        # Store custom tooltip for later enhancement with all shortcuts
+        self._custom_tooltip = tooltip
 
         # Create internal FileLink (embedded to prevent focus stealing)
         self._file_link = FileLink(
@@ -224,6 +216,9 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
                 # Set the action method on this instance
                 setattr(self, f"action_{action_name}", make_action(icon))
 
+        # Build complete tooltip with all keyboard shortcuts
+        self._build_tooltip_with_shortcuts()
+
     def compose(self):
         """Compose the widget layout: [icons_before] FileLink [icons_after]."""
         # Icons before
@@ -278,6 +273,43 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
     def action_open_file(self) -> None:
         """Open the file in the configured editor (keyboard shortcut handler)."""
         self._file_link.open_file()
+
+    # ------------------------------------------------------------------ #
+    # Helper methods
+    # ------------------------------------------------------------------ #
+    def _build_tooltip_with_shortcuts(self) -> None:
+        """Build and set tooltip showing description with all keyboard shortcuts."""
+        shortcuts_str = self._get_shortcuts_string()
+
+        # Build tooltip: use custom tooltip or default description as base
+        base = self._custom_tooltip if self._custom_tooltip else f"Open {self._path.name}"
+
+        tooltip = f"{base} - {shortcuts_str}" if shortcuts_str else base
+
+        self.tooltip = tooltip
+
+    def _get_shortcuts_string(self) -> str:
+        """Get keyboard shortcuts as a formatted string.
+
+        Returns
+        -------
+        str
+            Comma-separated shortcuts, e.g., "Open (enter/o), Status (1)"
+        """
+        shortcuts = []
+
+        # Add open file shortcut
+        open_keys = ["enter", "o"]  # Default FileLink keys
+        shortcuts.append(f"Open {format_keyboard_shortcuts(open_keys)}")
+
+        # Add icon shortcuts (only for clickable icons with keys)
+        all_icons = self._icons_before + self._icons_after
+        for icon in all_icons:
+            if icon.clickable and icon.key:
+                icon_desc = icon.tooltip or icon.name.title()
+                shortcuts.append(f"{icon_desc} {format_keyboard_shortcuts([icon.key])}")
+
+        return ", ".join(shortcuts)
 
     # ------------------------------------------------------------------ #
     # Public API - Icon Management

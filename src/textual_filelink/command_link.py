@@ -172,6 +172,7 @@ class CommandLink(Horizontal, can_focus=True):
         initial_status_icon: str = "❓",
         initial_status_tooltip: str | None = None,
         show_settings: bool = False,
+        tooltip: str | None = None,
         open_keys: list[str] | None = None,
         play_stop_keys: list[str] | None = None,
         settings_keys: list[str] | None = None,
@@ -193,6 +194,9 @@ class CommandLink(Horizontal, can_focus=True):
             Initial tooltip for status icon.
         show_settings : bool
             Whether to show settings icon (default: False).
+        tooltip : str | None
+            Custom tooltip text for the command name. If provided, keyboard shortcuts
+            will be appended. If None, uses command name as base.
         open_keys : list[str] | None
             Custom keyboard shortcuts for opening output. If None, uses DEFAULT_OPEN_KEYS.
         play_stop_keys : list[str] | None
@@ -208,6 +212,7 @@ class CommandLink(Horizontal, can_focus=True):
         self._output_path = Path(output_path).resolve() if output_path else None
         self._command_builder = command_builder
         self._show_settings = show_settings
+        self._custom_tooltip = tooltip  # Use _custom_tooltip to avoid conflict with Textual's _tooltip
 
         # Store custom keyboard shortcuts
         self._custom_open_keys = open_keys
@@ -337,7 +342,23 @@ class CommandLink(Horizontal, can_focus=True):
     # Helper methods
     # ------------------------------------------------------------------ #
     def _build_tooltip_with_shortcuts(self) -> None:
-        """Build and set tooltip on name widget showing all available keyboard shortcuts."""
+        """Build and set tooltip on name widget showing description with keyboard shortcuts."""
+        shortcuts_str = self._get_shortcuts_string()
+
+        # Build tooltip: use custom tooltip or command name as base
+        base = self._custom_tooltip if self._custom_tooltip else self._command_name
+        tooltip = f"{base} - {shortcuts_str}" if shortcuts_str else base
+
+        self._name_widget.tooltip = tooltip
+
+    def _get_shortcuts_string(self) -> str:
+        """Get keyboard shortcuts as a formatted string.
+
+        Returns
+        -------
+        str
+            Comma-separated shortcuts, e.g., "Play/Stop (space/p), Settings (s)"
+        """
         shortcuts = []
 
         # Add output opening if available
@@ -354,9 +375,7 @@ class CommandLink(Horizontal, can_focus=True):
             settings_keys = self._custom_settings_keys or self.DEFAULT_SETTINGS_KEYS
             shortcuts.append(f"Settings {format_keyboard_shortcuts(settings_keys)}")
 
-        # Combine into tooltip
-        tooltip = f"{self._command_name}: " + ", ".join(shortcuts)
-        self._name_widget.tooltip = tooltip
+        return ", ".join(shortcuts)
 
     # ------------------------------------------------------------------ #
     # Public API

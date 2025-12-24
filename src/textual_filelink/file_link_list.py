@@ -238,7 +238,11 @@ class FileLinkList(VerticalScroll):
 
         # Validate ID is unique
         if item.id in self._item_ids:
-            raise ValueError(f"Duplicate item ID: {item.id}")
+            raise ValueError(
+                f"Duplicate item ID: '{item.id}'. "
+                f"Each item in FileLinkList must have a unique ID. "
+                f"Either use a different name or provide an explicit id parameter."
+            )
 
         # Track ID
         self._item_ids.add(item.id)
