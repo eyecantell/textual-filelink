@@ -100,8 +100,8 @@ if __name__ == "__main__":
 ### CommandLink for Command Orchestration
 
 
-✅ ▶️ Build  ⚙️   - last run successful, play button ot start again, command name ("Build"), settings icon
-❌ ▶️ Build  ⚙️   - last run failed, play button to start aga1n, command name ("Build"), settings icon
+✅ ▶️ Build  ⚙️   - last run successful, play button to start again, command name ("Build"), settings icon
+❌ ▶️ Build  ⚙️   - last run failed, play button to start again, command name ("Build"), settings icon
 ⠧  ⏹️ Build  ⚙️   - spinner shows command running, stop button to cancel run, command name ("Build"), settings icon
 
 ```python
@@ -216,6 +216,24 @@ All FileLink widgets support keyboard activation:
 - `enter` or `o` - Open file in editor
 - Custom keys - If icons have `key` parameter set
 
+### Default Keyboard Shortcuts
+
+All widgets have class-level default keyboard shortcuts that can be customized:
+
+**FileLink:**
+```python
+FileLink.DEFAULT_OPEN_KEYS = ["enter", "o"]
+```
+
+**CommandLink:**
+```python
+CommandLink.DEFAULT_OPEN_KEYS = ["enter", "o"]
+CommandLink.DEFAULT_PLAY_STOP_KEYS = ["space", "p"]
+CommandLink.DEFAULT_SETTINGS_KEYS = ["s"]
+```
+
+These defaults apply to all instances unless overridden with the `open_keys`, `play_stop_keys`, or `settings_keys` parameters.
+
 ### Customizing Keyboard Shortcuts
 
 You can customize keyboard shortcuts per-widget using the `open_keys`, `play_stop_keys`, and `settings_keys` parameters:
@@ -307,7 +325,7 @@ FileLink(
 - `name`: Widget name
 - `id`: Widget ID
 - `classes`: CSS classes
-- `_embedded`: Internal use only. If True, disables focus
+- `_embedded`: Internal use only. Internal use only. If True, disables focus to prevent stealing focus from parent widgets (used when FileLink is embedded in CommandLink or FileLinkWithIcons)
 - `tooltip`: Optional tooltip text
 
 ### Properties
@@ -346,6 +364,8 @@ FileLink.DEFAULT_OPEN_KEYS = ["enter", "f2"]
 ```
 
 ## ToggleableFileLink API
+
+> **⚠️ Deprecation Notice:** ToggleableFileLink is deprecated as of v0.4.0 and will be removed in v0.5.0. Use `FileLinkWithIcons` for icon support and `FileLinkList` for toggle/remove controls instead.
 
 ### Constructor
 
