@@ -195,6 +195,9 @@ All widgets have class-level default keyboard shortcuts that can be customized:
 FileLink.DEFAULT_OPEN_KEYS = ["enter", "o"]
 ```
 
+**FileLinkWithIcons:**
+Uses `FileLink.DEFAULT_OPEN_KEYS` as its default (since it embeds a FileLink).
+
 **CommandLink:**
 ```python
 CommandLink.DEFAULT_OPEN_KEYS = ["enter", "o"]

@@ -589,3 +589,25 @@ class TestFileLinkWithIconsMessageBubbling:
             # Tooltip should show custom key
             assert widget.tooltip is not None
             assert "(f2)" in widget.tooltip
+
+    async def test_filelink_with_icons_respects_filelink_default_keys(self, temp_file):
+        """Test FileLinkWithIcons tooltip uses FileLink.DEFAULT_OPEN_KEYS as fallback."""
+        # Save original defaults
+        original_defaults = FileLink.DEFAULT_OPEN_KEYS
+
+        try:
+            # Change FileLink's global defaults
+            FileLink.DEFAULT_OPEN_KEYS = ["ctrl+o", "f5"]
+
+            # Create widget without custom open_keys
+            widget = FileLinkWithIcons(temp_file)
+            app = FileLinkWithIconsTestApp(widget)
+
+            async with app.run_test():
+                # Tooltip should reflect FileLink's defaults, not hardcoded ["enter", "o"]
+                assert widget.tooltip is not None
+                assert "(ctrl+o/f5)" in widget.tooltip.lower()
+
+        finally:
+            # Restore original defaults
+            FileLink.DEFAULT_OPEN_KEYS = original_defaults

@@ -316,8 +316,8 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         """
         shortcuts = []
 
-        # Add open file shortcut (use custom keys if provided)
-        open_keys = self._custom_open_keys if self._custom_open_keys is not None else ["enter", "o"]
+        # Add open file shortcut (use custom keys if provided, else FileLink's defaults)
+        open_keys = self._custom_open_keys if self._custom_open_keys is not None else FileLink.DEFAULT_OPEN_KEYS
         shortcuts.append(f"Open {format_keyboard_shortcuts(open_keys)}")
 
         # Add icon shortcuts (only for clickable icons with keys)

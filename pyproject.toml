@@ -1,6 +1,6 @@
 [project]
 name = "textual-filelink"
-version = "0.5.0"
+version = "0.5.1"
 description = "Clickable file links with icons, toggles, and command orchestration widget for Textual TUI applications."
 readme = "README.md"
 authors = [

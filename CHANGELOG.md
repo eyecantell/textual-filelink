@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-12-26
+
+### Fixed
+- **FileLinkWithIcons tooltip consistency** - Now correctly uses `FileLink.DEFAULT_OPEN_KEYS` as fallback instead of hardcoded `["enter", "o"]`
+  - If users globally change `FileLink.DEFAULT_OPEN_KEYS`, FileLinkWithIcons tooltips now reflect the change
+  - Ensures true consistency between FileLink and FileLinkWithIcons keyboard shortcut defaults
+  - No breaking changes - purely internal consistency improvement
+
 ## [0.5.0] - 2025-12-26
 
 ### Added
@@ -145,7 +153,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scrolling issues in demo applications
 - Various edge cases in error handling
 
-[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/eyecantell/textual-filelink/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/eyecantell/textual-filelink/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/eyecantell/textual-filelink/compare/v0.3.0...v0.4.0
 
