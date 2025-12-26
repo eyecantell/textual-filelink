@@ -215,6 +215,138 @@ class TestCommandLinkStatus:
 
             assert link._status_widget.tooltip == "Running tests..."
 
+    async def test_set_status_updates_all_tooltips(self):
+        """Test set_status() can update all tooltips at once."""
+        link = CommandLink("TestCommand")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Update all tooltips together
+            link.set_status(
+                icon="⏳",
+                running=True,
+                tooltip="Building project",
+                name_tooltip="Project build",
+                run_tooltip="Start building",
+                stop_tooltip="Stop building",
+            )
+            await pilot.pause()
+
+            # Verify all tooltips were updated
+            assert link._status_widget.tooltip == "Building project"
+            assert "Project build" in link._name_widget.tooltip
+            assert link._custom_run_tooltip == "Start building (space/p)"
+            assert link._custom_stop_tooltip == "Stop building (space/p)"
+            assert link._play_stop_widget.tooltip == "Stop building (space/p)"  # Currently running
+
+            # Change to not running
+            link.set_status(running=False, icon="✅")
+            await pilot.pause()
+
+            # Play button should now show run tooltip
+            assert link._play_stop_widget.tooltip == "Start building (space/p)"
+
+    async def test_set_status_tooltips_without_shortcuts(self):
+        """Test set_status() tooltip appending can be disabled."""
+        link = CommandLink("TestCommand")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Update tooltips without shortcuts
+            link.set_status(
+                name_tooltip="Just the name",
+                run_tooltip="Just run",
+                stop_tooltip="Just stop",
+                append_shortcuts=False,
+            )
+            await pilot.pause()
+
+            # Verify tooltips have no shortcuts
+            assert link._name_widget.tooltip == "Just the name"
+            assert link._custom_run_tooltip == "Just run"
+            assert link._custom_stop_tooltip == "Just stop"
+
+    async def test_set_name_tooltip(self):
+        """Test set_name_tooltip() updates name widget tooltip."""
+        link = CommandLink("TestCommand")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set custom tooltip with shortcuts (default)
+            link.set_name_tooltip("Build the project")
+            await pilot.pause()
+
+            # Should have custom tooltip with shortcuts appended
+            assert "Build the project" in link._name_widget.tooltip
+            assert "Play/Stop" in link._name_widget.tooltip
+
+            # Set custom tooltip without shortcuts
+            link.set_name_tooltip("Just the project", append_shortcuts=False)
+            await pilot.pause()
+
+            assert link._name_widget.tooltip == "Just the project"
+            assert "Play/Stop" not in link._name_widget.tooltip
+
+            # Set to None should use command name
+            link.set_name_tooltip(None)
+            await pilot.pause()
+
+            assert "TestCommand" in link._name_widget.tooltip
+
+    async def test_set_play_stop_tooltips(self):
+        """Test set_play_stop_tooltips() updates play/stop button tooltips."""
+        link = CommandLink("TestCommand")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set custom tooltips with shortcuts (default)
+            link.set_play_stop_tooltips(run_tooltip="Start build", stop_tooltip="Cancel build")
+            await pilot.pause()
+
+            # Initially not running, should show run tooltip with shortcuts
+            assert link._play_stop_widget.tooltip == "Start build (space/p)"
+
+            # Change to running, should show stop tooltip with shortcuts
+            link.set_status(running=True)
+            await pilot.pause()
+            assert link._play_stop_widget.tooltip == "Cancel build (space/p)"
+
+            # Set custom tooltips without shortcuts
+            link.set_play_stop_tooltips(run_tooltip="Just start", stop_tooltip="Just stop", append_shortcuts=False)
+            await pilot.pause()
+
+            # Should show tooltips without shortcuts
+            assert link._play_stop_widget.tooltip == "Just stop"
+
+            # Change back to not running
+            link.set_status(running=False)
+            await pilot.pause()
+            assert link._play_stop_widget.tooltip == "Just start"
+
+    async def test_set_settings_tooltip(self):
+        """Test set_settings_tooltip() updates settings icon tooltip."""
+        link = CommandLink("TestCommand", show_settings=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set custom tooltip with shortcuts (default)
+            link.set_settings_tooltip("Configure build options")
+            await pilot.pause()
+
+            assert link._settings_widget.tooltip == "Configure build options (s)"
+
+            # Set custom tooltip without shortcuts
+            link.set_settings_tooltip("Just build options", append_shortcuts=False)
+            await pilot.pause()
+
+            assert link._settings_widget.tooltip == "Just build options"
+
+            # Set to None should use default
+            link.set_settings_tooltip(None)
+            await pilot.pause()
+
+            assert link._settings_widget.tooltip == "Settings (s)"
+
 
 class TestCommandLinkPlayStop:
     """Test suite for CommandLink play/stop functionality."""

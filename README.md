@@ -21,7 +21,7 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 🎯 **Jump to specific line and column** in your editor
 - 🔧 **Customizable command builders** for any editor
 - 🎭 **Flexible layouts** - show/hide controls as needed
-- 💬 **Tooltips** for all interactive elements
+- 💬 **Smart tooltips** - automatic keyboard shortcut hints with optional control
 - 🚀 **Command orchestration** with play/stop controls and animated spinners
 - ⌨️ **Keyboard accessible** - fully tabbable and navigable without a mouse
 - 🔑 **Customizable keyboard shortcuts** - configure your own key bindings
@@ -554,6 +554,7 @@ CommandLink(
     initial_status_icon: str = "○",
     initial_status_tooltip: str | None = None,
     show_settings: bool = False,
+    tooltip: str | None = None,
     open_keys: list[str] | None = None,
     play_stop_keys: list[str] | None = None,
     settings_keys: list[str] | None = None,
@@ -569,6 +570,7 @@ CommandLink(
 - `initial_status_icon`: Initial status icon (default: "○")
 - `initial_status_tooltip`: Initial tooltip for status icon
 - `show_settings`: Whether to show the settings icon (default: False)
+- `tooltip`: Custom tooltip for command name widget. If None, uses command name. Keyboard shortcuts are automatically appended
 - `open_keys`: Custom keyboard shortcuts for opening output (default: ["enter", "o"])
 - `play_stop_keys`: Custom keyboard shortcuts for play/stop (default: ["space", "p"])
 - `settings_keys`: Custom keyboard shortcuts for settings (default: ["s"])
@@ -594,11 +596,11 @@ CommandLink(
 
 ### Methods
 
-#### `set_status(icon: str | None = None, running: bool | None = None, tooltip: str | None = None)`
-Update command status display.
+#### `set_status(icon=None, running=None, tooltip=None, name_tooltip=None, run_tooltip=None, stop_tooltip=None, append_shortcuts=True)`
+Update command status display and optionally update all tooltips at once.
 
 ```python
-# Start running (shows spinner)
+# Basic status update
 link.set_status(running=True, tooltip="Running tests...")
 
 # Complete with success
@@ -607,8 +609,25 @@ link.set_status(icon="✅", running=False, tooltip="All tests passed")
 # Complete with failure
 link.set_status(icon="❌", running=False, tooltip="3 tests failed")
 
-# Update tooltip only
-link.set_status(tooltip="Still running...")
+# Update status and all tooltips together
+link.set_status(
+    icon="⏳",
+    running=True,
+    tooltip="Building project",
+    name_tooltip="Project build",
+    run_tooltip="Start building",
+    stop_tooltip="Stop building"
+)
+# All tooltips get keyboard shortcuts appended automatically
+
+# Disable keyboard shortcut appending
+link.set_status(
+    running=True,
+    name_tooltip="⚠️ CRITICAL DEPLOY ⚠️",
+    run_tooltip="Deploy now",
+    stop_tooltip="Abort deployment",
+    append_shortcuts=False
+)
 ```
 
 #### `set_output_path(output_path: Path | str | None)`
@@ -617,6 +636,62 @@ Update the output file path.
 ```python
 link.set_output_path(Path("output.log"))
 link.set_output_path(None)  # Clear output path
+```
+
+#### `set_name_tooltip(tooltip: str | None, append_shortcuts: bool = True)`
+Set custom tooltip for the command name widget.
+
+```python
+# Tooltip with keyboard shortcuts (default)
+link.set_name_tooltip("Build the project")
+# Shows: "Build the project - Play/Stop (space/p), ..."
+
+# Tooltip without shortcuts
+link.set_name_tooltip("Build the project", append_shortcuts=False)
+# Shows: "Build the project"
+
+# Reset to default (command name)
+link.set_name_tooltip(None)
+```
+
+#### `set_play_stop_tooltips(run_tooltip: str | None = None, stop_tooltip: str | None = None, append_shortcuts: bool = True)`
+Set custom tooltips for the play/stop button. Tooltips automatically update based on running state.
+
+```python
+# Tooltips with keyboard shortcuts (default)
+link.set_play_stop_tooltips(
+    run_tooltip="Start build",
+    stop_tooltip="Cancel build"
+)
+# Shows: "Start build (space/p)" when not running
+#        "Cancel build (space/p)" when running
+
+# Tooltips without shortcuts (useful for critical actions)
+link.set_play_stop_tooltips(
+    run_tooltip="⚠️ DEPLOY TO PROD ⚠️",
+    stop_tooltip="⚠️ STOP DEPLOYMENT ⚠️",
+    append_shortcuts=False
+)
+
+# Update only one tooltip
+link.set_play_stop_tooltips(run_tooltip="Execute")
+```
+
+#### `set_settings_tooltip(tooltip: str | None, append_shortcuts: bool = True)`
+Set custom tooltip for the settings icon.
+
+```python
+# Tooltip with keyboard shortcuts (default)
+link.set_settings_tooltip("Build configuration")
+# Shows: "Build configuration (s)"
+
+# Tooltip without shortcuts
+link.set_settings_tooltip("Build configuration", append_shortcuts=False)
+# Shows: "Build configuration"
+
+# Reset to default
+link.set_settings_tooltip(None)
+# Shows: "Settings (s)"
 ```
 
 ### Messages

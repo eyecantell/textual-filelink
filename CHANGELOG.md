@@ -10,11 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Custom tooltip support** - CommandLink and FileLinkWithIcons now accept a `tooltip` parameter
   - Custom tooltip text is used as the base description
-  - Keyboard shortcuts are automatically appended to the custom tooltip
+  - Keyboard shortcuts are automatically appended to the custom tooltip by default
   - If no custom tooltip is provided, defaults to command name (CommandLink) or file name (FileLinkWithIcons)
+- **Tooltip control via `append_shortcuts` parameter** - All CommandLink tooltip methods now support controlling keyboard shortcut appending
+  - `set_name_tooltip(tooltip, append_shortcuts=True)` - Set command name tooltip with optional shortcut appending
+  - `set_play_stop_tooltips(run_tooltip, stop_tooltip, append_shortcuts=True)` - Set play/stop tooltips with optional shortcut appending
+  - `set_settings_tooltip(tooltip, append_shortcuts=True)` - Set settings tooltip with optional shortcut appending
+  - Defaults to `True` for backward compatibility
+  - Allows custom tooltips without keyboard shortcuts when needed (e.g., critical actions, custom formatting)
+- New public methods for CommandLink tooltip management:
+  - `set_name_tooltip()` - Update command name widget tooltip
+  - `set_play_stop_tooltips()` - Update play/stop button tooltips (respects running state)
+  - `set_settings_tooltip()` - Update settings icon tooltip
+- Enhanced `set_status()` method - Now supports updating all tooltips in one call
+  - New parameters: `name_tooltip`, `run_tooltip`, `stop_tooltip`, `append_shortcuts`
+  - Convenient for updating status and tooltips together when state changes
+  - Example: `link.set_status(running=True, tooltip="Building...", name_tooltip="Build in progress")`
 - New helper methods for tooltip building:
   - `_build_tooltip_with_shortcuts()` - Combines custom tooltip with keyboard shortcuts
   - `_get_shortcuts_string()` - Returns formatted keyboard shortcut string
+- New demo: `examples/demo_tooltip_control.py` - Demonstrates tooltip control options
 
 ### Changed
 - Improved FileLinkList error messages for duplicate IDs

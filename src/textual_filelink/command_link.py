@@ -224,6 +224,11 @@ class CommandLink(Horizontal, can_focus=True):
         self._status_tooltip = initial_status_tooltip
         self._command_running = False
 
+        # Custom tooltips for play/stop button (will be used if set)
+        self._custom_run_tooltip: str | None = None
+        self._custom_stop_tooltip: str | None = None
+        self._custom_settings_tooltip: str | None = None
+
         # Spinner state
         self._spinner_frame_index = 0
         self._spinner_timer = None
@@ -244,7 +249,7 @@ class CommandLink(Horizontal, can_focus=True):
 
         # Play/stop button
         self._play_stop_widget = Static("▶️", classes="play-stop-button")
-        self._play_stop_widget.tooltip = "Run command (space/p)"
+        self._play_stop_widget.tooltip = self._custom_run_tooltip or "Run command (space/p)"
         self._play_stop_widget._is_play_button = True  # type: ignore
 
         # Name (FileLink if output_path, Static otherwise)
@@ -264,7 +269,7 @@ class CommandLink(Horizontal, can_focus=True):
         # Settings icon (optional)
         if self._show_settings:
             self._settings_widget = Static("⚙️", classes="settings-icon")
-            self._settings_widget.tooltip = "Settings (s)"
+            self._settings_widget.tooltip = self._custom_settings_tooltip or "Settings (s)"
 
     def compose(self):
         """Compose widget layout."""
@@ -386,8 +391,12 @@ class CommandLink(Horizontal, can_focus=True):
         icon: str | None = None,
         running: bool | None = None,
         tooltip: str | None = None,
+        name_tooltip: str | None = None,
+        run_tooltip: str | None = None,
+        stop_tooltip: str | None = None,
+        append_shortcuts: bool = True,
     ) -> None:
-        """Update command status.
+        """Update command status and optionally update tooltips.
 
         Parameters
         ----------
@@ -397,21 +406,60 @@ class CommandLink(Horizontal, can_focus=True):
             Whether command is running. If True, starts spinner.
         tooltip : str | None
             New tooltip for status icon.
+        name_tooltip : str | None
+            New tooltip for command name widget. Keyboard shortcuts appended based on append_shortcuts.
+        run_tooltip : str | None
+            New tooltip for play button (when not running).
+        stop_tooltip : str | None
+            New tooltip for stop button (when running).
+        append_shortcuts : bool
+            Whether to append keyboard shortcuts to name/run/stop tooltips. Default: True.
 
         Examples
         --------
+        >>> # Basic status update
         >>> link.set_status(running=True, tooltip="Running...")
-        >>> link.set_status(icon="✅", running=False, tooltip="Passed")
+
+        >>> # Update status and tooltips together
+        >>> link.set_status(
+        ...     icon="✅",
+        ...     running=False,
+        ...     tooltip="Passed",
+        ...     name_tooltip="Build successful"
+        ... )
+
+        >>> # Update all tooltips when transitioning states
+        >>> link.set_status(
+        ...     running=True,
+        ...     tooltip="Building...",
+        ...     run_tooltip="Start build",
+        ...     stop_tooltip="Cancel build"
+        ... )
         """
+        # Update status icon
         if icon is not None:
             self._status_icon = icon
             # Update widget display (spinner will override if running)
             self._status_widget.update(icon)
 
+        # Update status tooltip
         if tooltip is not None:
             self._status_tooltip = tooltip
             self._status_widget.tooltip = tooltip
 
+        # Update name tooltip if provided
+        if name_tooltip is not None:
+            self.set_name_tooltip(name_tooltip, append_shortcuts=append_shortcuts)
+
+        # Update play/stop tooltips if provided
+        if run_tooltip is not None or stop_tooltip is not None:
+            self.set_play_stop_tooltips(
+                run_tooltip=run_tooltip,
+                stop_tooltip=stop_tooltip,
+                append_shortcuts=append_shortcuts,
+            )
+
+        # Update running state
         if running is not None:
             was_running = self._command_running
             self._command_running = running
@@ -419,10 +467,10 @@ class CommandLink(Horizontal, can_focus=True):
             # Update play/stop button
             if running:
                 self._play_stop_widget.update("⏹️")
-                self._play_stop_widget.tooltip = "Stop command (space/p)"
+                self._play_stop_widget.tooltip = self._custom_stop_tooltip or "Stop command (space/p)"
             else:
                 self._play_stop_widget.update("▶️")
-                self._play_stop_widget.tooltip = "Run command (space/p)"
+                self._play_stop_widget.tooltip = self._custom_run_tooltip or "Run command (space/p)"
 
             # Manage spinner
             if running and not was_running:
@@ -464,6 +512,115 @@ class CommandLink(Horizontal, can_focus=True):
 
         # Update tooltip to reflect new output path availability
         self._build_tooltip_with_shortcuts()
+
+    def set_name_tooltip(self, tooltip: str | None, append_shortcuts: bool = True) -> None:
+        """Set custom tooltip for the command name widget.
+
+        Parameters
+        ----------
+        tooltip : str | None
+            Custom tooltip text. If None, uses command name as base.
+        append_shortcuts : bool
+            Whether to automatically append keyboard shortcuts to the tooltip.
+            Default is True.
+
+        Examples
+        --------
+        >>> link.set_name_tooltip("Build project")  # Shows "Build project - Play/Stop (space/p), ..."
+        >>> link.set_name_tooltip("Build project", append_shortcuts=False)  # Shows "Build project"
+        """
+        self._custom_tooltip = tooltip
+        if append_shortcuts:
+            self._build_tooltip_with_shortcuts()
+        else:
+            # Set tooltip directly without shortcuts
+            base = self._custom_tooltip if self._custom_tooltip else self._command_name
+            self._name_widget.tooltip = base
+
+    def set_play_stop_tooltips(
+        self,
+        *,
+        run_tooltip: str | None = None,
+        stop_tooltip: str | None = None,
+        append_shortcuts: bool = True,
+    ) -> None:
+        """Set custom tooltips for play/stop button.
+
+        Parameters
+        ----------
+        run_tooltip : str | None
+            Tooltip shown when button is in "play" state (command not running).
+            If None, keeps current run tooltip.
+        stop_tooltip : str | None
+            Tooltip shown when button is in "stop" state (command running).
+            If None, keeps current stop tooltip.
+        append_shortcuts : bool
+            Whether to automatically append keyboard shortcuts to the tooltips.
+            Default is True.
+
+        Examples
+        --------
+        >>> link.set_play_stop_tooltips(
+        ...     run_tooltip="Start build",
+        ...     stop_tooltip="Cancel build"
+        ... )  # Shows "Start build (space/p)" and "Cancel build (space/p)"
+        >>> link.set_play_stop_tooltips(
+        ...     run_tooltip="Start build",
+        ...     stop_tooltip="Cancel build",
+        ...     append_shortcuts=False
+        ... )  # Shows "Start build" and "Cancel build"
+        """
+        # Get the play/stop keys for formatting
+        play_stop_keys = self._custom_play_stop_keys or self.DEFAULT_PLAY_STOP_KEYS
+        shortcuts_str = format_keyboard_shortcuts(play_stop_keys) if append_shortcuts else ""
+
+        if run_tooltip is not None:
+            if append_shortcuts and shortcuts_str:
+                self._custom_run_tooltip = f"{run_tooltip} {shortcuts_str}"
+            else:
+                self._custom_run_tooltip = run_tooltip
+
+        if stop_tooltip is not None:
+            if append_shortcuts and shortcuts_str:
+                self._custom_stop_tooltip = f"{stop_tooltip} {shortcuts_str}"
+            else:
+                self._custom_stop_tooltip = stop_tooltip
+
+        # Update current tooltip based on running state
+        if self._command_running:
+            self._play_stop_widget.tooltip = self._custom_stop_tooltip or "Stop command (space/p)"
+        else:
+            self._play_stop_widget.tooltip = self._custom_run_tooltip or "Run command (space/p)"
+
+    def set_settings_tooltip(self, tooltip: str | None, append_shortcuts: bool = True) -> None:
+        """Set custom tooltip for settings icon.
+
+        Parameters
+        ----------
+        tooltip : str | None
+            Custom tooltip text. If None, uses default "Settings (s)".
+        append_shortcuts : bool
+            Whether to automatically append keyboard shortcuts to the tooltip.
+            Default is True.
+
+        Examples
+        --------
+        >>> link.set_settings_tooltip("Build options")  # Shows "Build options (s)"
+        >>> link.set_settings_tooltip("Build options", append_shortcuts=False)  # Shows "Build options"
+        """
+        if tooltip is not None:
+            settings_keys = self._custom_settings_keys or self.DEFAULT_SETTINGS_KEYS
+            shortcuts_str = format_keyboard_shortcuts(settings_keys) if append_shortcuts else ""
+
+            if append_shortcuts and shortcuts_str:
+                self._custom_settings_tooltip = f"{tooltip} {shortcuts_str}"
+            else:
+                self._custom_settings_tooltip = tooltip
+        else:
+            self._custom_settings_tooltip = None
+
+        if self._show_settings:
+            self._settings_widget.tooltip = self._custom_settings_tooltip or "Settings (s)"
 
     def _animate_spinner(self) -> None:
         """Animate the spinner (called by timer)."""
