@@ -65,9 +65,9 @@ if __name__ == "__main__":
 ### CommandLink for Command Orchestration
 
 
-✅ ▶️ Build  ⚙️   - last run successful, play button to start again, command name ("Build"), settings icon
-❌ ▶️ Build  ⚙️   - last run failed, play button to start again, command name ("Build"), settings icon
-⠧  ⏹️ Build  ⚙️   - spinner shows command running, stop button to cancel run, command name ("Build"), settings icon
+- ✅ ▶️ Build  ⚙️   - last run successful, play button to start again, command name ("Build"), settings icon
+- ❌ ▶️ Build  ⚙️   - last run failed, play button to start again, command name ("Build"), settings icon
+- ⠧  ⏹️ Build  ⚙️   - spinner shows command running, stop button to cancel run, command name ("Build"), settings icon
 
 ```python
 from textual_filelink import CommandLink
