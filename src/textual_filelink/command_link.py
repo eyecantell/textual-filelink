@@ -166,7 +166,7 @@ class CommandLink(Horizontal, can_focus=True):
 
     def __init__(
         self,
-        name: str,
+        command_name: str,
         *,
         output_path: Path | str | None = None,
         command_builder: Callable | None = None,
@@ -179,13 +179,14 @@ class CommandLink(Horizontal, can_focus=True):
         settings_keys: list[str] | None = None,
         spinner_frames: list[str] | None = None,
         spinner_interval: float = 0.1,
+        name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
     ) -> None:
         """
         Parameters
         ----------
-        name : str
+        command_name : str
             Command name to display.
         output_path : Path | str | None
             Optional output file path. If set, clicking name opens the file.
@@ -213,12 +214,14 @@ class CommandLink(Horizontal, can_focus=True):
         spinner_interval : float
             Seconds between spinner frame updates. Default: 0.1
             Lower values = faster spin. Example: 0.05 for 2x speed
+        name : str | None
+            Widget name for Textual's widget identification system (optional).
         id : str | None
-            Widget ID. If None, auto-generated from name via sanitize_id().
+            Widget ID. If None, auto-generated from command_name via sanitize_id().
         classes : str | None
             CSS classes.
         """
-        self._command_name = name
+        self._command_name = command_name
         self._output_path = Path(output_path).resolve() if output_path else None
         self._command_builder = command_builder
         self._show_settings = show_settings
@@ -246,10 +249,11 @@ class CommandLink(Horizontal, can_focus=True):
         self._spinner_timer = None
 
         # Auto-generate ID if not provided
-        widget_id = id or sanitize_id(name)
+        widget_id = id or sanitize_id(command_name)
 
         # Initialize container
         super().__init__(
+            name=name,
             id=widget_id,
             classes=classes,
         )
@@ -645,8 +649,14 @@ class CommandLink(Horizontal, can_focus=True):
     # Properties
     # ------------------------------------------------------------------ #
     @property
-    def name(self) -> str:
-        """Get command name."""
+    def command_name(self) -> str:
+        """Get the command name.
+
+        Returns
+        -------
+        str
+            The command name displayed in the widget.
+        """
         return self._command_name
 
     @property

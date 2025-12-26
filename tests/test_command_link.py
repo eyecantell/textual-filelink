@@ -49,7 +49,7 @@ class TestCommandLinkInitialization:
         """Test CommandLink initializes with default values."""
         link = CommandLink("TestCommand")
 
-        assert link.name == "TestCommand"  # name property returns actual name
+        assert link.command_name == "TestCommand"  # command_name property returns actual name
         assert link.output_path is None
         assert link.is_running is False
 
@@ -530,11 +530,11 @@ class TestCommandLinkSettings:
 class TestCommandLinkProperties:
     """Test suite for CommandLink properties."""
 
-    def test_name_property(self):
-        """Test name property returns command name."""
+    def test_command_name_property(self):
+        """Test command_name property returns command name."""
         link = CommandLink("My Test Command")
 
-        assert link.name == "My Test Command"
+        assert link.command_name == "My Test Command"
 
     def test_output_path_property(self, temp_output_file):
         """Test output_path property."""

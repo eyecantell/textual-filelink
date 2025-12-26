@@ -398,7 +398,7 @@ yield CommandLink(
 
 ```python
 CommandLink(
-    name: str,
+    command_name: str,
     *,
     output_path: Path | str | None = None,
     command_builder: Callable | None = None,
@@ -411,13 +411,14 @@ CommandLink(
     settings_keys: list[str] | None = None,
     spinner_frames: list[str] | None = None,
     spinner_interval: float = 0.1,
+    name: str | None = None,
     id: str | None = None,
     classes: str | None = None,
 )
 ```
 
 **Parameters:**
-- `name`: Command display name (also used to generate widget ID if not provided)
+- `command_name`: Command display name (also used to generate widget ID if not provided)
 - `output_path`: Path to output file. If set, clicking command name opens the file
 - `command_builder`: Custom command builder for opening output files
 - `initial_status_icon`: Initial status icon (default: "○")
@@ -429,7 +430,8 @@ CommandLink(
 - `settings_keys`: Custom keyboard shortcuts for settings (default: ["s"])
 - `spinner_frames`: Custom spinner animation frames (unicode characters). If None, uses Braille pattern. Example: ["◐", "◓", "◑", "◒"]
 - `spinner_interval`: Seconds between spinner frame updates. Default: 0.1. Lower = faster spin. Example: 0.05
-- `id`: Widget ID. If None, auto-generated from name
+- `name`: Widget name for Textual's widget identification system (optional)
+- `id`: Widget ID. If None, auto-generated from command_name
 - `classes`: CSS classes
 
 ### Layout
@@ -445,9 +447,10 @@ CommandLink(
 
 ### Properties
 
-- `name: str` - The command name
+- `command_name: str` - The command name
 - `output_path: Path | None` - Current output file path
 - `is_running: bool` - Whether the command is currently running
+- `name: str | None` - Widget name (Textual's widget identification system)
 
 ### Methods
 

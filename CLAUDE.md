@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **textual-filelink** is a Python library providing clickable file link widgets for [Textual](https://github.com/Textualize/textual) TUI applications. It enables opening files in editors directly from terminal UIs with support for line/column navigation, customizable icons, toggle controls, and command orchestration.
 
-**Current Version**: 0.5.0
+**Current Version**: 0.6.0
 
 The library exports these main widget classes:
 - **FileLink**: Basic clickable filename link
@@ -217,18 +217,22 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
 
 ### CommandLink (src/textual_filelink/command_link.py)
 - **Responsibility**: Orchestrate command execution with status display and controls
-- **Current Design (v0.3.0)**: Inherits from ToggleableFileLink
-- **Future Design (v0.4.0)**: Will be rewritten to inherit from `Horizontal` with flat architecture (see refactor-2025-12-22.md)
+- **Current Design (v0.6.0)**: Standalone widget extending `Horizontal`
 - **Key Concepts**:
-  - Layout: `[toggle?] [status/spinner] [▶️/⏹️] command_name [⚙️?] [remove?]` (v0.3.0)
+  - Layout: `[status/spinner] [▶️/⏹️] command_name [⚙️?]`
   - Animated spinner using `set_interval()` when running
   - Auto-generates widget ID from command name via `sanitize_id()`
   - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
   - Internal attribute naming: `_command_running` (not `_running` to avoid Textual's MessagePump conflict)
+- **API (v0.6.0)**:
+  - Constructor parameter: `command_name: str` (first positional parameter)
+  - Property: `widget.command_name` returns the command name
+  - Textual's `name` parameter: Now available for widget identification
+  - **Important**: `widget.name` returns Textual's widget name (str | None), NOT the command name
 - **Messages**:
-  - `CommandLink.PlayClicked` (name, output_path)
-  - `CommandLink.StopClicked` (name, output_path)
-  - `CommandLink.SettingsClicked` (name, output_path)
+  - `CommandLink.PlayClicked` (widget, name, output_path) - Note: message.name is command name
+  - `CommandLink.StopClicked` (widget, name, output_path) - Note: message.name is command name
+  - `CommandLink.SettingsClicked` (widget, name, output_path) - Note: message.name is command name
   - `CommandLink.OutputClicked` (output_path)
 
 ### FileLinkList (src/textual_filelink/file_link_list.py)
