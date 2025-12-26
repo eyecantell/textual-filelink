@@ -6,6 +6,7 @@ from textual.app import App, ComposeResult
 from textual_filelink import FileLink
 from textual_filelink.file_link_with_icons import FileLinkWithIcons
 from textual_filelink.icon import Icon
+from textual_filelink.utils import sanitize_id
 
 
 class FileLinkWithIconsTestApp(App):
@@ -549,3 +550,42 @@ class TestFileLinkWithIconsMessageBubbling:
             # App should have received the message
             assert len(app.file_opened_events) == 1
             assert app.file_opened_events[0].path == temp_file
+
+    async def test_filelink_with_icons_auto_generates_id(self, temp_file):
+        """Test FileLinkWithIcons auto-generates ID from filename."""
+        widget = FileLinkWithIcons(temp_file)
+        app = FileLinkWithIconsTestApp(widget)
+
+        async with app.run_test():
+            # temp_file is "test.txt" -> id="test-txt"
+            assert widget.id is not None
+            assert widget.id == sanitize_id(temp_file.name)
+            assert widget.id == "test-txt"
+
+    async def test_filelink_with_icons_explicit_id_overrides_auto(self, temp_file):
+        """Test explicit ID takes precedence over auto-generation."""
+        widget = FileLinkWithIcons(temp_file, id="custom-id")
+        app = FileLinkWithIconsTestApp(widget)
+
+        async with app.run_test():
+            assert widget.id == "custom-id"
+
+    async def test_filelink_with_icons_custom_open_keys(self, temp_file):
+        """Test FileLinkWithIcons accepts custom open_keys parameter."""
+        widget = FileLinkWithIcons(temp_file, open_keys=["f2", "ctrl+o"])
+        app = FileLinkWithIconsTestApp(widget)
+
+        async with app.run_test():
+            # Verify custom keys were forwarded to embedded FileLink
+            assert widget._custom_open_keys == ["f2", "ctrl+o"]
+            assert widget.file_link._custom_open_keys == ["f2", "ctrl+o"]
+
+    async def test_filelink_with_icons_open_keys_in_tooltip(self, temp_file):
+        """Test custom open_keys are reflected in tooltip."""
+        widget = FileLinkWithIcons(temp_file, open_keys=["f2"])
+        app = FileLinkWithIconsTestApp(widget)
+
+        async with app.run_test():
+            # Tooltip should show custom key
+            assert widget.tooltip is not None
+            assert "(f2)" in widget.tooltip

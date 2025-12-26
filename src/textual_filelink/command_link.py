@@ -85,8 +85,9 @@ class CommandLink(Horizontal, can_focus=True):
     }
     """
 
-    # Spinner frames for animation
-    SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    # Default spinner frames and interval for animation
+    DEFAULT_SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    DEFAULT_SPINNER_INTERVAL = 0.1  # seconds
 
     class PlayClicked(Message):
         """Posted when play button clicked.
@@ -176,6 +177,8 @@ class CommandLink(Horizontal, can_focus=True):
         open_keys: list[str] | None = None,
         play_stop_keys: list[str] | None = None,
         settings_keys: list[str] | None = None,
+        spinner_frames: list[str] | None = None,
+        spinner_interval: float = 0.1,
         id: str | None = None,
         classes: str | None = None,
     ) -> None:
@@ -203,6 +206,13 @@ class CommandLink(Horizontal, can_focus=True):
             Custom keyboard shortcuts for play/stop. If None, uses DEFAULT_PLAY_STOP_KEYS.
         settings_keys : list[str] | None
             Custom keyboard shortcuts for settings. If None, uses DEFAULT_SETTINGS_KEYS.
+        spinner_frames : list[str] | None
+            Custom spinner animation frames (unicode characters).
+            If None, uses DEFAULT_SPINNER_FRAMES (Braille pattern).
+            Example: ["◐", "◓", "◑", "◒"] for circle spinner
+        spinner_interval : float
+            Seconds between spinner frame updates. Default: 0.1
+            Lower values = faster spin. Example: 0.05 for 2x speed
         id : str | None
             Widget ID. If None, auto-generated from name via sanitize_id().
         classes : str | None
@@ -229,7 +239,9 @@ class CommandLink(Horizontal, can_focus=True):
         self._custom_stop_tooltip: str | None = None
         self._custom_settings_tooltip: str | None = None
 
-        # Spinner state
+        # Spinner configuration and state
+        self._spinner_frames = spinner_frames if spinner_frames is not None else self.DEFAULT_SPINNER_FRAMES
+        self._spinner_interval = spinner_interval
         self._spinner_frame_index = 0
         self._spinner_timer = None
 
@@ -476,7 +488,7 @@ class CommandLink(Horizontal, can_focus=True):
             if running and not was_running:
                 # Start spinner
                 self._spinner_frame_index = 0
-                self._spinner_timer = self.set_interval(0.1, self._animate_spinner)
+                self._spinner_timer = self.set_interval(self._spinner_interval, self._animate_spinner)
             elif not running and was_running:
                 # Stop spinner, show final icon
                 if self._spinner_timer:
@@ -625,9 +637,9 @@ class CommandLink(Horizontal, can_focus=True):
     def _animate_spinner(self) -> None:
         """Animate the spinner (called by timer)."""
         if self._command_running:
-            frame = self.SPINNER_FRAMES[self._spinner_frame_index]
+            frame = self._spinner_frames[self._spinner_frame_index]
             self._status_widget.update(frame)
-            self._spinner_frame_index = (self._spinner_frame_index + 1) % len(self.SPINNER_FRAMES)
+            self._spinner_frame_index = (self._spinner_frame_index + 1) % len(self._spinner_frames)
 
     # ------------------------------------------------------------------ #
     # Properties

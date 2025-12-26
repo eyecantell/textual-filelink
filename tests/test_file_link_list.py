@@ -140,13 +140,19 @@ class TestFileLinkListAddItem:
             wrapper = file_list._wrappers["test-py"]
             assert wrapper.is_toggled is True
 
-    def test_add_item_without_id_raises(self, temp_file):
+    async def test_add_item_without_id_raises(self):
         """Test adding item without ID raises ValueError."""
-        file_list = FileLinkList()
-        link = FileLink(temp_file)  # No ID set
+        from textual.widgets import Static
 
-        with pytest.raises(ValueError, match="must have an explicit ID"):
-            file_list.add_item(link)
+        file_list = FileLinkList()
+        app = FileLinkListTestApp(file_list)
+
+        async with app.run_test():
+            # Use a Static widget without an ID
+            widget = Static("No ID")
+
+            with pytest.raises(ValueError, match="must have an explicit ID"):
+                file_list.add_item(widget)
 
     async def test_add_duplicate_id_raises(self, temp_file):
         """Test adding item with duplicate ID raises ValueError."""

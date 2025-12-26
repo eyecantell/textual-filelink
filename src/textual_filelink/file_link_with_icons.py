@@ -103,6 +103,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         command_builder: Callable | None = None,
         icons_before: list[Icon] | None = None,
         icons_after: list[Icon] | None = None,
+        open_keys: list[str] | None = None,
         name: str | None = None,
         id: str | None = None,
         classes: str | None = None,
@@ -123,7 +124,14 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             Icons to display before the filename. Order is preserved.
         icons_after : list[Icon] | None
             Icons to display after the filename. Order is preserved.
-        name, id, classes : str | None
+        open_keys : list[str] | None
+            Custom keyboard shortcuts for opening the file. If None, uses ["enter", "o"].
+            Example: ["f2"] or ["ctrl+o", "enter"]
+        id : str | None
+            Widget ID. If None, auto-generates from filename using sanitize_id().
+            Example: "README.md" becomes "readme-md".
+            Note: If you have multiple FileLinkWithIcons with the same filename, provide explicit IDs.
+        name, classes : str | None
             Standard Textual widget parameters.
         tooltip : str | None
             Optional tooltip for the entire widget.
@@ -137,6 +145,15 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         self._path = Path(path).resolve()
         self._line = line
         self._column = column
+
+        # Store custom open keys for forwarding to FileLink
+        self._custom_open_keys = open_keys
+
+        # Auto-generate ID from filename if not provided
+        if id is None:
+            from .utils import sanitize_id
+
+            id = sanitize_id(self._path.name)
 
         # Initialize container (bindings will be added dynamically in on_mount)
         super().__init__(
@@ -155,6 +172,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             line=line,
             column=column,
             command_builder=command_builder,
+            open_keys=open_keys,  # Forward custom keys to embedded FileLink
             _embedded=True,
             tooltip=None,  # No tooltip on embedded FileLink
         )
@@ -298,8 +316,8 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         """
         shortcuts = []
 
-        # Add open file shortcut
-        open_keys = ["enter", "o"]  # Default FileLink keys
+        # Add open file shortcut (use custom keys if provided)
+        open_keys = self._custom_open_keys if self._custom_open_keys is not None else ["enter", "o"]
         shortcuts.append(f"Open {format_keyboard_shortcuts(open_keys)}")
 
         # Add icon shortcuts (only for clickable icons with keys)

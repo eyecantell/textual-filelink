@@ -49,8 +49,12 @@ from textual_filelink import FileLink
 
 class MyApp(App):
     def compose(self) -> ComposeResult:
+        # Auto-generates id="readme-md"
         yield FileLink("README.md", line=10, column=5)
-    
+
+        # Or provide explicit ID
+        yield FileLink("script.py", id="main-script")
+
     def on_file_link_opened(self, event: FileLink.Opened):
         self.notify(f"Opened {event.path.name} at line {event.line}")
 
@@ -137,7 +141,14 @@ class MyApp(App):
                 Icon(name="lock", icon="🔒", clickable=True, key="l", tooltip="Toggle lock"),
             ],
         )
-    
+
+        # Custom keyboard shortcuts
+        yield FileLinkWithIcons(
+            "config.yaml",
+            open_keys=["f2"],  # Press F2 to open (instead of default Enter/O)
+            icons_before=[Icon(name="status", icon="✓")],
+        )
+
     def on_file_link_with_icons_icon_clicked(self, event: FileLinkWithIcons.IconClicked):
         self.notify(f"Clicked icon: {event.icon_name}")
 
@@ -369,6 +380,17 @@ class MyApp(App):
         link.set_status(icon="✅", running=False, tooltip="All tests passed")
 ```
 
+**Custom Spinner Example:**
+
+```python
+# Faster circle spinner for quick operations
+yield CommandLink(
+    "Quick Build",
+    spinner_frames=["◐", "◓", "◑", "◒"],
+    spinner_interval=0.05
+)
+```
+
 ### Constructor
 
 ```python
@@ -384,6 +406,8 @@ CommandLink(
     open_keys: list[str] | None = None,
     play_stop_keys: list[str] | None = None,
     settings_keys: list[str] | None = None,
+    spinner_frames: list[str] | None = None,
+    spinner_interval: float = 0.1,
     id: str | None = None,
     classes: str | None = None,
 )
@@ -400,6 +424,8 @@ CommandLink(
 - `open_keys`: Custom keyboard shortcuts for opening output (default: ["enter", "o"])
 - `play_stop_keys`: Custom keyboard shortcuts for play/stop (default: ["space", "p"])
 - `settings_keys`: Custom keyboard shortcuts for settings (default: ["s"])
+- `spinner_frames`: Custom spinner animation frames (unicode characters). If None, uses Braille pattern. Example: ["◐", "◓", "◑", "◒"]
+- `spinner_interval`: Seconds between spinner frame updates. Default: 0.1. Lower = faster spin. Example: 0.05
 - `id`: Widget ID. If None, auto-generated from name
 - `classes`: CSS classes
 

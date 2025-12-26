@@ -30,11 +30,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `_build_tooltip_with_shortcuts()` - Combines custom tooltip with keyboard shortcuts
   - `_get_shortcuts_string()` - Returns formatted keyboard shortcut string
 - New demo: `examples/demo_tooltip_control.py` - Demonstrates tooltip control options
+- **Auto-ID generation for FileLink and FileLinkWithIcons**
+  - IDs now auto-generate from filename using `sanitize_id()` if not provided
+  - Example: `FileLink("README.md")` gets `id="readme-md"`
+  - Explicit IDs still override auto-generation
+  - Consistent with CommandLink behavior
+  - Note: If you have multiple widgets with the same filename, provide explicit IDs
+- **Custom `open_keys` parameter for FileLinkWithIcons**
+  - Same API as FileLink for keyboard shortcut customization
+  - Example: `FileLinkWithIcons("file.txt", open_keys=["f2"])`
+  - Custom keys are forwarded to the embedded FileLink
+  - Tooltips automatically reflect custom keyboard shortcuts
+- **Customizable spinner for CommandLink**
+  - New `spinner_frames` parameter for custom animation frames
+  - New `spinner_interval` parameter for animation speed control
+  - Example: `CommandLink("Build", spinner_frames=["◐", "◓", "◑", "◒"], spinner_interval=0.05)`
+  - Default spinner uses Braille pattern with 0.1s interval
 
 ### Changed
 - Improved FileLinkList error messages for duplicate IDs
   - More helpful guidance when ID conflicts occur
   - Suggests using different names or explicit ID parameters
+- FileLinkList no longer raises ValueError for FileLink/FileLinkWithIcons without explicit IDs
+  - Auto-generated IDs are now used automatically
+  - Only widgets without any ID (e.g., Static with no id parameter) will raise an error
 
 ### Fixed
 - Avoided naming conflict with Textual's internal `_tooltip` attribute by using `_custom_tooltip` internally

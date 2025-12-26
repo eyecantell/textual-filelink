@@ -109,6 +109,10 @@ class FileLink(Static, can_focus=True):
         open_keys : list[str] | None
             Custom keyboard shortcuts for opening the file. If None, uses DEFAULT_OPEN_KEYS.
             Example: ["f2"] or ["ctrl+o", "enter"]
+        id : str | None
+            Widget ID. If None, auto-generates from filename using sanitize_id().
+            Example: "README.md" becomes "readme-md".
+            Note: If you have multiple FileLinks with the same filename, provide explicit IDs.
         _embedded : bool
             Internal use only. If True, disables focus to prevent stealing focus from parent widget.
         tooltip : str | None
@@ -122,6 +126,12 @@ class FileLink(Static, can_focus=True):
 
         # Store custom open keys if provided (will be applied in on_mount)
         self._custom_open_keys = open_keys
+
+        # Auto-generate ID from filename if not provided
+        if id is None:
+            from .utils import sanitize_id
+
+            id = sanitize_id(self._path.name)
 
         # Initialize Static with the display name as content
         super().__init__(

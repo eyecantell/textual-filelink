@@ -669,3 +669,45 @@ class TestCommandLinkIntegration:
             await pilot.press("o")
             await pilot.pause()
             # (FileLink opens, no direct way to verify in test)
+
+    async def test_commandlink_custom_spinner_frames(self):
+        """Test CommandLink accepts custom spinner frames."""
+        custom_frames = ["◐", "◓", "◑", "◒"]
+        link = CommandLink("Build", spinner_frames=custom_frames)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            assert link._spinner_frames == custom_frames
+
+            # Set to running and verify spinner uses custom frames
+            link.set_status(running=True)
+            await pilot.pause()
+
+            # Spinner should cycle through custom frames
+            # (status widget will show one of the custom frames)
+            assert link._command_running is True
+
+    async def test_commandlink_custom_spinner_interval(self):
+        """Test CommandLink accepts custom spinner interval."""
+        link = CommandLink("Build", spinner_interval=0.05)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._spinner_interval == 0.05
+
+    async def test_commandlink_default_spinner_frames(self):
+        """Test CommandLink uses default spinner frames when not specified."""
+        link = CommandLink("Build")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._spinner_frames == CommandLink.DEFAULT_SPINNER_FRAMES
+
+    async def test_commandlink_default_spinner_interval(self):
+        """Test CommandLink uses default spinner interval when not specified."""
+        link = CommandLink("Build")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._spinner_interval == 0.1
+            assert link._spinner_interval == CommandLink.DEFAULT_SPINNER_INTERVAL

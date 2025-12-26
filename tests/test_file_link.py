@@ -7,6 +7,7 @@ import pytest
 from textual.app import App, ComposeResult
 
 from textual_filelink import FileLink
+from textual_filelink.utils import sanitize_id
 
 
 class FileLinkTestApp(App):
@@ -489,3 +490,22 @@ class TestFileLink:
         """Test that FileLink.Clicked is aliased to FileLink.Opened."""
         # Verify the alias exists
         assert FileLink.Clicked is FileLink.Opened
+
+    async def test_filelink_auto_generates_id(self, temp_file):
+        """Test FileLink auto-generates ID from filename."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        async with app.run_test():
+            # temp_file is "test.txt" -> id="test-txt"
+            assert link.id is not None
+            assert link.id == sanitize_id(temp_file.name)
+            assert link.id == "test-txt"
+
+    async def test_filelink_explicit_id_overrides_auto(self, temp_file):
+        """Test explicit ID takes precedence over auto-generation."""
+        link = FileLink(temp_file, id="custom-id")
+        app = FileLinkTestApp(link)
+
+        async with app.run_test():
+            assert link.id == "custom-id"
