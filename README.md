@@ -58,45 +58,6 @@ if __name__ == "__main__":
     MyApp().run()
 ```
 
-### ToggleableFileLink with Multiple Icons
-
-```python
-from textual_filelink import ToggleableFileLink
-
-class MyApp(App):
-    def compose(self) -> ComposeResult:
-        yield ToggleableFileLink(
-            "script.py",
-            initial_toggle=True,
-            show_toggle=True,
-            show_remove=True,
-            icons=[
-                {"name": "status", "icon": "✓", "clickable": True, "tooltip": "Validated"},
-                {"name": "lock", "icon": "🔒", "position": "after", "tooltip": "Read-only"},
-                {"name": "modified", "icon": "📝", "visible": False, "tooltip": "Modified"},
-            ],
-            toggle_tooltip="Toggle selection",
-            remove_tooltip="Remove file",
-            line=42
-        )
-    
-    def on_toggleable_file_link_toggled(self, event: ToggleableFileLink.Toggled):
-        self.notify(f"{event.path.name} toggled: {event.is_toggled}")
-    
-    def on_toggleable_file_link_removed(self, event: ToggleableFileLink.Removed):
-        self.notify(f"{event.path.name} removed")
-    
-    def on_toggleable_file_link_icon_clicked(self, event: ToggleableFileLink.IconClicked):
-        self.notify(f"Clicked '{event.icon_name}' icon on {event.path.name}")
-        
-        # Example: dynamically update icon
-        link = event.control
-        link.update_icon("status", icon="⏳", tooltip="Processing...")
-
-if __name__ == "__main__":
-    MyApp().run()
-```
-
 ### CommandLink for Command Orchestration
 
 
@@ -201,11 +162,9 @@ All FileLink widgets support keyboard activation:
 **FileLink:**
 - `enter` or `o` - Open file in editor
 
-**ToggleableFileLink:**
-- `enter` or `o` - Open file in editor
-- `space` or `t` - Toggle checkbox
-- `delete` or `x` - Remove widget
-- `1-9` - Activate clickable icons (in order of appearance)
+**FileLinkWithIcons:**
+- `enter` or `o` - Open file in editor (via embedded FileLink)
+- `1-9` - Activate clickable icons (if defined with `key` parameter)
 
 **CommandLink:**
 - `enter` or `o` - Open output file (if path is set)
@@ -363,146 +322,13 @@ FileLink.default_command_builder = FileLink.vim_command
 FileLink.DEFAULT_OPEN_KEYS = ["enter", "f2"]
 ```
 
-## ToggleableFileLink API
-
-> **⚠️ Deprecation Notice:** ToggleableFileLink is deprecated as of v0.4.0 and will be removed in v0.5.0. Use `FileLinkWithIcons` for icon support and `FileLinkList` for toggle/remove controls instead.
-
-### Constructor
-
-```python
-ToggleableFileLink(
-    path: Path | str,
-    *,
-    initial_toggle: bool = False,
-    show_toggle: bool = True,
-    show_remove: bool = True,
-    icons: list[IconConfig | dict] | None = None,
-    line: int | None = None,
-    column: int | None = None,
-    command_builder: Callable | None = None,
-    disable_on_untoggle: bool = False,
-    toggle_tooltip: str | None = None,
-    remove_tooltip: str | None = None,
-    link_tooltip: str | None = None,
-    name: str | None = None,
-    id: str | None = None,
-    classes: str | None = None,
-)
-```
-
-**Parameters:**
-- `path`: Full path to the file
-- `initial_toggle`: Whether the item starts toggled (checked)
-- `show_toggle`: Whether to display the toggle control (☐/☑)
-- `show_remove`: Whether to display the remove button (×)
-- `icons`: List of icon configurations (see IconConfig below)
-- `line`: Optional line number to jump to
-- `column`: Optional column number to jump to
-- `command_builder`: Custom function to build the editor command
-- `disable_on_untoggle`: If True, dim/disable the link when untoggled
-- `toggle_tooltip`: Optional tooltip text for the toggle button
-- `remove_tooltip`: Optional tooltip text for the remove button
-- `link_tooltip`: Optional tooltip text for the filename/link
-
-### IconConfig
-
-Icons can be specified as dicts or `IconConfig` dataclasses:
-
-```python
-from textual_filelink.toggleable_file_link import IconConfig
-
-# As dict
-{"name": "status", "icon": "✓", "clickable": True, "tooltip": "Done"}
-
-# As dataclass
-IconConfig(name="status", icon="✓", clickable=True, tooltip="Done")
-```
-
-**IconConfig Properties:**
-- `name` (str, **required**): Unique identifier for the icon
-- `icon` (str, **required**): Unicode character to display
-- `position` (str): "before" or "after" the filename (default: "before")
-- `index` (int | None): Explicit ordering index (default: None = use list order)
-- `visible` (bool): Whether icon is initially visible (default: True)
-- `clickable` (bool): Whether icon posts `IconClicked` messages (default: False)
-- `tooltip` (str | None): Tooltip text (default: None)
-
-### Properties
-
-- `path: Path` - The file path
-- `is_toggled: bool` - Current toggle state
-- `icons: list[dict]` - List of all icon configurations
-- `file_link: FileLink` - The internal FileLink widget
-
-### Methods
-
-#### `set_icon_visible(name: str, visible: bool)`
-Show or hide a specific icon.
-
-```python
-link.set_icon_visible("warning", True)   # Show icon
-link.set_icon_visible("warning", False)  # Hide icon
-```
-
-#### `update_icon(name: str, **kwargs)`
-Update any properties of an existing icon.
-
-```python
-link.update_icon("status", icon="✓", tooltip="Complete")
-link.update_icon("status", visible=False)
-link.update_icon("status", position="after", index=5)
-```
-
-**Updatable properties:** `icon`, `position`, `index`, `visible`, `clickable`, `tooltip`
-
-#### `get_icon(name: str) -> dict | None`
-Get a copy of an icon's configuration.
-
-```python
-config = link.get_icon("status")
-if config:
-    print(f"Icon: {config['icon']}, Visible: {config['visible']}")
-```
-
-#### `set_toggle_tooltip(tooltip: str | None)`
-Update the toggle button tooltip.
-
-#### `set_remove_tooltip(tooltip: str | None)`
-Update the remove button tooltip.
-
-#### `set_link_tooltip(tooltip: str | None)`
-Update the filename/link tooltip.
-
-### Messages
-
-#### `ToggleableFileLink.Toggled`
-Posted when the toggle state changes.
-
-**Attributes:**
-- `path: Path`
-- `is_toggled: bool`
-
-#### `ToggleableFileLink.Removed`
-Posted when the remove button is clicked.
-
-**Attributes:**
-- `path: Path`
-
-#### `ToggleableFileLink.IconClicked`
-Posted when a clickable icon is clicked.
-
-**Attributes:**
-- `path: Path`
-- `icon_name: str` - The name of the clicked icon
-- `icon: str` - The unicode character of the icon
-
 ## CommandLink API
 
 `CommandLink` is a widget for command orchestration and status display. It provides play/stop controls, animated spinner, status icons, and optional settings.
 
 ### Architecture
 
-CommandLink is a standalone widget (extends `Horizontal`, not `ToggleableFileLink`). It has a flat composition:
+CommandLink is a standalone widget that extends `Horizontal`. It has a flat composition:
 - Status icon (or animated spinner when running)
 - Play/stop button (▶️/⏸️)
 - Command name (clickable FileLink if output_path is set)
@@ -858,7 +684,7 @@ if __name__ == "__main__":
 - Optional remove buttons for each item
 - ID validation (all items must have explicit IDs, no duplicates)
 - Batch operations: `toggle_all()`, `remove_selected()`
-- Works with FileLink, FileLinkWithIcons, CommandLink, and ToggleableFileLink
+- Works with FileLink, FileLinkWithIcons, and CommandLink
 
 ### Constructor
 

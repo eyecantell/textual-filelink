@@ -6,12 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **textual-filelink** is a Python library providing clickable file link widgets for [Textual](https://github.com/Textualize/textual) TUI applications. It enables opening files in editors directly from terminal UIs with support for line/column navigation, customizable icons, toggle controls, and command orchestration.
 
-**Current Version**: 0.3.0
+**Current Version**: 0.5.0
 
 The library exports these main widget classes:
 - **FileLink**: Basic clickable filename link
 - **FileLinkWithIcons**: FileLink with customizable icons (composition-based)
-- **ToggleableFileLink**: Legacy widget with checkboxes, icons, and removal (inheritance-based, will be deprecated in v0.4.0)
 - **CommandLink**: Specialized widget for command orchestration with status icons and play/stop controls
 - **FileLinkList**: Container for managing widgets with uniform toggle/remove controls
 - **Icon**: Dataclass for type-safe icon configuration

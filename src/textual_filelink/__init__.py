@@ -3,7 +3,6 @@ from .file_link import FileLink
 from .file_link_list import FileLinkList
 from .file_link_with_icons import FileLinkWithIcons
 from .icon import Icon
-from .toggleable_file_link import ToggleableFileLink
 from .utils import sanitize_id
 
-__all__ = ["FileLink", "FileLinkWithIcons", "CommandLink", "FileLinkList", "Icon", "sanitize_id", "ToggleableFileLink"]
+__all__ = ["FileLink", "FileLinkWithIcons", "CommandLink", "FileLinkList", "Icon", "sanitize_id"]
