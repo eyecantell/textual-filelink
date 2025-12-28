@@ -889,8 +889,8 @@ class TestCommandLinkTimer:
 
     async def test_timer_updates_automatically(self):
         """Test timer display updates automatically via interval."""
-        from unittest.mock import patch
         import time as time_module
+        from unittest.mock import patch
 
         link = CommandLink("TestCommand", show_timer=True)
         app = CommandLinkTestApp(link)
@@ -910,8 +910,6 @@ class TestCommandLinkTimer:
             with patch.object(time_module, "time", side_effect=mock_time):
                 link.set_start_time(1000.0)
                 await pilot.pause()
-
-                initial_display = link._last_timer_display
 
                 # Wait for interval to fire (updates should show time progression)
                 await pilot.pause(1.5)
@@ -1018,15 +1016,12 @@ class TestCommandLinkTimer:
     async def test_timer_constructor_with_timestamps(self):
         """Test CommandLink constructor accepts start_time and end_time."""
         from unittest.mock import patch
-        import time
 
         with patch("time.time", return_value=1060.0):
-            link = CommandLink(
-                "TestCommand", show_timer=True, start_time=1000.0, end_time=900.0
-            )
+            link = CommandLink("TestCommand", show_timer=True, start_time=1000.0, end_time=900.0)
             app = CommandLinkTestApp(link)
 
-            async with app.run_test() as pilot:
+            async with app.run_test():
                 assert link._start_time == 1000.0
                 assert link._end_time == 900.0
 

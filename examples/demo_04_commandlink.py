@@ -29,6 +29,7 @@ Keyboard Shortcuts:
 
 import asyncio
 import random
+import time
 from pathlib import Path
 
 from textual.app import App, ComposeResult
@@ -36,7 +37,6 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Footer, Header, Label, Static
 
 from textual_filelink import CommandLink
-import time
 
 
 class CommandLinkDemo(App):
