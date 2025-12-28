@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-12-28
+
+### Changed
+- **BREAKING: CommandLink timer API redesigned** - Now uses timestamps instead of pre-formatted strings
+  - **Removed**: `set_timer_data(duration_str, time_ago_str)` method (no deprecation - clean break)
+  - **Added**: `set_start_time(timestamp)` and `set_end_time(timestamp)` methods
+  - **Added**: `start_time` and `end_time` constructor parameters (float | None)
+  - **Added**: `start_time` and `end_time` parameters to `set_status()` for atomic updates
+  - Timer now self-contained: computes and formats relative times internally
+  - No external polling required: widget manages its own 1-second update interval
+  - **Migration**: Replace `set_timer_data(duration_str="12m 34s")` with `set_start_time(time.time())`
+  - **Benefits**: Eliminates layering violations, reduces coupling, simplifies external code (80→10 lines in demo)
+
+### Added
+- **Public time formatting utilities** - Exported from `textual_filelink`
+  - `format_duration(seconds: float) -> str` - Format elapsed time as duration
+    - Milliseconds: "500ms" for sub-second durations (< 1s)
+    - Decimal seconds: "2.4s" for 1-60s range
+    - Compound units: "1m 30s", "2h 5m", "1d 3h", "2w 3d"
+  - `format_time_ago(seconds: float) -> str` - Format elapsed time as time-ago
+    - Single-unit display: "5s ago", "2m ago", "3h ago", "2d ago", "1w ago"
+  - Both functions handle edge cases: negative values return empty string
+  - Available for external use: `from textual_filelink import format_duration, format_time_ago`
+
 ## [0.7.0] - 2025-12-28
 
 ### Added
@@ -187,7 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scrolling issues in demo applications
 - Various edge cases in error handling
 
-[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/eyecantell/textual-filelink/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/eyecantell/textual-filelink/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/eyecantell/textual-filelink/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/eyecantell/textual-filelink/compare/v0.4.0...v0.5.0

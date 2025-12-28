@@ -6,15 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **textual-filelink** is a Python library providing clickable file link widgets for [Textual](https://github.com/Textualize/textual) TUI applications. It enables opening files in editors directly from terminal UIs with support for line/column navigation, customizable icons, toggle controls, and command orchestration.
 
-**Current Version**: 0.7.0
+**Current Version**: 0.8.0
 
-The library exports these main widget classes:
+The library exports these main widget classes and utilities:
 - **FileLink**: Basic clickable filename link
 - **FileLinkWithIcons**: FileLink with customizable icons (composition-based)
 - **CommandLink**: Specialized widget for command orchestration with status icons, play/stop controls, and optional timer display
 - **FileLinkList**: Container for managing widgets with uniform toggle/remove controls
 - **Icon**: Dataclass for type-safe icon configuration
 - **sanitize_id()**: Utility function for converting strings to valid widget IDs
+- **format_duration()**: Format elapsed time as human-readable duration (new in v0.8.0)
+- **format_time_ago()**: Format elapsed time as time-ago string (new in v0.8.0)
 
 ## Common Development Commands
 
@@ -217,30 +219,38 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
 
 ### CommandLink (src/textual_filelink/command_link.py)
 - **Responsibility**: Orchestrate command execution with status display and controls
-- **Current Design (v0.7.0)**: Standalone widget extending `Horizontal`
+- **Current Design (v0.8.0)**: Standalone widget extending `Horizontal`
 - **Key Concepts**:
   - Layout: `[status/spinner] [timer?] [▶️/⏹️] command_name [⚙️?]`
   - Animated spinner using `set_interval()` when running
-  - Optional timer display with `show_timer=True` (new in v0.7.0)
+  - Optional timer display with `show_timer=True` (added in v0.7.0, redesigned in v0.8.0)
   - Auto-generates widget ID from command name via `sanitize_id()`
   - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
   - Internal attribute naming: `_command_running` (not `_running` to avoid Textual's MessagePump conflict)
-- **API (v0.7.0)**:
+- **API (v0.8.0)**:
   - Constructor parameter: `command_name: str` (first positional parameter)
-  - Constructor parameter: `show_timer: bool = False` - Enable timer display (new in v0.7.0)
-  - Constructor parameter: `timer_field_width: int = 12` - Timer column width (new in v0.7.0)
+  - Constructor parameter: `show_timer: bool = False` - Enable timer display
+  - Constructor parameter: `timer_field_width: int = 12` - Timer column width
+  - Constructor parameter: `start_time: float | None = None` - Unix timestamp when command started (new in v0.8.0)
+  - Constructor parameter: `end_time: float | None = None` - Unix timestamp when command completed (new in v0.8.0)
   - Property: `widget.command_name` returns the command name
-  - Method: `set_timer_data(duration_str=None, time_ago_str=None)` - Update timer with pre-formatted strings (new in v0.7.0)
+  - Method: `set_start_time(timestamp: float | None)` - Set command start timestamp (new in v0.8.0)
+  - Method: `set_end_time(timestamp: float | None)` - Set command end timestamp (new in v0.8.0)
+  - Method: `set_status(..., start_time=None, end_time=None)` - Accepts timestamp parameters (updated in v0.8.0)
+  - **REMOVED in v0.8.0**: `set_timer_data(duration_str, time_ago_str)` method (breaking change)
   - Textual's `name` parameter: Now available for widget identification
   - **Important**: `widget.name` returns Textual's widget name (str | None), NOT the command name
-- **Timer Display (v0.7.0)**:
-  - Shows `duration_str` when running (e.g., "12m 34s")
-  - Shows `time_ago_str` when not running (e.g., "5s ago")
-  - Updates automatically every 1 second when enabled
+- **Timer Display (v0.8.0 - BREAKING CHANGE)**:
+  - Widget now accepts Unix timestamps (from `time.time()`) instead of pre-formatted strings
+  - Computes and formats relative times internally using `utils.format_duration()` and `utils.format_time_ago()`
+  - Shows elapsed duration when running: "500ms", "2.4s", "1m 30s", "2h 5m", "1d 3h", "2w 3d"
+  - Shows time-ago when not running: "5s ago", "2m ago", "3h ago", "2d ago", "1w ago"
+  - Updates automatically every 1 second when enabled (no external polling required)
   - Right-justified within fixed-width column for alignment
-  - Designed for integration with textual-cmdorc's RunHandle
   - Timer interval started in `on_mount()`, stopped in `on_unmount()`
-  - Optimized to avoid unnecessary refreshes (only updates when string changes)
+  - Optimized to avoid unnecessary refreshes (only updates when display string changes)
+  - Self-contained: Widget owns all time computation and display logic
+  - Migration: Replace `set_timer_data(duration_str="12m 34s")` with `set_start_time(time.time())`
 - **Messages**:
   - `CommandLink.PlayClicked` (widget, name, output_path) - Note: message.name is command name
   - `CommandLink.StopClicked` (widget, name, output_path) - Note: message.name is command name
@@ -283,6 +293,16 @@ class Icon:
 ### Utility Functions (src/textual_filelink/utils.py)
 - `sanitize_id(name: str) -> str` - Convert any string to valid widget ID
   - Lowercases, converts spaces/paths to hyphens, removes special chars
+- `format_duration(secs: float) -> str` - Format elapsed time as duration (NEW in v0.8.0)
+  - Milliseconds (< 1s): "500ms", "999ms"
+  - Decimal seconds (1-60s): "1.0s", "2.4s", "59.9s"
+  - Compound units (≥ 60s): "1m 30s", "2h 5m", "1d 3h", "2w 3d"
+  - Negative values return empty string
+  - Used internally by CommandLink timer display
+- `format_time_ago(secs: float) -> str` - Format elapsed time as time-ago (NEW in v0.8.0)
+  - Single-unit display: "5s ago", "2m ago", "3h ago", "2d ago", "1w ago"
+  - Negative values return empty string
+  - Used internally by CommandLink timer display
 
 ## Testing Structure
 
@@ -293,6 +313,7 @@ class Icon:
 - **tests/test_command_link.py**: CommandLink unit tests
 - **tests/test_file_link_list.py**: FileLinkList unit tests
 - **tests/test_tooltip_enhancement.py**: Tooltip keyboard shortcut enhancement tests
+- **tests/test_utils.py**: Utility function tests (format_duration, format_time_ago, sanitize_id) (NEW in v0.8.0)
 - **tests/test_integration.py**: Integration tests with mock Textual apps
 
 **Key Testing Pattern**: Tests use `pilot` fixture to simulate user interactions (clicks) and verify message emission.

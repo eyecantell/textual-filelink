@@ -66,3 +66,105 @@ def format_keyboard_shortcuts(keys: list[str]) -> str:
     if not keys:
         return ""
     return f"({'/'.join(keys)})"
+
+
+def format_duration(secs: float) -> str:
+    """Format seconds into a human-readable duration string.
+
+    Parameters
+    ----------
+    secs : float
+        Number of seconds to format
+
+    Returns
+    -------
+    str
+        Human-readable string like "452ms", "2.4s", "1m 23s", "2h 5m", "1d 3h", "2w 3d"
+
+    Examples
+    --------
+    >>> format_duration(0.5)
+    '500ms'
+    >>> format_duration(90)
+    '1m 30s'
+    >>> format_duration(3661)
+    '1h 1m'
+    """
+    # Handle negative values (clock skew)
+    if secs < 0:
+        return ""
+
+    # Milliseconds for sub-second durations
+    if secs < 1:
+        return f"{secs * 1000:.0f}ms"
+
+    # Decimal seconds for 1-60s range
+    if secs < 60:
+        return f"{secs:.1f}s"
+
+    # Minutes and seconds
+    mins, secs_remainder = divmod(int(secs), 60)
+    if mins < 60:
+        return f"{mins}m {secs_remainder}s"
+
+    # Hours and minutes
+    hrs, mins_remainder = divmod(mins, 60)
+    if hrs < 24:
+        return f"{hrs}h {mins_remainder}m"
+
+    # Days and hours
+    days, hrs_remainder = divmod(hrs, 24)
+    if days < 7:
+        return f"{days}d {hrs_remainder}h"
+
+    # Weeks and days
+    weeks, days_remainder = divmod(days, 7)
+    return f"{weeks}w {days_remainder}d" if days_remainder else f"{weeks}w"
+
+
+def format_time_ago(secs: float) -> str:
+    """Format elapsed seconds as time-ago string.
+
+    Parameters
+    ----------
+    secs : float
+        Number of seconds since event
+
+    Returns
+    -------
+    str
+        Human-readable string like "5s ago", "2m ago", "3h ago", "2d ago", "1w ago"
+
+    Examples
+    --------
+    >>> format_time_ago(30)
+    '30s ago'
+    >>> format_time_ago(3661)
+    '1h ago'
+    """
+    # Handle negative values (clock skew)
+    if secs < 0:
+        return ""
+
+    # Seconds
+    if secs < 60:
+        return f"{int(secs)}s ago"
+
+    # Minutes
+    mins = int(secs) // 60
+    if mins < 60:
+        return f"{mins}m ago"
+
+    # Hours
+    hrs = mins // 60
+    if hrs < 24:
+        return f"{hrs}h ago"
+
+    # Days
+    days = hrs // 24
+    if days < 7:
+        return f"{days}d ago"
+
+    # Weeks
+    weeks = days // 7
+    return f"{weeks}w ago"

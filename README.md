@@ -102,10 +102,11 @@ if __name__ == "__main__":
     MyApp().run()
 ```
 
-**With Timer (for textual-cmdorc integration):**
+**With Timer (NEW in v0.8.0):**
 
 ```python
 from textual_filelink import CommandLink
+import time
 
 class MyApp(App):
     def compose(self) -> ComposeResult:
@@ -117,17 +118,13 @@ class MyApp(App):
 
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
         link = self.query_one(CommandLink)
-        link.set_status(running=True)
-        # Update timer with pre-formatted strings (e.g., from textual-cmdorc)
-        link.set_timer_data(duration_str="1m 23s")
-
-    async def update_timer_periodically(self, link: CommandLink, duration_str: str):
-        # Timer display updates automatically every 1 second
-        link.set_timer_data(duration_str=duration_str)
+        # Set status and timestamp in one call - widget handles all formatting
+        link.set_status(running=True, start_time=time.time())
+        # Widget automatically shows: "500ms", "1.0s", "2.4s", "1m 5s", etc.
 
     def on_completion(self, link: CommandLink):
-        link.set_status(icon="✅", running=False)
-        link.set_timer_data(time_ago_str="30s ago")
+        # Set status and end timestamp - widget shows "5s ago", "2m ago", etc.
+        link.set_status(icon="✅", running=False, end_time=time.time())
 ```
 
 ### FileLinkList for Managing Collections
@@ -487,39 +484,65 @@ CommandLink(
 
 ### Methods
 
-#### `set_timer_data(duration_str=None, time_ago_str=None)`
-Update timer display with pre-formatted time strings.
+#### `set_start_time(timestamp)` (NEW in v0.8.0)
+Set command start timestamp for elapsed time display.
 
 ```python
-# Update duration while running
-link.set_timer_data(duration_str="1m 23s")
+import time
 
-# Update time-ago after completion
-link.set_timer_data(time_ago_str="30s ago")
+# When command starts
+link.set_start_time(time.time())
+# Widget automatically shows: "500ms", "1.0s", "2.4s", "1m 5s", etc.
 
-# Clear timer data
-link.set_timer_data(duration_str="", time_ago_str="")
+# Clear start time
+link.set_start_time(None)
 ```
 
 **Parameters:**
-- `duration_str`: Formatted duration for running commands (e.g., "12m 34s")
-- `time_ago_str`: Formatted time-ago for completed commands (e.g., "5s ago")
+- `timestamp: float | None` - Unix timestamp from `time.time()` when command started, or None to clear
 
 **Notes:**
-- Timer automatically displays duration_str when running=True
-- Timer automatically displays time_ago_str when running=False
-- Updates every 1 second automatically
-- Expects pre-formatted strings (for integration with textual-cmdorc)
+- Widget computes and formats elapsed time internally from timestamp
+- Display updates automatically every 1 second (no external polling needed)
+- Shows duration when running=True: milliseconds, decimal seconds, or compound units
+- Self-contained widget design eliminates layering violations
 
-#### `set_status(icon=None, running=None, tooltip=None, name_tooltip=None, run_tooltip=None, stop_tooltip=None, append_shortcuts=True)`
-Update command status display and optionally update all tooltips at once.
+#### `set_end_time(timestamp)` (NEW in v0.8.0)
+Set command end timestamp for time-ago display.
 
 ```python
+import time
+
+# When command completes
+link.set_end_time(time.time())
+# Widget automatically shows: "5s ago", "2m ago", "3h ago", etc.
+
+# Clear end time
+link.set_end_time(None)
+```
+
+**Parameters:**
+- `timestamp: float | None` - Unix timestamp from `time.time()` when command completed, or None to clear
+
+**Notes:**
+- Widget computes and formats time-ago internally from timestamp
+- Display updates automatically every 1 second
+- Shows single-unit time-ago when running=False: seconds, minutes, hours, days, weeks
+
+#### `set_status(icon=None, running=None, tooltip=None, name_tooltip=None, run_tooltip=None, stop_tooltip=None, start_time=None, end_time=None, append_shortcuts=True)` (v0.8.0: Added start_time/end_time)
+Update command status display and optionally update all tooltips and timer timestamps at once.
+
+```python
+import time
+
 # Basic status update
 link.set_status(running=True, tooltip="Running tests...")
 
-# Complete with success
-link.set_status(icon="✅", running=False, tooltip="All tests passed")
+# Start with timer (NEW in v0.8.0)
+link.set_status(running=True, start_time=time.time(), tooltip="Running tests...")
+
+# Complete with success and timer (NEW in v0.8.0)
+link.set_status(icon="✅", running=False, end_time=time.time(), tooltip="All tests passed")
 
 # Complete with failure
 link.set_status(icon="❌", running=False, tooltip="3 tests failed")
@@ -1345,6 +1368,51 @@ Converts a name to a valid Textual widget ID by:
 - Converting to lowercase
 - Replacing spaces and path separators with hyphens
 - Keeping only alphanumeric characters, hyphens, and underscores
+
+### format_duration (NEW in v0.8.0)
+
+```python
+from textual_filelink import format_duration
+
+# Format elapsed time as duration
+duration = format_duration(0.5)      # Returns: "500ms"
+duration = format_duration(2.4)      # Returns: "2.4s"
+duration = format_duration(90)       # Returns: "1m 30s"
+duration = format_duration(3661)     # Returns: "1h 1m"
+duration = format_duration(90000)    # Returns: "1d 1h"
+duration = format_duration(691200)   # Returns: "1w 1d"
+```
+
+**Description:**
+Formats seconds into a human-readable duration string with automatic unit selection:
+- Milliseconds (< 1s): "500ms", "999ms"
+- Decimal seconds (1-60s): "1.0s", "2.4s", "59.9s"
+- Compound units (≥ 60s): "1m 30s", "2h 5m", "1d 3h", "2w 3d"
+- Negative values return empty string
+- Used internally by CommandLink timer display
+
+### format_time_ago (NEW in v0.8.0)
+
+```python
+from textual_filelink import format_time_ago
+
+# Format elapsed time as time-ago
+time_ago = format_time_ago(30)       # Returns: "30s ago"
+time_ago = format_time_ago(120)      # Returns: "2m ago"
+time_ago = format_time_ago(3661)     # Returns: "1h ago"
+time_ago = format_time_ago(86400)    # Returns: "1d ago"
+time_ago = format_time_ago(604800)   # Returns: "1w ago"
+```
+
+**Description:**
+Formats elapsed seconds as a time-ago string with single-unit display:
+- Seconds (< 60s): "5s ago", "59s ago"
+- Minutes (< 60m): "1m ago", "59m ago"
+- Hours (< 24h): "1h ago", "23h ago"
+- Days (< 7d): "1d ago", "6d ago"
+- Weeks (≥ 7d): "1w ago", "2w ago"
+- Negative values return empty string
+- Used internally by CommandLink timer display
 
 ## Development
 

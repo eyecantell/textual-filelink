@@ -1,6 +1,6 @@
 """Tests for utility functions."""
 
-from textual_filelink.utils import sanitize_id
+from textual_filelink.utils import format_duration, format_time_ago, sanitize_id
 
 
 class TestSanitizeId:
@@ -71,3 +71,129 @@ class TestSanitizeId:
         """Test sanitization of string with only special characters."""
         assert sanitize_id("!!!") == "---"
         assert sanitize_id("@#$") == "---"
+
+
+class TestFormatDuration:
+    """Tests for format_duration() function."""
+
+    def test_milliseconds(self):
+        """Test millisecond formatting for sub-second durations."""
+        assert format_duration(0.5) == "500ms"
+        assert format_duration(0.999) == "999ms"
+        assert format_duration(0.1) == "100ms"
+        assert format_duration(0.001) == "1ms"
+
+    def test_zero(self):
+        """Test zero duration."""
+        assert format_duration(0.0) == "0ms"
+
+    def test_decimal_seconds(self):
+        """Test decimal seconds for 1-60s range."""
+        assert format_duration(1.0) == "1.0s"
+        assert format_duration(30.5) == "30.5s"
+        assert format_duration(59.9) == "59.9s"
+        assert format_duration(5.3) == "5.3s"
+
+    def test_minutes_and_seconds(self):
+        """Test minutes and seconds formatting."""
+        assert format_duration(60) == "1m 0s"
+        assert format_duration(90) == "1m 30s"
+        assert format_duration(125) == "2m 5s"
+        assert format_duration(3599) == "59m 59s"
+
+    def test_hours_and_minutes(self):
+        """Test hours and minutes formatting."""
+        assert format_duration(3600) == "1h 0m"
+        assert format_duration(3661) == "1h 1m"
+        assert format_duration(7200) == "2h 0m"
+        assert format_duration(7325) == "2h 2m"
+        assert format_duration(86399) == "23h 59m"
+
+    def test_days_and_hours(self):
+        """Test days and hours formatting."""
+        assert format_duration(86400) == "1d 0h"
+        assert format_duration(90000) == "1d 1h"
+        assert format_duration(172800) == "2d 0h"
+        assert format_duration(176400) == "2d 1h"
+        assert format_duration(604799) == "6d 23h"
+
+    def test_weeks(self):
+        """Test weeks formatting."""
+        assert format_duration(604800) == "1w"
+        assert format_duration(691200) == "1w 1d"
+        assert format_duration(1209600) == "2w"
+        assert format_duration(1296000) == "2w 1d"
+
+    def test_large_values(self):
+        """Test large time values."""
+        assert format_duration(2419200) == "4w"  # 4 weeks
+        assert format_duration(2505600) == "4w 1d"  # 4 weeks 1 day
+
+    def test_negative_values(self):
+        """Test negative values return empty string."""
+        assert format_duration(-1.0) == ""
+        assert format_duration(-60) == ""
+        assert format_duration(-3600) == ""
+
+    def test_boundary_values(self):
+        """Test boundary conditions."""
+        assert format_duration(0.999) == "999ms"  # Just under 1s
+        assert format_duration(1.0) == "1.0s"  # Exactly 1s
+        assert format_duration(59.9) == "59.9s"  # Just under 60s
+        assert format_duration(60.0) == "1m 0s"  # Exactly 60s
+
+
+class TestFormatTimeAgo:
+    """Tests for format_time_ago() function."""
+
+    def test_seconds(self):
+        """Test seconds formatting."""
+        assert format_time_ago(0) == "0s ago"
+        assert format_time_ago(5) == "5s ago"
+        assert format_time_ago(30) == "30s ago"
+        assert format_time_ago(59) == "59s ago"
+
+    def test_minutes(self):
+        """Test minutes formatting."""
+        assert format_time_ago(60) == "1m ago"
+        assert format_time_ago(120) == "2m ago"
+        assert format_time_ago(300) == "5m ago"
+        assert format_time_ago(3599) == "59m ago"
+
+    def test_hours(self):
+        """Test hours formatting."""
+        assert format_time_ago(3600) == "1h ago"
+        assert format_time_ago(7200) == "2h ago"
+        assert format_time_ago(10800) == "3h ago"
+        assert format_time_ago(86399) == "23h ago"
+
+    def test_days(self):
+        """Test days formatting."""
+        assert format_time_ago(86400) == "1d ago"
+        assert format_time_ago(172800) == "2d ago"
+        assert format_time_ago(259200) == "3d ago"
+        assert format_time_ago(604799) == "6d ago"
+
+    def test_weeks(self):
+        """Test weeks formatting."""
+        assert format_time_ago(604800) == "1w ago"
+        assert format_time_ago(1209600) == "2w ago"
+        assert format_time_ago(1814400) == "3w ago"
+
+    def test_negative_values(self):
+        """Test negative values return empty string."""
+        assert format_time_ago(-1) == ""
+        assert format_time_ago(-60) == ""
+        assert format_time_ago(-3600) == ""
+
+    def test_fractional_seconds(self):
+        """Test fractional seconds are truncated."""
+        assert format_time_ago(5.5) == "5s ago"
+        assert format_time_ago(59.9) == "59s ago"
+
+    def test_boundary_values(self):
+        """Test boundary conditions."""
+        assert format_time_ago(59) == "59s ago"  # Just under 60s
+        assert format_time_ago(60) == "1m ago"  # Exactly 60s
+        assert format_time_ago(3599) == "59m ago"  # Just under 60m
+        assert format_time_ago(3600) == "1h ago"  # Exactly 60m

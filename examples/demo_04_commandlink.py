@@ -36,6 +36,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, Footer, Header, Label, Static
 
 from textual_filelink import CommandLink
+import time
 
 
 class CommandLinkDemo(App):
@@ -285,75 +286,9 @@ class CommandLinkDemo(App):
         self._running_count = 0
         self.update_stats()
 
-        # Track elapsed seconds for each timer command (for demo simulation)
-        self._timer_elapsed_seconds = {}
-
-        # Initialize timer for Lint Code to show completed state
+        # Initialize timer for Lint Code to show completed state (2 hours ago)
         lint_cmd = self.query_one("#cmd-timer-lint", CommandLink)
-        lint_cmd.set_timer_data(time_ago_str="2h ago")
-        self._timer_elapsed_seconds["cmd-timer-lint"] = 7200  # 2 hours in seconds
-
-        # Start timer update interval for all timer-enabled commands
-        self.set_interval(1.0, self._update_all_timers)
-
-    def _update_all_timers(self) -> None:
-        """Update all timer displays every second."""
-        # Update running command timers
-        for cmd_id in ["cmd-timer-compile", "cmd-timer-benchmark"]:
-            try:
-                cmd = self.query_one(f"#{cmd_id}", CommandLink)
-                if cmd.is_running and cmd_id in self._timer_elapsed_seconds:
-                    # Increment elapsed seconds
-                    self._timer_elapsed_seconds[cmd_id] += 1
-                    # Format and update duration
-                    duration_str = self._format_duration(self._timer_elapsed_seconds[cmd_id])
-                    cmd.set_timer_data(duration_str=duration_str)
-            except Exception:
-                pass
-
-        # Update completed command time-ago
-        for cmd_id in ["cmd-timer-compile", "cmd-timer-benchmark", "cmd-timer-lint"]:
-            try:
-                cmd = self.query_one(f"#{cmd_id}", CommandLink)
-                if not cmd.is_running and cmd_id in self._timer_elapsed_seconds:
-                    # Increment elapsed seconds
-                    self._timer_elapsed_seconds[cmd_id] += 1
-                    # Format and update time-ago
-                    time_ago_str = self._format_time_ago(self._timer_elapsed_seconds[cmd_id])
-                    cmd.set_timer_data(time_ago_str=time_ago_str)
-            except Exception:
-                pass
-
-    def _format_duration(self, seconds: int) -> str:
-        """Format elapsed seconds as duration string (e.g., '1m 23s')."""
-        if seconds < 60:
-            return f"{seconds}s"
-        elif seconds < 3600:
-            mins = seconds // 60
-            secs = seconds % 60
-            return f"{mins}m {secs}s"
-        elif seconds < 86400:
-            hours = seconds // 3600
-            mins = (seconds % 3600) // 60
-            return f"{hours}h {mins}m"
-        else:
-            days = seconds // 86400
-            hours = (seconds % 86400) // 3600
-            return f"{days}d {hours}h"
-
-    def _format_time_ago(self, seconds: int) -> str:
-        """Format elapsed seconds as time-ago string (e.g., '30s ago')."""
-        if seconds < 60:
-            return f"{seconds}s ago"
-        elif seconds < 3600:
-            mins = seconds // 60
-            return f"{mins}m ago"
-        elif seconds < 86400:
-            hours = seconds // 3600
-            return f"{hours}h ago"
-        else:
-            days = seconds // 86400
-            return f"{days}d ago"
+        lint_cmd.set_status(end_time=time.time() - 7200)  # 2 hours ago
 
     def update_stats(self) -> None:
         """Update statistics display."""
@@ -374,16 +309,15 @@ class CommandLinkDemo(App):
         """
         cmd = self.query_one(f"#{command_id}", CommandLink)
 
-        # Start running
-        cmd.set_status(running=True)
+        # Start running with timer
+        if use_timer:
+            cmd.set_status(running=True, start_time=time.time())
+        else:
+            cmd.set_status(running=True)
+
         self._running_count += 1
         self._total_runs += 1
         self.update_stats()
-
-        # Initialize timer if enabled
-        if use_timer:
-            self._timer_elapsed_seconds[command_id] = 0
-            cmd.set_timer_data(duration_str="0s")
 
         # Wait for duration
         await asyncio.sleep(duration)
@@ -391,18 +325,17 @@ class CommandLinkDemo(App):
         # Random outcome (70% success, 30% failure)
         success = random.random() < 0.7
 
-        # Stop running with status
-        if success:
-            cmd.set_status(icon="✅", running=False, tooltip="Success!")
-        else:
-            cmd.set_status(icon="❌", running=False, tooltip="Failed")
-
-        # Set time-ago if timer enabled
+        # Stop running with status and timer
         if use_timer:
-            # Keep the elapsed seconds, just switch to time-ago format
-            # (Don't reset to 0, continue from where we were)
-            time_ago_str = self._format_time_ago(self._timer_elapsed_seconds.get(command_id, 0))
-            cmd.set_timer_data(time_ago_str=time_ago_str)
+            if success:
+                cmd.set_status(icon="✅", running=False, tooltip="Success!", end_time=time.time())
+            else:
+                cmd.set_status(icon="❌", running=False, tooltip="Failed", end_time=time.time())
+        else:
+            if success:
+                cmd.set_status(icon="✅", running=False, tooltip="Success!")
+            else:
+                cmd.set_status(icon="❌", running=False, tooltip="Failed")
 
         self._running_count -= 1
         self.update_stats()
@@ -427,14 +360,11 @@ class CommandLinkDemo(App):
     def on_command_link_stop_clicked(self, event: CommandLink.StopClicked) -> None:
         """Handle stop button clicks."""
         self.notify(f"⏹️ Stopping: {event.name}", timeout=1)
-        # Update the widget directly using the widget reference
-        event.widget.set_status(icon="⏹️", running=False, tooltip="Stopped")
-        # Set time-ago for timer commands
+        # Update the widget with timestamp (widget handles the rest)
         if event.widget._show_timer:
-            if event.widget.id not in self._timer_elapsed_seconds:
-                self._timer_elapsed_seconds[event.widget.id] = 0
-            time_ago_str = self._format_time_ago(self._timer_elapsed_seconds[event.widget.id])
-            event.widget.set_timer_data(time_ago_str=time_ago_str)
+            event.widget.set_status(icon="⏹️", running=False, tooltip="Stopped", end_time=time.time())
+        else:
+            event.widget.set_status(icon="⏹️", running=False, tooltip="Stopped")
         self._running_count -= 1
         self.update_stats()
 
@@ -492,11 +422,11 @@ class CommandLinkDemo(App):
                 try:
                     cmd = self.query_one(f"#{cmd_id}", CommandLink)
                     if cmd.is_running:
-                        cmd.set_status(icon="⏹️", running=False, tooltip="Stopped")
-                        # Set time-ago for timer commands
+                        # Set end_time for timer commands, widget handles display
                         if cmd._show_timer:
-                            self._timer_elapsed_seconds[cmd_id] = 0
-                            cmd.set_timer_data(time_ago_str="0s ago")
+                            cmd.set_status(icon="⏹️", running=False, tooltip="Stopped", end_time=time.time())
+                        else:
+                            cmd.set_status(icon="⏹️", running=False, tooltip="Stopped")
                         self._running_count -= 1
                 except Exception:
                     pass
@@ -530,11 +460,11 @@ class CommandLinkDemo(App):
             ]:
                 try:
                     cmd = self.query_one(f"#{cmd_id}", CommandLink)
-                    cmd.set_status(icon="✅", running=False, tooltip="Success!")
-                    # Set time-ago for timer commands
+                    # Set time-ago for timer commands (1 minute ago)
                     if cmd._show_timer:
-                        self._timer_elapsed_seconds[cmd_id] = 60  # 1 minute in seconds
-                        cmd.set_timer_data(time_ago_str="1m ago")
+                        cmd.set_status(icon="✅", running=False, tooltip="Success!", end_time=time.time() - 60)
+                    else:
+                        cmd.set_status(icon="✅", running=False, tooltip="Success!")
                 except Exception:
                     pass
             self.notify("✅ All commands succeeded", timeout=2)
@@ -553,11 +483,11 @@ class CommandLinkDemo(App):
             ]:
                 try:
                     cmd = self.query_one(f"#{cmd_id}", CommandLink)
-                    cmd.set_status(icon="❌", running=False, tooltip="Failed")
-                    # Set time-ago for timer commands
+                    # Set time-ago for timer commands (30 seconds ago)
                     if cmd._show_timer:
-                        self._timer_elapsed_seconds[cmd_id] = 30  # 30 seconds
-                        cmd.set_timer_data(time_ago_str="30s ago")
+                        cmd.set_status(icon="❌", running=False, tooltip="Failed", end_time=time.time() - 30)
+                    else:
+                        cmd.set_status(icon="❌", running=False, tooltip="Failed")
                 except Exception:
                     pass
             self.notify("❌ All commands failed", timeout=2)
@@ -571,24 +501,23 @@ class CommandLinkDemo(App):
                 except Exception:
                     pass
 
-            # Reset timer commands
+            # Reset timer commands (clear timestamps)
             for cmd_id in ["cmd-timer-compile", "cmd-timer-benchmark"]:
                 try:
                     cmd = self.query_one(f"#{cmd_id}", CommandLink)
                     cmd.set_status(icon="○", running=False, tooltip="Ready")
-                    cmd.set_timer_data(duration_str="", time_ago_str="")
-                    # Clear elapsed seconds tracking
-                    if cmd_id in self._timer_elapsed_seconds:
-                        del self._timer_elapsed_seconds[cmd_id]
+                    # Clear timestamps by setting to None
+                    cmd.set_start_time(None)
+                    cmd.set_end_time(None)
                 except Exception:
                     pass
 
-            # Reset Lint Code to show completed state
+            # Reset Lint Code to show completed state (2 hours ago)
             try:
                 lint_cmd = self.query_one("#cmd-timer-lint", CommandLink)
-                lint_cmd.set_status(icon="✅", running=False, tooltip="Last run successful")
-                lint_cmd.set_timer_data(time_ago_str="2h ago")
-                self._timer_elapsed_seconds["cmd-timer-lint"] = 7200  # 2 hours in seconds
+                lint_cmd.set_status(
+                    icon="✅", running=False, tooltip="Last run successful", end_time=time.time() - 7200
+                )
             except Exception:
                 pass
 

@@ -192,6 +192,8 @@ class CommandLink(Horizontal, can_focus=True):
         show_settings: bool = False,
         show_timer: bool = False,
         timer_field_width: int = 12,
+        start_time: float | None = None,
+        end_time: float | None = None,
         tooltip: str | None = None,
         open_keys: list[str] | None = None,
         play_stop_keys: list[str] | None = None,
@@ -221,6 +223,12 @@ class CommandLink(Horizontal, can_focus=True):
             Whether to show elapsed/time-ago timer in a fixed-width field (default: False).
         timer_field_width : int
             Fixed width of the timing column in characters (default: 12).
+        start_time : float | None
+            Unix timestamp (time.time()) when command started. Widget will compute
+            and display elapsed duration automatically. Default: None.
+        end_time : float | None
+            Unix timestamp (time.time()) when command completed. Widget will compute
+            and display time-ago automatically. Default: None.
         tooltip : str | None
             Custom tooltip text for the command name. If provided, keyboard shortcuts
             will be appended. If None, uses command name as base.
@@ -274,8 +282,8 @@ class CommandLink(Horizontal, can_focus=True):
         self._spinner_timer = None
 
         # Timer state for elapsed/time-ago display
-        self._timer_duration_str: str | None = None
-        self._timer_time_ago_str: str | None = None
+        self._start_time: float | None = start_time
+        self._end_time: float | None = end_time
         self._timer_update_interval = None
         self._last_timer_display: str = ""  # Track last displayed timer to avoid unnecessary refreshes
 
@@ -460,6 +468,8 @@ class CommandLink(Horizontal, can_focus=True):
         name_tooltip: str | None = None,
         run_tooltip: str | None = None,
         stop_tooltip: str | None = None,
+        start_time: float | None = None,
+        end_time: float | None = None,
         append_shortcuts: bool = True,
     ) -> None:
         """Update command status and optionally update tooltips.
@@ -478,6 +488,10 @@ class CommandLink(Horizontal, can_focus=True):
             New tooltip for play button (when not running).
         stop_tooltip : str | None
             New tooltip for stop button (when running).
+        start_time : float | None
+            Unix timestamp (time.time()) when command started. Sets timer start time.
+        end_time : float | None
+            Unix timestamp (time.time()) when command completed. Sets timer end time.
         append_shortcuts : bool
             Whether to append keyboard shortcuts to name/run/stop tooltips. Default: True.
 
@@ -501,6 +515,13 @@ class CommandLink(Horizontal, can_focus=True):
         ...     run_tooltip="Start build",
         ...     stop_tooltip="Cancel build"
         ... )
+
+        >>> # Start command with timer
+        >>> import time
+        >>> link.set_status(running=True, start_time=time.time())
+
+        >>> # Complete command with timer
+        >>> link.set_status(running=False, end_time=time.time(), icon="✅")
         """
         # Update status icon
         if icon is not None:
@@ -553,47 +574,57 @@ class CommandLink(Horizontal, can_focus=True):
             # Update timer display when running state changes
             self._update_timer_display()
 
-    def set_timer_data(
-        self,
-        *,
-        duration_str: str | None = None,
-        time_ago_str: str | None = None,
-    ) -> None:
-        """Update timer display with formatted time strings.
+        # Update timer timestamps if provided
+        if start_time is not None:
+            self.set_start_time(start_time)
+        if end_time is not None:
+            self.set_end_time(end_time)
+
+    def set_start_time(self, timestamp: float | None) -> None:
+        """Set command start timestamp for elapsed time display.
 
         Parameters
         ----------
-        duration_str : str | None
-            Formatted duration string for running commands (e.g., "12m 34s").
-            If None, keeps current duration string.
-        time_ago_str : str | None
-            Formatted time-ago string for completed commands (e.g., "5s ago").
-            If None, keeps current time-ago string.
+        timestamp : float | None
+            Unix timestamp (time.time()) when command started, or None to clear.
 
         Examples
         --------
-        >>> # Update duration while running
-        >>> link.set_timer_data(duration_str="1m 23s")
-
-        >>> # Update time-ago after completion
-        >>> link.set_timer_data(time_ago_str="30s ago")
-
-        >>> # Clear timer data
-        >>> link.set_timer_data(duration_str="", time_ago_str="")
+        >>> import time
+        >>> link.set_start_time(time.time())  # Set to current time
+        >>> link.set_start_time(None)  # Clear start time
 
         Notes
         -----
-        This method expects pre-formatted strings from external sources (e.g., textual-cmdorc's
-        RunHandle). It does not perform any time formatting itself. The display will automatically
-        choose between duration_str (when running) and time_ago_str (when not running).
+        Widget will automatically compute and format elapsed duration from this timestamp.
+        Timer display updates every second via internal interval when show_timer=True.
         """
-        if duration_str is not None:
-            self._timer_duration_str = duration_str
-        if time_ago_str is not None:
-            self._timer_time_ago_str = time_ago_str
+        self._start_time = timestamp
+        if self._show_timer:
+            self._update_timer_display()
 
-        # Update display immediately
-        self._update_timer_display()
+    def set_end_time(self, timestamp: float | None) -> None:
+        """Set command end timestamp for time-ago display.
+
+        Parameters
+        ----------
+        timestamp : float | None
+            Unix timestamp (time.time()) when command completed, or None to clear.
+
+        Examples
+        --------
+        >>> import time
+        >>> link.set_end_time(time.time())  # Set to current time
+        >>> link.set_end_time(None)  # Clear end time
+
+        Notes
+        -----
+        Widget will automatically compute and format time-ago from this timestamp.
+        Timer display updates every second via internal interval when show_timer=True.
+        """
+        self._end_time = timestamp
+        if self._show_timer:
+            self._update_timer_display()
 
     def set_output_path(self, output_path: Path | str | None) -> None:
         """Set or update the output file path.
@@ -741,28 +772,39 @@ class CommandLink(Horizontal, can_focus=True):
             self._spinner_frame_index = (self._spinner_frame_index + 1) % len(self._spinner_frames)
 
     def _update_timer_display(self) -> None:
-        """Update the timer display widget with current timer data.
+        """Compute and update timer display from timestamps.
+
+        - Running + start_time set: Show elapsed duration
+        - Not running + end_time set: Show time ago
+        - Otherwise: Show empty
 
         Only updates if the display string has changed to avoid unnecessary refreshes.
         """
         if not self._show_timer:
             return
 
-        # Determine which time string to display
-        if self._command_running and self._timer_duration_str:
-            # Running: show duration
-            time_str = self._timer_duration_str
-        elif not self._command_running and self._timer_time_ago_str:
-            # Not running with history: show time ago
-            time_str = self._timer_time_ago_str
-        else:
-            # No timer data available
-            time_str = ""
+        import time
 
-        # Right-justify within the fixed width
+        from .utils import format_duration, format_time_ago
+
+        time_str = ""
+
+        if self._command_running and self._start_time is not None:
+            # Running: show elapsed duration
+            elapsed = time.time() - self._start_time
+            if elapsed >= 0:  # Guard against clock skew
+                time_str = format_duration(elapsed)
+
+        elif not self._command_running and self._end_time is not None:
+            # Completed: show time ago
+            elapsed = time.time() - self._end_time
+            if elapsed >= 0:
+                time_str = format_time_ago(elapsed)
+
+        # Right-justify within fixed width
         padded_time = time_str.rjust(self._timer_field_width)
 
-        # Only update if changed (avoid unnecessary redraws)
+        # Only update if changed (optimization)
         if padded_time != self._last_timer_display:
             self._last_timer_display = padded_time
             self._timer_widget.update(padded_time)
