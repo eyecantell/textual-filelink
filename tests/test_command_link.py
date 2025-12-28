@@ -711,3 +711,211 @@ class TestCommandLinkIntegration:
         async with app.run_test():
             assert link._spinner_interval == 0.1
             assert link._spinner_interval == CommandLink.DEFAULT_SPINNER_INTERVAL
+
+
+class TestCommandLinkTimer:
+    """Test suite for CommandLink timer functionality."""
+
+    async def test_timer_disabled_by_default(self):
+        """Test timer is disabled by default."""
+        link = CommandLink("TestCommand")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._show_timer is False
+            # Timer widget should not be created
+            timer_widgets = link.query(".timer-display")
+            assert len(timer_widgets) == 0
+
+    async def test_timer_enabled_with_show_timer(self):
+        """Test timer widget is created when show_timer=True."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._show_timer is True
+            # Timer widget should be created
+            timer_widgets = link.query(".timer-display")
+            assert len(timer_widgets) == 1
+
+    async def test_timer_field_width_default(self):
+        """Test timer field width defaults to 12."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._timer_field_width == 12
+
+    async def test_timer_field_width_custom(self):
+        """Test custom timer field width."""
+        link = CommandLink("TestCommand", show_timer=True, timer_field_width=20)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            assert link._timer_field_width == 20
+
+    async def test_set_timer_data_duration(self):
+        """Test set_timer_data() updates duration string."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set running with duration
+            link.set_status(running=True)
+            link.set_timer_data(duration_str="1m 23s")
+            await pilot.pause()
+
+            assert link._timer_duration_str == "1m 23s"
+            # Timer widget should show right-justified duration
+            assert "1m 23s" in str(link._timer_widget.render())
+
+    async def test_set_timer_data_time_ago(self):
+        """Test set_timer_data() updates time-ago string."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set not running with time ago
+            link.set_status(running=False)
+            link.set_timer_data(time_ago_str="30s ago")
+            await pilot.pause()
+
+            assert link._timer_time_ago_str == "30s ago"
+            # Timer widget should show right-justified time ago
+            assert "30s ago" in str(link._timer_widget.render())
+
+    async def test_timer_shows_duration_when_running(self):
+        """Test timer shows duration when command is running."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set both duration and time_ago
+            link.set_timer_data(duration_str="2m 15s", time_ago_str="1h ago")
+
+            # When running, should show duration
+            link.set_status(running=True)
+            await pilot.pause()
+
+            rendered = str(link._timer_widget.render())
+            assert "2m 15s" in rendered
+            assert "1h ago" not in rendered
+
+    async def test_timer_shows_time_ago_when_not_running(self):
+        """Test timer shows time-ago when command is not running."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set both duration and time_ago
+            link.set_timer_data(duration_str="2m 15s", time_ago_str="1h ago")
+
+            # When not running, should show time ago
+            link.set_status(running=False)
+            await pilot.pause()
+
+            rendered = str(link._timer_widget.render())
+            assert "1h ago" in rendered
+            assert "2m 15s" not in rendered
+
+    async def test_timer_padding_correct(self):
+        """Test timer values are right-justified within field width."""
+        link = CommandLink("TestCommand", show_timer=True, timer_field_width=12)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Short duration should be padded
+            link.set_status(running=True)
+            link.set_timer_data(duration_str="5s")
+            await pilot.pause()
+
+            # Should be right-justified to 12 chars
+            assert link._last_timer_display == "5s".rjust(12)
+
+    async def test_timer_empty_when_no_data(self):
+        """Test timer is empty when no data is set."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.set_status(running=False)
+            await pilot.pause()
+
+            # Should be empty (all spaces) when no data
+            assert link._last_timer_display == "".rjust(12)
+
+    async def test_timer_interval_started_on_mount(self):
+        """Test timer update interval is started when widget is mounted."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            # Timer interval should be created
+            assert link._timer_update_interval is not None
+
+    async def test_timer_interval_not_started_when_disabled(self):
+        """Test timer interval is not started when show_timer=False."""
+        link = CommandLink("TestCommand", show_timer=False)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            # Timer interval should not be created
+            assert link._timer_update_interval is None
+
+    async def test_timer_updates_automatically(self):
+        """Test timer display updates automatically via interval."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            link.set_status(running=True)
+            link.set_timer_data(duration_str="1s")
+            await pilot.pause()
+
+            initial_display = link._last_timer_display
+
+            # Update timer data
+            link.set_timer_data(duration_str="2s")
+
+            # Wait for interval to fire
+            await pilot.pause(1.5)
+
+            # Display should have updated
+            assert link._last_timer_display != initial_display
+            assert "2s" in str(link._timer_widget.render())
+
+    async def test_clear_timer_data(self):
+        """Test clearing timer data with empty strings."""
+        link = CommandLink("TestCommand", show_timer=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Set timer data
+            link.set_timer_data(duration_str="1m 23s", time_ago_str="30s ago")
+            await pilot.pause()
+
+            assert link._timer_duration_str == "1m 23s"
+            assert link._timer_time_ago_str == "30s ago"
+
+            # Clear timer data
+            link.set_timer_data(duration_str="", time_ago_str="")
+            await pilot.pause()
+
+            assert link._timer_duration_str == ""
+            assert link._timer_time_ago_str == ""
+
+    async def test_timer_layout_order(self):
+        """Test timer appears in correct position in layout."""
+        link = CommandLink("TestCommand", show_timer=True, show_settings=True)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test():
+            # Get all children
+            children = list(link.children)
+
+            # Order should be: status, timer, play/stop, name, settings
+            assert children[0] == link._status_widget
+            assert children[1] == link._timer_widget
+            assert children[2] == link._play_stop_widget
+            assert children[3] == link._name_widget
+            assert children[4] == link._settings_widget

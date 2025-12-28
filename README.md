@@ -64,10 +64,13 @@ if __name__ == "__main__":
 
 ### CommandLink for Command Orchestration
 
+CommandLink displays command status with play/stop controls and optional timer display for elapsed time and time-ago:
 
-- ✅ ▶️ Build  ⚙️   - last run successful, play button to start again, command name ("Build"), settings icon
-- ❌ ▶️ Build  ⚙️   - last run failed, play button to start again, command name ("Build"), settings icon
-- ⠧  ⏹️ Build  ⚙️   - spinner shows command running, stop button to cancel run, command name ("Build"), settings icon
+- ○             ▶️ Lint        - Not run (no timer)
+- ○ [1]         ▶️ Lint        - Not run with shortcut indicator
+- ⏳ 12m 34s    ⏹️ Tests       - Running for 12 minutes 34 seconds
+- ✅ 5s ago     ▶️ Format      - Completed 5 seconds ago
+- ❌ 6d ago     ▶️ Build       - Failed 6 days ago
 
 ```python
 from textual_filelink import CommandLink
@@ -80,6 +83,7 @@ class MyApp(App):
             initial_status_icon="○",
             initial_status_tooltip="Not run yet",
             show_settings=True,
+            show_timer=True,  # Enable timer display
         )
 
     def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
@@ -96,6 +100,34 @@ class MyApp(App):
 
 if __name__ == "__main__":
     MyApp().run()
+```
+
+**With Timer (for textual-cmdorc integration):**
+
+```python
+from textual_filelink import CommandLink
+
+class MyApp(App):
+    def compose(self) -> ComposeResult:
+        yield CommandLink(
+            "Build Project",
+            show_timer=True,         # Show elapsed/time-ago column
+            timer_field_width=12,    # Fixed width (default: 12)
+        )
+
+    def on_command_link_play_clicked(self, event: CommandLink.PlayClicked):
+        link = self.query_one(CommandLink)
+        link.set_status(running=True)
+        # Update timer with pre-formatted strings (e.g., from textual-cmdorc)
+        link.set_timer_data(duration_str="1m 23s")
+
+    async def update_timer_periodically(self, link: CommandLink, duration_str: str):
+        # Timer display updates automatically every 1 second
+        link.set_timer_data(duration_str=duration_str)
+
+    def on_completion(self, link: CommandLink):
+        link.set_status(icon="✅", running=False)
+        link.set_timer_data(time_ago_str="30s ago")
 ```
 
 ### FileLinkList for Managing Collections
@@ -258,7 +290,7 @@ class MyApp(App):
 
 ### Keyboard Shortcut Discoverability
 
-All interactive elements automatically display their keyboard shortcuts in tooltips. This makes keyboard navigation discoverable without reading documentation.
+All interactive elements automatically display their keyboard shortcuts in tooltips. This makes keyboard navigation discoverable without reading documentation. Note that if tooltips are too long, textual may not render them properly (they may blink or have other odd behavior).
 
 **Examples:**
 - Toggle checkbox: "Click to toggle (space/t)"
@@ -437,10 +469,11 @@ CommandLink(
 ### Layout
 
 ```
-[status/spinner] [▶️/⏸️] command_name [⚙️]
+[status/spinner] [timer?] [▶️/⏸️] command_name [⚙️]
 ```
 
 - **status/spinner**: Shows status icon, or animated spinner when running
+- **timer**: Fixed-width elapsed/time-ago display (only if show_timer=True)
 - **play/stop**: ▶️ when stopped, ⏸️ when running
 - **command_name**: Clickable link to output file (if output_path is set)
 - **settings**: ⚙️ icon (only if show_settings=True)
@@ -453,6 +486,30 @@ CommandLink(
 - `name: str | None` - Widget name (Textual's widget identification system)
 
 ### Methods
+
+#### `set_timer_data(duration_str=None, time_ago_str=None)`
+Update timer display with pre-formatted time strings.
+
+```python
+# Update duration while running
+link.set_timer_data(duration_str="1m 23s")
+
+# Update time-ago after completion
+link.set_timer_data(time_ago_str="30s ago")
+
+# Clear timer data
+link.set_timer_data(duration_str="", time_ago_str="")
+```
+
+**Parameters:**
+- `duration_str`: Formatted duration for running commands (e.g., "12m 34s")
+- `time_ago_str`: Formatted time-ago for completed commands (e.g., "5s ago")
+
+**Notes:**
+- Timer automatically displays duration_str when running=True
+- Timer automatically displays time_ago_str when running=False
+- Updates every 1 second automatically
+- Expects pre-formatted strings (for integration with textual-cmdorc)
 
 #### `set_status(icon=None, running=None, tooltip=None, name_tooltip=None, run_tooltip=None, stop_tooltip=None, append_shortcuts=True)`
 Update command status display and optionally update all tooltips at once.

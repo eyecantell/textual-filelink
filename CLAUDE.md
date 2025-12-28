@@ -6,12 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **textual-filelink** is a Python library providing clickable file link widgets for [Textual](https://github.com/Textualize/textual) TUI applications. It enables opening files in editors directly from terminal UIs with support for line/column navigation, customizable icons, toggle controls, and command orchestration.
 
-**Current Version**: 0.6.0
+**Current Version**: 0.7.0
 
 The library exports these main widget classes:
 - **FileLink**: Basic clickable filename link
 - **FileLinkWithIcons**: FileLink with customizable icons (composition-based)
-- **CommandLink**: Specialized widget for command orchestration with status icons and play/stop controls
+- **CommandLink**: Specialized widget for command orchestration with status icons, play/stop controls, and optional timer display
 - **FileLinkList**: Container for managing widgets with uniform toggle/remove controls
 - **Icon**: Dataclass for type-safe icon configuration
 - **sanitize_id()**: Utility function for converting strings to valid widget IDs
@@ -217,18 +217,30 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
 
 ### CommandLink (src/textual_filelink/command_link.py)
 - **Responsibility**: Orchestrate command execution with status display and controls
-- **Current Design (v0.6.0)**: Standalone widget extending `Horizontal`
+- **Current Design (v0.7.0)**: Standalone widget extending `Horizontal`
 - **Key Concepts**:
-  - Layout: `[status/spinner] [▶️/⏹️] command_name [⚙️?]`
+  - Layout: `[status/spinner] [timer?] [▶️/⏹️] command_name [⚙️?]`
   - Animated spinner using `set_interval()` when running
+  - Optional timer display with `show_timer=True` (new in v0.7.0)
   - Auto-generates widget ID from command name via `sanitize_id()`
   - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
   - Internal attribute naming: `_command_running` (not `_running` to avoid Textual's MessagePump conflict)
-- **API (v0.6.0)**:
+- **API (v0.7.0)**:
   - Constructor parameter: `command_name: str` (first positional parameter)
+  - Constructor parameter: `show_timer: bool = False` - Enable timer display (new in v0.7.0)
+  - Constructor parameter: `timer_field_width: int = 12` - Timer column width (new in v0.7.0)
   - Property: `widget.command_name` returns the command name
+  - Method: `set_timer_data(duration_str=None, time_ago_str=None)` - Update timer with pre-formatted strings (new in v0.7.0)
   - Textual's `name` parameter: Now available for widget identification
   - **Important**: `widget.name` returns Textual's widget name (str | None), NOT the command name
+- **Timer Display (v0.7.0)**:
+  - Shows `duration_str` when running (e.g., "12m 34s")
+  - Shows `time_ago_str` when not running (e.g., "5s ago")
+  - Updates automatically every 1 second when enabled
+  - Right-justified within fixed-width column for alignment
+  - Designed for integration with textual-cmdorc's RunHandle
+  - Timer interval started in `on_mount()`, stopped in `on_unmount()`
+  - Optimized to avoid unnecessary refreshes (only updates when string changes)
 - **Messages**:
   - `CommandLink.PlayClicked` (widget, name, output_path) - Note: message.name is command name
   - `CommandLink.StopClicked` (widget, name, output_path) - Note: message.name is command name

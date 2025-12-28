@@ -14,12 +14,20 @@ from .utils import format_keyboard_shortcuts, sanitize_id
 
 
 class CommandLink(Horizontal, can_focus=True):
-    """Command orchestration widget with status, play/stop, and optional settings.
+    """Command orchestration widget with status, play/stop, optional timer, and settings.
 
     Flat architecture (no inheritance), builds own layout:
-    [status/spinner] [▶️/⏹️] name [⚙️?]
+    [status/spinner] [timer?] [▶️/⏹️] name [⚙️?]
 
     Toggle and remove controls are added by FileLinkList, not by CommandLink itself.
+
+    Timer Display
+    -------------
+    When show_timer=True, displays elapsed time or time-ago in a fixed-width column:
+    - Running command: shows duration (e.g., "12m 34s")
+    - Completed command: shows time ago (e.g., "5s ago")
+    - Updates automatically every 1 second
+    - Use set_timer_data() to provide formatted time strings
 
     Event Bubbling Policy
     ---------------------
@@ -33,9 +41,12 @@ class CommandLink(Horizontal, can_focus=True):
     ...     "Tests",
     ...     initial_status_icon="❓",
     ...     initial_status_tooltip="Not run",
+    ...     show_timer=True,
     ... )
     >>> link.set_status(running=True, tooltip="Running...")
+    >>> link.set_timer_data(duration_str="1m 23s")
     >>> link.set_status(icon="✅", running=False, tooltip="Passed")
+    >>> link.set_timer_data(time_ago_str="30s ago")
     """
 
     DEFAULT_CSS = """
@@ -49,6 +60,12 @@ class CommandLink(Horizontal, can_focus=True):
         width: auto;
         height: 1;
         padding: 0 1;
+    }
+    CommandLink > .timer-display {
+        width: auto;
+        height: 1;
+        padding: 0 1;
+        color: $text-muted;
     }
     CommandLink > .play-stop-button {
         width: auto;
@@ -173,6 +190,8 @@ class CommandLink(Horizontal, can_focus=True):
         initial_status_icon: str = "❓",
         initial_status_tooltip: str | None = None,
         show_settings: bool = False,
+        show_timer: bool = False,
+        timer_field_width: int = 12,
         tooltip: str | None = None,
         open_keys: list[str] | None = None,
         play_stop_keys: list[str] | None = None,
@@ -198,6 +217,10 @@ class CommandLink(Horizontal, can_focus=True):
             Initial tooltip for status icon.
         show_settings : bool
             Whether to show settings icon (default: False).
+        show_timer : bool
+            Whether to show elapsed/time-ago timer in a fixed-width field (default: False).
+        timer_field_width : int
+            Fixed width of the timing column in characters (default: 12).
         tooltip : str | None
             Custom tooltip text for the command name. If provided, keyboard shortcuts
             will be appended. If None, uses command name as base.
@@ -225,6 +248,8 @@ class CommandLink(Horizontal, can_focus=True):
         self._output_path = Path(output_path).resolve() if output_path else None
         self._command_builder = command_builder
         self._show_settings = show_settings
+        self._show_timer = show_timer
+        self._timer_field_width = timer_field_width
         self._custom_tooltip = tooltip  # Use _custom_tooltip to avoid conflict with Textual's _tooltip
 
         # Store custom keyboard shortcuts
@@ -248,6 +273,12 @@ class CommandLink(Horizontal, can_focus=True):
         self._spinner_frame_index = 0
         self._spinner_timer = None
 
+        # Timer state for elapsed/time-ago display
+        self._timer_duration_str: str | None = None
+        self._timer_time_ago_str: str | None = None
+        self._timer_update_interval = None
+        self._last_timer_display: str = ""  # Track last displayed timer to avoid unnecessary refreshes
+
         # Auto-generate ID if not provided
         widget_id = id or sanitize_id(command_name)
 
@@ -262,6 +293,12 @@ class CommandLink(Horizontal, can_focus=True):
         self._status_widget = Static(self._status_icon, classes="status-icon")
         if self._status_tooltip:
             self._status_widget.tooltip = self._status_tooltip
+
+        # Timer widget (only created if show_timer is True)
+        if self._show_timer:
+            self._timer_widget = Static("", classes="timer-display")
+            # Initial render of timer (empty or with current data)
+            self._update_timer_display()
 
         # Play/stop button
         self._play_stop_widget = Static("▶️", classes="play-stop-button")
@@ -290,13 +327,15 @@ class CommandLink(Horizontal, can_focus=True):
     def compose(self):
         """Compose widget layout."""
         yield self._status_widget
+        if self._show_timer:
+            yield self._timer_widget
         yield self._play_stop_widget
         yield self._name_widget
         if self._show_settings:
             yield self._settings_widget
 
     def on_mount(self) -> None:
-        """Set up runtime keyboard bindings."""
+        """Set up runtime keyboard bindings and timer interval."""
         # Open output bindings (only if output_path is set)
         if self._output_path:
             open_keys = self._custom_open_keys if self._custom_open_keys is not None else self.DEFAULT_OPEN_KEYS
@@ -317,6 +356,17 @@ class CommandLink(Horizontal, can_focus=True):
             )
             for key in settings_keys:
                 self._bindings.bind(key, "settings", "Settings", show=False)
+
+        # Timer update interval (if enabled)
+        if self._show_timer:
+            self._timer_update_interval = self.set_interval(1.0, self._update_timer_display)
+
+    def on_unmount(self) -> None:
+        """Clean up timer interval when widget is unmounted."""
+        # Stop timer update interval if running
+        if self._timer_update_interval:
+            self._timer_update_interval.stop()
+            self._timer_update_interval = None
 
     def on_click(self, event) -> None:
         """Handle clicks on child widgets."""
@@ -500,6 +550,51 @@ class CommandLink(Horizontal, can_focus=True):
                     self._spinner_timer = None
                 self._status_widget.update(self._status_icon)
 
+            # Update timer display when running state changes
+            self._update_timer_display()
+
+    def set_timer_data(
+        self,
+        *,
+        duration_str: str | None = None,
+        time_ago_str: str | None = None,
+    ) -> None:
+        """Update timer display with formatted time strings.
+
+        Parameters
+        ----------
+        duration_str : str | None
+            Formatted duration string for running commands (e.g., "12m 34s").
+            If None, keeps current duration string.
+        time_ago_str : str | None
+            Formatted time-ago string for completed commands (e.g., "5s ago").
+            If None, keeps current time-ago string.
+
+        Examples
+        --------
+        >>> # Update duration while running
+        >>> link.set_timer_data(duration_str="1m 23s")
+
+        >>> # Update time-ago after completion
+        >>> link.set_timer_data(time_ago_str="30s ago")
+
+        >>> # Clear timer data
+        >>> link.set_timer_data(duration_str="", time_ago_str="")
+
+        Notes
+        -----
+        This method expects pre-formatted strings from external sources (e.g., textual-cmdorc's
+        RunHandle). It does not perform any time formatting itself. The display will automatically
+        choose between duration_str (when running) and time_ago_str (when not running).
+        """
+        if duration_str is not None:
+            self._timer_duration_str = duration_str
+        if time_ago_str is not None:
+            self._timer_time_ago_str = time_ago_str
+
+        # Update display immediately
+        self._update_timer_display()
+
     def set_output_path(self, output_path: Path | str | None) -> None:
         """Set or update the output file path.
 
@@ -644,6 +739,33 @@ class CommandLink(Horizontal, can_focus=True):
             frame = self._spinner_frames[self._spinner_frame_index]
             self._status_widget.update(frame)
             self._spinner_frame_index = (self._spinner_frame_index + 1) % len(self._spinner_frames)
+
+    def _update_timer_display(self) -> None:
+        """Update the timer display widget with current timer data.
+
+        Only updates if the display string has changed to avoid unnecessary refreshes.
+        """
+        if not self._show_timer:
+            return
+
+        # Determine which time string to display
+        if self._command_running and self._timer_duration_str:
+            # Running: show duration
+            time_str = self._timer_duration_str
+        elif not self._command_running and self._timer_time_ago_str:
+            # Not running with history: show time ago
+            time_str = self._timer_time_ago_str
+        else:
+            # No timer data available
+            time_str = ""
+
+        # Right-justify within the fixed width
+        padded_time = time_str.rjust(self._timer_field_width)
+
+        # Only update if changed (avoid unnecessary redraws)
+        if padded_time != self._last_timer_display:
+            self._last_timer_display = padded_time
+            self._timer_widget.update(padded_time)
 
     # ------------------------------------------------------------------ #
     # Properties

@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-12-28
+
+### Added
+- **Timer display for CommandLink** - Optional elapsed time and time-ago display
+  - New `show_timer` parameter (default: False) - Enable fixed-width timer column
+  - New `timer_field_width` parameter (default: 12) - Control timer column width
+  - `set_timer_data(duration_str, time_ago_str)` method - Update timer with pre-formatted strings
+  - Automatic display switching based on running state:
+    - Shows `duration_str` when command is running (e.g., "12m 34s")
+    - Shows `time_ago_str` when command is not running (e.g., "5s ago")
+  - Auto-updates every 1 second when enabled
+  - Right-justified padding for perfect alignment in command lists
+  - Example: `CommandLink("Build", show_timer=True)`
+  - Designed for integration with textual-cmdorc's RunHandle time formatting
+  - New layout: `[status/spinner] [timer?] [▶️/⏹️] command_name [⚙️]`
+  - Timer display uses muted text color for visual hierarchy
+  - Timer interval automatically started/stopped on mount/unmount
+  - Optimized to avoid unnecessary refreshes (only updates when timer string changes)
+- Enhanced `demo_04_commandlink.py` with timer examples
+  - Section 5 demonstrates timer functionality with live updates
+  - "Run Compile (with timer)" and "Run Benchmark (with timer)" buttons
+  - Real-time duration and time-ago updates
+  - Demonstrates completed state with "2h ago" initialization
+
 ## [0.6.0] - 2025-12-26
 
 ### Changed
@@ -163,7 +187,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scrolling issues in demo applications
 - Various edge cases in error handling
 
-[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/eyecantell/textual-filelink/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/eyecantell/textual-filelink/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/eyecantell/textual-filelink/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/eyecantell/textual-filelink/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/eyecantell/textual-filelink/compare/v0.3.0...v0.4.0
