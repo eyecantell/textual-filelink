@@ -342,6 +342,34 @@ FileLink(
 #### `open_file()`
 Open the file in the configured editor (can be called programmatically).
 
+#### `set_path(path, display_name=None, line=None, column=None)` (NEW in v0.8.1)
+Update the file path after initialization.
+
+```python
+# Update to a new file path
+link.set_path("new_file.py")
+
+# Update with custom display name
+link.set_path("output.log", display_name="Build Output")
+
+# Update with line/column position
+link.set_path("script.py", line=42, column=10)
+
+# Line/column are preserved if not specified
+link.set_path("different.py")  # Keeps existing line/column
+```
+
+**Parameters:**
+- `path: Path | str` - New file path (required)
+- `display_name: str | None` - New display name. If None, uses filename (default: None)
+- `line: int | None` - New line number. If None, preserves existing value (default: None)
+- `column: int | None` - New column number. If None, preserves existing value (default: None)
+
+**Notes:**
+- Updates the internal path, display text, and tooltip
+- Line and column are only updated if explicitly provided
+- Useful for updating file links after file operations or command completion
+
 ### Messages
 
 #### `FileLink.Opened`

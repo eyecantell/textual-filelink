@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1]
+
+### Added
+- **FileLink**: Added `set_path()` method to update the file path after initialization
+  - Parameters: `path`, `display_name`, `line`, `column` (all optional except path)
+  - Updates internal state, display text, and tooltip
+  - Line and column are preserved if not explicitly provided
+
+### Fixed
+- **CommandLink**: `set_output_path()` now correctly updates FileLink when called with a new path
+  - Previously, changing from one output file to another would not update the clickable link
+  - Now handles all state transitions: Static ↔ FileLink and FileLink path updates
+
 ## [0.8.0] - 2025-12-28
 
 ### Changed

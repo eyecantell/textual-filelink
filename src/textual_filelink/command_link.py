@@ -636,21 +636,40 @@ class CommandLink(Horizontal, can_focus=True):
         """
         self._output_path = Path(output_path).resolve() if output_path else None
 
-        # Update name widget if needed
-        if self._output_path and not isinstance(self._name_widget, FileLink):
-            # Replace Static with FileLink
-            self._name_widget.remove()
-            self._name_widget = FileLink(
-                self._output_path,
-                display_name=self._command_name,
-                command_builder=self._command_builder,
-                _embedded=True,
-            )
-            # Mount before settings widget if it exists, otherwise at end
-            if self._show_settings:
-                self.mount(self._name_widget, before=self._settings_widget)
+        # Handle state transitions
+        if self._output_path:
+            # Need FileLink widget
+            if isinstance(self._name_widget, FileLink):
+                # Update existing FileLink's path
+                self._name_widget.set_path(
+                    self._output_path,
+                    display_name=self._command_name,
+                )
             else:
-                self.mount(self._name_widget)
+                # Replace Static with FileLink
+                self._name_widget.remove()
+                self._name_widget = FileLink(
+                    self._output_path,
+                    display_name=self._command_name,
+                    command_builder=self._command_builder,
+                    _embedded=True,
+                )
+                # Mount before settings widget if it exists, otherwise at end
+                if self._show_settings:
+                    self.mount(self._name_widget, before=self._settings_widget)
+                else:
+                    self.mount(self._name_widget)
+        else:
+            # Need Static widget (no output path)
+            if isinstance(self._name_widget, FileLink):
+                # Replace FileLink with Static
+                self._name_widget.remove()
+                self._name_widget = Static(self._command_name, classes="command-name")
+                # Mount before settings widget if it exists, otherwise at end
+                if self._show_settings:
+                    self.mount(self._name_widget, before=self._settings_widget)
+                else:
+                    self.mount(self._name_widget)
 
         # Update tooltip to reflect new output path availability
         self._build_tooltip_with_shortcuts()

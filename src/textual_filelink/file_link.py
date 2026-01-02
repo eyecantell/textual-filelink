@@ -361,3 +361,36 @@ class FileLink(Static, can_focus=True):
     def column(self) -> int | None:
         """Get the column number."""
         return self._column
+
+    def set_path(
+        self,
+        path: Path | str,
+        display_name: str | None = None,
+        line: int | None = None,
+        column: int | None = None,
+    ) -> None:
+        """Update the file path.
+
+        Parameters
+        ----------
+        path : Path | str
+            New file path.
+        display_name : str | None
+            New display name. If None, uses filename.
+        line : int | None
+            New line number. If None, keeps existing.
+        column : int | None
+            New column number. If None, keeps existing.
+        """
+        self._path = Path(path).resolve()
+        self._display_name = display_name or self._path.name
+        if line is not None:
+            self._line = line
+        if column is not None:
+            self._column = column
+
+        # Update display using Static's built-in method
+        self.update(self._display_name)
+
+        # Update tooltip
+        self.tooltip = self._enhance_tooltip(f"Open {self._path.name}", "open_file")

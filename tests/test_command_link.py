@@ -482,6 +482,72 @@ class TestCommandLinkOutput:
             # Name widget should now be FileLink
             assert isinstance(link._name_widget, FileLink)
 
+    async def test_set_output_path_filelink_to_filelink(self, tmp_path):
+        """Test set_output_path() updates FileLink when path changes (PRIMARY BUG FIX)."""
+        # Create two temp files
+        temp_file1 = tmp_path / "output1.txt"
+        temp_file1.write_text("output 1")
+        temp_file2 = tmp_path / "output2.txt"
+        temp_file2.write_text("output 2")
+
+        # Initialize with first output path
+        link = CommandLink("TestCommand", output_path=temp_file1)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Should start with FileLink pointing to temp_file1
+            assert link.output_path == temp_file1
+            assert isinstance(link._name_widget, FileLink)
+            assert link._name_widget.path == temp_file1
+
+            # Update to new output path
+            link.set_output_path(temp_file2)
+            await pilot.pause()
+
+            # Should still be FileLink but with updated path
+            assert link.output_path == temp_file2
+            assert isinstance(link._name_widget, FileLink)
+            assert link._name_widget.path == temp_file2.resolve()
+
+    async def test_set_output_path_filelink_to_static(self, temp_output_file):
+        """Test set_output_path(None) converts FileLink back to Static."""
+        # Initialize with output path
+        link = CommandLink("TestCommand", output_path=temp_output_file)
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Should start with FileLink
+            assert link.output_path == temp_output_file
+            assert isinstance(link._name_widget, FileLink)
+
+            # Clear output path
+            link.set_output_path(None)
+            await pilot.pause()
+
+            # Should be converted to Static
+            assert link.output_path is None
+            assert link._name_widget.__class__.__name__ == "Static"
+            assert not isinstance(link._name_widget, FileLink)
+
+    async def test_set_output_path_static_to_filelink(self, temp_output_file):
+        """Test set_output_path() converts Static to FileLink (existing behavior)."""
+        # This is the existing test scenario, included for completeness
+        link = CommandLink("TestCommand")
+        app = CommandLinkTestApp(link)
+
+        async with app.run_test() as pilot:
+            # Should start with Static
+            assert link.output_path is None
+            assert link._name_widget.__class__.__name__ == "Static"
+
+            # Set output path
+            link.set_output_path(temp_output_file)
+            await pilot.pause()
+
+            # Should be converted to FileLink
+            assert link.output_path == temp_output_file
+            assert isinstance(link._name_widget, FileLink)
+
 
 class TestCommandLinkSettings:
     """Test suite for CommandLink settings functionality."""

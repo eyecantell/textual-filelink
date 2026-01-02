@@ -1,7 +1,7 @@
 # Development Dockerfile for textual-filelink
 # For use with VS Code Remote Development
 
-FROM python:3.10-slim AS base
+FROM python:3.12-slim AS base
 
 # Prevent apt from prompting for input
 ENV DEBIAN_FRONTEND=noninteractive
@@ -24,6 +24,16 @@ RUN useradd -s /bin/bash -m developer && \
 # Add claude code globally
 RUN npm install -g @anthropic-ai/claude-code
 
+# Install Language Servers (as root, globally available)
+# Python LSP
+RUN pip install --no-cache-dir pyright
+
+# TypeScript/JavaScript LSP
+RUN npm install -g @vtsls/language-server typescript
+
+# Enable LSP tool for claude code
+ENV ENABLE_LSP_TOOL=1
+
 # Switch to developer user for remaining operations
 USER developer
 
@@ -40,8 +50,8 @@ RUN pip install --no-cache-dir \
     build \
     GitPython \
     pdm \
-    prepdir \
     pydantic \
+    prepdir \
     pytest \
     ruff \
     twine

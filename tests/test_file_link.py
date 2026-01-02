@@ -509,3 +509,102 @@ class TestFileLink:
 
         async with app.run_test():
             assert link.id == "custom-id"
+
+    async def test_set_path_updates_path(self, temp_file, tmp_path):
+        """Test set_path() updates the _path attribute."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            assert link.path == temp_file
+
+            # Update to new path
+            link.set_path(temp_file2)
+            assert link.path == temp_file2.resolve()
+
+    async def test_set_path_updates_display(self, temp_file, tmp_path, get_rendered_text):
+        """Test set_path() updates the display text."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            assert get_rendered_text(link) == temp_file.name
+
+            # Update to new path
+            link.set_path(temp_file2)
+            await link.workers.wait_for_complete()
+            assert get_rendered_text(link) == temp_file2.name
+
+    async def test_set_path_updates_tooltip(self, temp_file, tmp_path):
+        """Test set_path() updates the tooltip."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            assert temp_file.name in str(link.tooltip)
+
+            # Update to new path
+            link.set_path(temp_file2)
+            assert temp_file2.name in str(link.tooltip)
+            assert temp_file.name not in str(link.tooltip)
+
+    async def test_set_path_with_display_name(self, temp_file, tmp_path, get_rendered_text):
+        """Test set_path() with custom display name."""
+        link = FileLink(temp_file)
+        app = FileLinkTestApp(link)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            # Update with custom display name
+            link.set_path(temp_file2, display_name="Custom Name")
+            await link.workers.wait_for_complete()
+
+            assert link.path == temp_file2.resolve()
+            assert link.display_name == "Custom Name"
+            assert get_rendered_text(link) == "Custom Name"
+
+    async def test_set_path_updates_line_column(self, temp_file):
+        """Test set_path() updates line and column."""
+        link = FileLink(temp_file, line=10, column=5)
+        app = FileLinkTestApp(link)
+
+        async with app.run_test():
+            assert link.line == 10
+            assert link.column == 5
+
+            # Update line and column
+            link.set_path(temp_file, line=20, column=15)
+            assert link.line == 20
+            assert link.column == 15
+
+    async def test_set_path_preserves_line_column_if_not_specified(self, temp_file, tmp_path):
+        """Test set_path() preserves line/column if not explicitly provided."""
+        link = FileLink(temp_file, line=10, column=5)
+        app = FileLinkTestApp(link)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            # Update path without specifying line/column
+            link.set_path(temp_file2)
+
+            # Line and column should be preserved
+            assert link.line == 10
+            assert link.column == 5
