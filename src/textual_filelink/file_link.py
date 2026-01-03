@@ -10,7 +10,10 @@ from textual.binding import Binding
 from textual.message import Message
 from textual.widgets import Static
 
+from .logging import get_logger
 from .utils import format_keyboard_shortcuts
+
+_logger = get_logger()
 
 
 class FileLink(Static, can_focus=True):
@@ -240,24 +243,33 @@ class FileLink(Static, can_focus=True):
         """Open the file (shared logic for click and keyboard activation)."""
         # Determine which command builder to use
         command_builder = self._command_builder or self.default_command_builder or self.vscode_command
+        _logger.debug(f"Opening file: path={self._path}, line={self._line}, col={self._column}")
 
         # Open the file directly (it's fast enough not to block)
         try:
             cmd = command_builder(self._path, self._line, self._column)
+            _logger.debug(f"Executing: {' '.join(cmd)}")
 
             result = subprocess.run(
                 cmd, env=os.environ.copy(), cwd=str(Path.cwd()), capture_output=True, text=True, timeout=5
             )
 
             if result.returncode == 0:
+                _logger.info(f"Opened {self._path.name}")
                 self.app.notify(f"Opened {self._path.name}", title="FileLink", timeout=1.5)
             else:
                 error_msg = result.stderr.strip() if result.stderr else f"Exit code {result.returncode}"
+                _logger.error(
+                    f"Failed: {self._path.name}, rc={result.returncode}, "
+                    f"stderr={result.stderr.strip() if result.stderr else 'None'}"
+                )
                 self.app.notify(f"Failed to open {self._path.name}: {error_msg}", severity="error", timeout=3)
 
         except subprocess.TimeoutExpired:
+            _logger.error(f"Timeout (5s): {self._path.name}")
             self.app.notify(f"Timeout opening {self._path.name}", severity="error", timeout=3)
         except Exception as exc:
+            _logger.exception(f"Exception opening {self._path.name}")
             self.app.notify(f"Failed to open {self._path.name}: {exc}", severity="error", timeout=3)
 
     # ------------------------------------------------------------------ #
@@ -271,6 +283,7 @@ class FileLink(Static, can_focus=True):
             relative_path = path.relative_to(cwd)
             file_arg = str(relative_path)
         except ValueError:
+            _logger.debug(f"Using absolute path: {path}")
             file_arg = str(path)
 
         if line is not None:

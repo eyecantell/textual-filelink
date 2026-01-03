@@ -122,22 +122,22 @@ class FileLinkDemo(App):
             with Vertical(classes="column"):
                 yield Static("Basic File Links", classes="column-title")
                 yield Static("Click to open at the beginning:")
-                yield FileLink(Path("sample_files/README.md"))
-                yield FileLink(Path("sample_files/example.py"))
-                yield FileLink(Path("sample_files/config.json"))
+                yield FileLink(Path("sample_files/README.md"), id="basic-readme")
+                yield FileLink(Path("sample_files/example.py"), id="basic-example")
+                yield FileLink(Path("sample_files/config.json"), id="basic-config")
 
             # Column 2: With line numbers
             with Vertical(classes="column"):
                 yield Static("Line Navigation", classes="column-title")
                 yield Static("Jump to a specific line:")
                 with Horizontal():
-                    yield FileLink(Path("sample_files/example.py"), line=10)
+                    yield FileLink(Path("sample_files/example.py"), line=10, id="line-example")
                     yield Static(":10", classes="coord-label")
                 with Horizontal():
-                    yield FileLink(Path("sample_files/Makefile"), line=1)
+                    yield FileLink(Path("sample_files/Makefile"), line=1, id="line-makefile")
                     yield Static(":1", classes="coord-label")
                 with Horizontal():
-                    yield FileLink(Path("sample_files/data.csv"), line=5)
+                    yield FileLink(Path("sample_files/data.csv"), line=5, id="line-data")
                     yield Static(":5", classes="coord-label")
 
             # Column 3: With line and column
@@ -145,13 +145,13 @@ class FileLinkDemo(App):
                 yield Static("Line & Column", classes="column-title")
                 yield Static("Precise cursor positioning:")
                 with Horizontal():
-                    yield FileLink(Path("sample_files/example.py"), line=14, column=4)
+                    yield FileLink(Path("sample_files/example.py"), line=14, column=4, id="col-example")
                     yield Static(":14:4", classes="coord-label")
                 with Horizontal():
-                    yield FileLink(Path("sample_files/config.json"), line=3, column=8)
+                    yield FileLink(Path("sample_files/config.json"), line=3, column=8, id="col-config")
                     yield Static(":3:8", classes="coord-label")
                 with Horizontal():
-                    yield FileLink(Path("sample_files/notes.txt"), line=2, column=1)
+                    yield FileLink(Path("sample_files/notes.txt"), line=2, column=1, id="col-notes")
                     yield Static(":2:1", classes="coord-label")
 
         # Section 2: Editor Configuration
@@ -172,6 +172,7 @@ class FileLinkDemo(App):
                 display_name="📝 VSCode (default)",
                 command_builder=FileLink.vscode_command,
                 tooltip="Opens with: code --goto file.py:line:column",
+                id="editor-vscode",
             )
 
             yield FileLink(
@@ -179,6 +180,7 @@ class FileLinkDemo(App):
                 display_name="🖥️  Vim (terminal)",
                 command_builder=FileLink.vim_command,
                 tooltip="Opens with: vim +line file.py",
+                id="editor-vim",
             )
 
             yield FileLink(
@@ -186,6 +188,7 @@ class FileLinkDemo(App):
                 display_name="📄 Nano (beginner-friendly)",
                 command_builder=FileLink.nano_command,
                 tooltip="Opens with: nano +line file.py",
+                id="editor-nano",
             )
 
             yield FileLink(
@@ -193,6 +196,7 @@ class FileLinkDemo(App):
                 display_name="☕ Eclipse IDE",
                 command_builder=FileLink.eclipse_command,
                 tooltip="Opens with: eclipse file.py",
+                id="editor-eclipse",
             )
 
             yield FileLink(
@@ -200,6 +204,7 @@ class FileLinkDemo(App):
                 display_name="📋 Copy path to clipboard",
                 command_builder=FileLink.copy_path_command,
                 tooltip="Copies path instead of opening",
+                id="editor-copy",
             )
 
             # Custom command builder example
@@ -215,6 +220,7 @@ class FileLinkDemo(App):
                 display_name="🎨 Sublime Text (custom)",
                 command_builder=custom_sublime_command,
                 tooltip="Opens with: subl file.py:line:column",
+                id="editor-sublime",
             )
 
             # Global default configuration

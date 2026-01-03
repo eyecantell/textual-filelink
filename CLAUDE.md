@@ -304,6 +304,62 @@ class Icon:
   - Negative values return empty string
   - Used internally by CommandLink timer display
 
+### Logging (src/textual_filelink/logging.py)
+
+Optional logging for debugging. NullHandler by default (library best practice).
+
+**Quick Setup:**
+```python
+from textual_filelink import setup_logging
+setup_logging(level="DEBUG")  # Console output
+
+# Or use standard Python logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
+**API Functions:**
+- `setup_logging(level="DEBUG", format_string=None)` - Enable console logging
+- `disable_logging()` - Remove all handlers except NullHandler
+- `get_logger()` - Get package logger (for internal use)
+
+**What Gets Logged:**
+- **DEBUG**: File opens, command execution, validation, widget lifecycle
+- **INFO**: Successful file opens
+- **ERROR**: Command failures, timeouts, validation errors
+
+**Logging by Component:**
+
+*FileLink (Priority 1: Command Execution)*
+- DEBUG: File opening (`path`, `line`, `col`), command execution, path resolution
+- INFO: Successful file opens
+- ERROR: Command failures, timeouts, exceptions
+
+*FileLinkWithIcons (Priority 2: Validation)*
+- DEBUG: Icon validation
+- ERROR: Duplicate names/keys, key conflicts
+
+*FileLinkList (Priority 2: List Management)*
+- DEBUG: Item add/remove, toggle operations
+- ERROR: Missing IDs, duplicate IDs
+
+*CommandLink (Priority 3: Lifecycle)*
+- DEBUG: Widget mounting/unmounting, timer start, status changes
+
+**Example Usage:**
+```python
+from textual_filelink import setup_logging, FileLink
+
+# Enable DEBUG logging
+setup_logging(level="DEBUG")
+
+# Logs: "Opening file: path=test.py, line=10, col=5"
+# Logs: "Executing: code --goto test.py:10:5"
+# Logs: "Opened test.py"
+link = FileLink("test.py", line=10, column=5)
+link.open_file()
+```
+
 ## Testing Structure
 
 - **tests/conftest.py**: Shared fixtures for all tests
@@ -314,6 +370,7 @@ class Icon:
 - **tests/test_file_link_list.py**: FileLinkList unit tests
 - **tests/test_tooltip_enhancement.py**: Tooltip keyboard shortcut enhancement tests
 - **tests/test_utils.py**: Utility function tests (format_duration, format_time_ago, sanitize_id) (NEW in v0.8.0)
+- **tests/test_logging.py**: Logging infrastructure tests (NEW in v0.9.0)
 - **tests/test_integration.py**: Integration tests with mock Textual apps
 
 **Key Testing Pattern**: Tests use `pilot` fixture to simulate user interactions (clicks) and verify message emission.

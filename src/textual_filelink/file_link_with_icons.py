@@ -12,7 +12,10 @@ from textual.widgets import Static
 
 from .file_link import FileLink
 from .icon import Icon
+from .logging import get_logger
 from .utils import format_keyboard_shortcuts
+
+_logger = get_logger()
 
 
 class FileLinkWithIcons(Horizontal, can_focus=True):
@@ -183,23 +186,27 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
     def _validate_icons(self) -> None:
         """Validate icon configuration (fail fast on errors)."""
         all_icons = self._icons_before + self._icons_after
+        _logger.debug(f"Validating {len(all_icons)} icons")
 
         # Check for duplicate names
         names = [icon.name for icon in all_icons]
         if len(names) != len(set(names)):
             duplicates = [name for name in names if names.count(name) > 1]
+            _logger.error(f"Duplicate icon names: {set(duplicates)}")
             raise ValueError(f"Duplicate icon names: {set(duplicates)}")
 
         # Check for duplicate keys (excluding None)
         keys = [icon.key for icon in all_icons if icon.key is not None]
         if len(keys) != len(set(keys)):
             duplicates = [key for key in keys if keys.count(key) > 1]
+            _logger.error(f"Duplicate icon keys: {set(duplicates)}")
             raise ValueError(f"Duplicate icon keys: {set(duplicates)}")
 
         # Check for conflicts with FileLink bindings
         filelink_keys = {"o", "enter"}  # FileLink's default keys
         for icon in all_icons:
             if icon.key in filelink_keys:
+                _logger.error(f"Key conflict: '{icon.key}' reserved")
                 raise ValueError(
                     f"Icon key '{icon.key}' conflicts with FileLink binding. Reserved keys: {filelink_keys}"
                 )

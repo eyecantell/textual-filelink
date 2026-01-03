@@ -1465,6 +1465,61 @@ pdm run ruff check .
 pdm run ruff format .
 ```
 
+## Logging
+
+textual-filelink provides optional logging for debugging. By default, no logs are emitted (NullHandler - library best practice).
+
+### Quick Start
+
+```python
+from textual_filelink import setup_logging
+
+# Enable DEBUG logging to console
+setup_logging(level="DEBUG")
+
+# Or use standard Python logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+```
+
+### What Gets Logged
+
+- **Command Execution**: File paths, commands, return codes, stderr output
+- **Validation Errors**: Icon duplicates, key conflicts, missing IDs
+- **Widget Lifecycle**: Mounting, unmounting, timer intervals, status changes
+
+### Log Levels
+
+- `DEBUG`: Detailed diagnostic information (default when enabled)
+- `INFO`: Confirmation of successful operations
+- `ERROR`: Failures requiring attention
+
+### Configuration
+
+```python
+from textual_filelink import setup_logging, disable_logging
+
+# Basic setup
+setup_logging(level="DEBUG")
+
+# Custom format
+setup_logging(
+    level="INFO",
+    format_string="%(levelname)s: %(message)s"
+)
+
+# Disable logging (useful for tests)
+disable_logging()
+```
+
+### Example Output
+
+```
+2026-01-03 10:30:45 - textual_filelink - DEBUG - _do_open_file:246 - Opening file: path=/app/main.py, line=10, col=5
+2026-01-03 10:30:45 - textual_filelink - DEBUG - _do_open_file:251 - Executing: code --goto main.py:10:5
+2026-01-03 10:30:45 - textual_filelink - INFO - _do_open_file:258 - Opened main.py
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

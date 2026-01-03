@@ -110,6 +110,7 @@ class FileLinkWithIconsDemo(App):
                     Icon(name="status", icon="✅", tooltip="Validated"),
                 ],
                 tooltip="Icons before filename",
+                id="pos-before",
             )
 
             yield FileLinkWithIcons(
@@ -119,6 +120,7 @@ class FileLinkWithIconsDemo(App):
                     Icon(name="sync", icon="☁️", tooltip="Synced to cloud"),
                 ],
                 tooltip="Icons after filename",
+                id="pos-after",
             )
 
             yield FileLinkWithIcons(
@@ -131,6 +133,7 @@ class FileLinkWithIconsDemo(App):
                     Icon(name="modified", icon="📝", tooltip="Recently modified"),
                 ],
                 tooltip="Icons before and after",
+                id="pos-both",
             )
 
             # Section 2: Clickable Icons
@@ -165,26 +168,31 @@ class FileLinkWithIconsDemo(App):
             yield FileLinkWithIcons(
                 Path("sample_files/example.py"),
                 icons_before=[Icon(name="type", icon="🐍", tooltip="Python")],
+                id="type-python",
             )
 
             yield FileLinkWithIcons(
                 Path("sample_files/config.json"),
                 icons_before=[Icon(name="type", icon="⚙️", tooltip="Configuration")],
+                id="type-config",
             )
 
             yield FileLinkWithIcons(
                 Path("sample_files/data.csv"),
                 icons_before=[Icon(name="type", icon="📊", tooltip="Data file")],
+                id="type-data",
             )
 
             yield FileLinkWithIcons(
                 Path("sample_files/README.md"),
                 icons_before=[Icon(name="type", icon="📄", tooltip="Documentation")],
+                id="type-doc",
             )
 
             yield FileLinkWithIcons(
                 Path("sample_files/Makefile"),
                 icons_before=[Icon(name="type", icon="🔨", tooltip="Build file")],
+                id="type-build",
             )
 
             # Section 4: Status Indicators

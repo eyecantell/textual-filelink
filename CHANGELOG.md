@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-01-03
+
+### Added
+- **Logging Infrastructure**: Complete logging system for debugging and diagnostics
+  - `setup_logging(level, format_string)` - Enable console logging
+  - `disable_logging()` - Remove all handlers
+  - `get_logger()` - Get package logger (internal use)
+  - NullHandler by default (opt-in logging, library best practice)
+  - Compatible with standard Python logging
+
+- **Logging Coverage**: DEBUG/INFO/ERROR logging throughout widgets
+  - **FileLink**: Command execution, path resolution, subprocess errors (Priority 1)
+  - **FileLinkWithIcons**: Icon validation errors (Priority 2)
+  - **FileLinkList**: Item add/remove, ID validation (Priority 2)
+  - **CommandLink**: Widget lifecycle, timer intervals, status changes (Priority 3)
+
+### Documentation
+- Added comprehensive logging documentation to README.md and CLAUDE.md
+- Added `tests/test_logging.py` with full test coverage (96%)
+
 ## [0.8.1]
 
 ### Added

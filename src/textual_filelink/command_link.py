@@ -10,7 +10,10 @@ from textual.message import Message
 from textual.widgets import Static
 
 from .file_link import FileLink
+from .logging import get_logger
 from .utils import format_keyboard_shortcuts, sanitize_id
+
+_logger = get_logger()
 
 
 class CommandLink(Horizontal, can_focus=True):
@@ -344,6 +347,8 @@ class CommandLink(Horizontal, can_focus=True):
 
     def on_mount(self) -> None:
         """Set up runtime keyboard bindings and timer interval."""
+        _logger.debug(f"Mounting CommandLink: {self._command_name}")
+
         # Open output bindings (only if output_path is set)
         if self._output_path:
             open_keys = self._custom_open_keys if self._custom_open_keys is not None else self.DEFAULT_OPEN_KEYS
@@ -368,9 +373,12 @@ class CommandLink(Horizontal, can_focus=True):
         # Timer update interval (if enabled)
         if self._show_timer:
             self._timer_update_interval = self.set_interval(1.0, self._update_timer_display)
+            _logger.debug(f"Timer started: start={self._start_time}, end={self._end_time}")
 
     def on_unmount(self) -> None:
         """Clean up timer interval when widget is unmounted."""
+        _logger.debug(f"Unmounting CommandLink: {self._command_name}")
+
         # Stop timer update interval if running
         if self._timer_update_interval:
             self._timer_update_interval.stop()
@@ -523,6 +531,8 @@ class CommandLink(Horizontal, can_focus=True):
         >>> # Complete command with timer
         >>> link.set_status(running=False, end_time=time.time(), icon="✅")
         """
+        _logger.debug(f"Status: {self._command_name} → icon={icon}, running={running}")
+
         # Update status icon
         if icon is not None:
             self._status_icon = icon

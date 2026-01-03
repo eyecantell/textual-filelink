@@ -9,6 +9,10 @@ from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Static
 
+from .logging import get_logger
+
+_logger = get_logger()
+
 
 class FileLinkListItem(Horizontal):
     """Internal wrapper widget for items in FileLinkList.
@@ -234,10 +238,12 @@ class FileLinkList(VerticalScroll):
         """
         # Validate ID exists
         if not item.id:
+            _logger.error(f"Item missing ID: {type(item).__name__}")
             raise ValueError(f"Item must have an explicit ID set. Got: {item}")
 
         # Validate ID is unique
         if item.id in self._item_ids:
+            _logger.error(f"Duplicate ID: {item.id}")
             raise ValueError(
                 f"Duplicate item ID: '{item.id}'. "
                 f"Each item in FileLinkList must have a unique ID. "
@@ -258,6 +264,7 @@ class FileLinkList(VerticalScroll):
 
         # Mount the wrapper
         self.mount(wrapper)
+        _logger.debug(f"Added item: id={item.id}")
 
     def remove_item(self, item: Widget) -> None:
         """Remove an item from the list.
@@ -269,6 +276,8 @@ class FileLinkList(VerticalScroll):
         """
         if item.id not in self._item_ids:
             return
+
+        _logger.debug(f"Removed: {item.id}")
 
         # Get wrapper
         wrapper = self._wrappers[item.id]
@@ -285,6 +294,8 @@ class FileLinkList(VerticalScroll):
 
     def clear_items(self) -> None:
         """Remove all items from the list."""
+        _logger.debug(f"Clearing {len(self._item_ids)} items")
+
         # Remove all wrappers
         for wrapper in list(self._wrappers.values()):
             wrapper.remove()
