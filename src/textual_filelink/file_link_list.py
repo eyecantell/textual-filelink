@@ -222,19 +222,24 @@ class FileLinkList(VerticalScroll):
         *,
         toggled: bool = False,
     ) -> None:
-        """Add an item to the list.
+        """Add any Textual Widget to the list.
 
         Parameters
         ----------
         item : Widget
-            The widget to add (must have an explicit ID set).
+            Any Textual Widget subclass with explicit ID set.
         toggled : bool
             Initial toggle state (default: False).
 
         Raises
         ------
         ValueError
-            If item has no ID or ID is duplicate.
+            If widget has no ID or ID is duplicate.
+
+        Notes
+        -----
+        Widget-agnostic - accepts FileLink, CommandLink, Button, custom widgets, etc.
+        Only requirement: widget.id must be set explicitly and be unique within list.
         """
         # Validate ID exists
         if not item.id:
