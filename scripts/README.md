@@ -76,7 +76,7 @@ These demos require deeper understanding of async patterns, event handling, and 
    - Per-instance vs class-level configuration
    - **Prerequisites:** Understand demo_01 FileLink basics
 
-9. **[demo_09_file_browser.py](demo_09_file_browser.py)** - Real File Browser with Navigation ✅
+9. **[demo_06_file_browser.py](demo_06_file_browser.py)** - Real File Browser with Navigation ✅
    - Single directory view with file listings
    - 20+ file type icons (emoji-based)
    - Click directories to navigate
@@ -116,7 +116,7 @@ Looking for a specific feature? Here's where to find it:
 | Run commands                  | demo_06           |
 | Orchestrate multiple commands | demo_07           |
 | Configure different editors   | demo_08           |
-| Browse directories            | demo_09           |
+| Browse directories            | demo_06           |
 | Show files in a table         | demo_10           |
 | Handle errors gracefully      | demo_11           |
 

@@ -4,7 +4,7 @@ from .file_link_list import FileLinkList
 from .file_link_with_icons import FileLinkWithIcons
 from .icon import Icon
 from .logging import disable_logging, setup_logging
-from .utils import format_duration, format_time_ago, sanitize_id
+from .utils import command_from_template, format_duration, format_time_ago, sanitize_id
 
 __all__ = [
     "FileLink",
@@ -12,6 +12,7 @@ __all__ = [
     "CommandLink",
     "FileLinkList",
     "Icon",
+    "command_from_template",
     "sanitize_id",
     "format_duration",
     "format_time_ago",

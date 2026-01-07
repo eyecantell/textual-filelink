@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.10.0]
+
+### Added
+- **Command Templates** - Easy editor configuration with Jinja2-style templates
+  - `command_template` parameter for FileLink, FileLinkWithIcons, and CommandLink
+  - `command_from_template(template)` utility function to create command builders
+  - **Built-in template constants** for common editors:
+    - `FileLink.VSCODE_TEMPLATE` = `"code --goto {{ path }}:{{ line }}:{{ column }}"`
+    - `FileLink.VIM_TEMPLATE` = `"vim {{ line_plus }} {{ path }}"`
+    - `FileLink.SUBLIME_TEMPLATE` = `"subl {{ path }}:{{ line }}:{{ column }}"`
+    - `FileLink.NANO_TEMPLATE` = `"nano {{ line_plus }} {{ path }}"`
+    - `FileLink.ECLIPSE_TEMPLATE` = `"eclipse --launcher.openFile {{ path }}{{ line_colon }}"`
+  - **9 template variables** for flexible command construction:
+    - `{{ path }}` - Full absolute path
+    - `{{ path_relative }}` - Path relative to cwd (falls back to absolute)
+    - `{{ path_name }}` - Just the filename
+    - `{{ line }}`, `{{ column }}` - Line/column numbers (empty if None)
+    - `{{ line_colon }}`, `{{ column_colon }}` - Colon-prefixed format (e.g., `:42`)
+    - `{{ line_plus }}`, `{{ column_plus }}` - Plus-prefixed format (e.g., `+42`) for vim-style editors
+  - **Strict validation** - Catches unknown variables at template creation time
+  - **Priority order** for command resolution:
+    1. Instance `command_builder` (highest priority)
+    2. Instance `command_template`
+    3. Class `default_command_builder`
+    4. Class `default_command_template`
+    5. Built-in VSCode command (fallback)
+  - **Usage examples**:
+    ```python
+    # Use built-in template constant
+    FileLink("file.py", line=42, command_template=FileLink.VIM_TEMPLATE)
+
+    # Custom template
+    FileLink("file.py", command_template='myeditor "{{ path }}" --line {{ line }}')
+
+    # Class-level default
+    FileLink.default_command_template = FileLink.VIM_TEMPLATE
+
+    # Explicit builder
+    builder = command_from_template("emacs +{{ line }} {{ path }}")
+    FileLink("file.py", command_builder=builder)
+    ```
+  - No external dependencies (uses simple string replacement + `shlex.split()`)
+  - Comprehensive test coverage (43 new tests, all passing)
+  - New demo: `examples/demo_06_command_templates.py`
+
 ## [0.9.0] - 2026-01-03
 
 ### Added

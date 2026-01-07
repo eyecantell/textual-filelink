@@ -190,12 +190,61 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - Custom `display_name` parameter (defaults to filename)
   - Runtime keyboard bindings via `open_keys` parameter
   - Supports multiple editor command builders (VSCode, Vim, Nano, Eclipse)
+  - **Command templates** for easy editor configuration (NEW in v0.9.0)
   - Shows notifications on success/failure
   - Default is VSCode with `code --goto file:line:column`
 - **Messages**:
   - `FileLink.Opened` (path, line, column) - Primary message (v0.3.0+)
   - `FileLink.Clicked` - Backwards-compatible alias for `Opened` (will be removed in future)
 - **Keyboard Shortcuts**: Customizable via `open_keys` parameter (default: `["enter", "o"]`)
+
+**Command Templates (NEW in v0.9.0)**:
+- **Built-in Template Constants**:
+  - `FileLink.VSCODE_TEMPLATE` = `"code --goto {{ path }}:{{ line }}:{{ column }}"`
+  - `FileLink.VIM_TEMPLATE` = `"vim {{ line_plus }} {{ path }}"`
+  - `FileLink.SUBLIME_TEMPLATE` = `"subl {{ path }}:{{ line }}:{{ column }}"`
+  - `FileLink.NANO_TEMPLATE` = `"nano {{ line_plus }} {{ path }}"`
+  - `FileLink.ECLIPSE_TEMPLATE` = `"eclipse --launcher.openFile {{ path }}{{ line_colon }}"`
+
+- **Template Variables** (9 available):
+  - `{{ path }}` - Full absolute path
+  - `{{ path_relative }}` - Path relative to cwd (falls back to absolute)
+  - `{{ path_name }}` - Just the filename
+  - `{{ line }}` - Line number (empty string if None)
+  - `{{ column }}` - Column number (empty string if None)
+  - `{{ line_colon }}` - `:line` format (e.g., `:42`, empty if None)
+  - `{{ column_colon }}` - `:column` format (e.g., `:5`, empty if None)
+  - `{{ line_plus }}` - `+line` format (e.g., `+42`, empty if None) - for vim
+  - `{{ column_plus }}` - `+column` format (e.g., `+5`, empty if None)
+
+- **Usage Examples**:
+  ```python
+  # Method 1: Use built-in template constant
+  link = FileLink("file.py", line=42, command_template=FileLink.VIM_TEMPLATE)
+
+  # Method 2: Custom template string
+  link = FileLink("file.py", line=42,
+                  command_template='myeditor "{{ path }}" --line {{ line }}')
+
+  # Method 3: Class-level default for all FileLinks
+  FileLink.default_command_template = FileLink.VIM_TEMPLATE
+
+  # Method 4: Convert template to builder explicitly
+  builder = command_from_template(FileLink.SUBLIME_TEMPLATE)
+  link = FileLink("file.py", command_builder=builder)
+  ```
+
+- **Priority Order** (when opening files):
+  1. Instance `command_builder` (explicit callable, highest priority)
+  2. Instance `command_template` (converted to builder at runtime)
+  3. Class `default_command_builder`
+  4. Class `default_command_template` (converted to builder at runtime)
+  5. Built-in `vscode_command` (fallback)
+
+- **Template Limitations**:
+  - Templates work great for simple formats (VSCode, Sublime, simple vim)
+  - For complex conditional logic (e.g., vim's `cursor()` call), use custom `command_builder` function
+  - Paths with spaces require quotes in template: `'editor "{{ path }}"'`
 
 ### FileLinkWithIcons (src/textual_filelink/file_link_with_icons.py)
 - **Responsibility**: Compose FileLink with custom icons via composition (not inheritance)
@@ -205,6 +254,7 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - Layout: `[icons_before...] FileLink [icons_after...]`
   - Dynamic keyboard shortcuts for clickable icons (1-9 keys)
   - Runtime bindings created in `on_mount()` using `self._bindings.bind()`
+  - **Supports `command_template` parameter** - forwards to internal FileLink (NEW in v0.9.0)
 - **Messages**:
   - `FileLinkWithIcons.IconClicked` (path, icon_name, icon_char)
   - Plus `FileLink.Opened` from embedded FileLink
@@ -227,6 +277,7 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - Auto-generates widget ID from command name via `sanitize_id()`
   - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
   - Internal attribute naming: `_command_running` (not `_running` to avoid Textual's MessagePump conflict)
+  - **Supports `command_template` parameter** for output file opening (NEW in v0.9.0)
 - **API (v0.8.0)**:
   - Constructor parameter: `command_name: str` (first positional parameter)
   - Constructor parameter: `show_timer: bool = False` - Enable timer display
@@ -258,7 +309,12 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - `CommandLink.OutputClicked` (output_path)
 
 ### FileLinkList (src/textual_filelink/file_link_list.py)
-- **Responsibility**: Container for managing widgets with uniform toggle/remove controls
+- **Responsibility**: Container for managing ANY Textual Widget with uniform toggle/remove controls
+- **Widget-Agnostic**: Accepts any Widget subclass, not just FileLink-based widgets
+  - FileLink, FileLinkWithIcons, CommandLink
+  - Standard Textual widgets (Button, Label, Input, etc.)
+  - Custom Widget subclasses
+- **Only Requirement**: All widgets must have explicit IDs set
 - **Key Concepts**:
   - Inherits from `VerticalScroll` for automatic scrolling
   - Wraps any widget uniformly: `[toggle?] widget [remove?]`
@@ -278,6 +334,37 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - `get_items()` - Get all widgets
   - `__len__()`, `__iter__()` - Standard container protocols
 
+#### Widget Agnosticism
+
+FileLinkList is genuinely widget-agnostic - it can wrap ANY Textual Widget subclass:
+
+```python
+from textual.widgets import Button, Label
+from textual_filelink import FileLinkList, FileLink, CommandLink
+
+# Create list
+widget_list = FileLinkList(show_toggles=True, show_remove=True)
+
+# Add FileLink widgets
+widget_list.add_item(FileLink("file.py", id="file1"))
+
+# Add CommandLink widgets (non-FileLink!)
+widget_list.add_item(CommandLink("Build", id="cmd1"))
+
+# Add standard Textual widgets
+widget_list.add_item(Button("Click", id="btn1"))
+widget_list.add_item(Label("Status", id="lbl1"))
+
+# Add custom widgets
+widget_list.add_item(MyCustomWidget(id="custom1"))
+```
+
+**Key Points**:
+- No FileLink-specific dependencies in implementation
+- Wrapper (FileLinkListItem) only manages layout, not widget functionality
+- Messages expose the wrapped widget for type-aware handling
+- Proven to work: CommandLink usage in demo_05_dev_orchestration.py
+
 ### Icon Dataclass (src/textual_filelink/icon.py)
 ```python
 @dataclass
@@ -293,6 +380,14 @@ class Icon:
 ### Utility Functions (src/textual_filelink/utils.py)
 - `sanitize_id(name: str) -> str` - Convert any string to valid widget ID
   - Lowercases, converts spaces/paths to hyphens, removes special chars
+- `command_from_template(template: str) -> Callable` - Create command builder from template (NEW in v0.9.0)
+  - Converts Jinja2-style template strings to command builder functions
+  - Supports 9 template variables (see FileLink documentation)
+  - Validates template at creation time (raises ValueError for unknown variables)
+  - Returns builder function: `Callable[[Path, int | None, int | None], list[str]]`
+  - Example: `builder = command_from_template("vim {{ line_plus }} {{ path }}")`
+  - Templates parsed with simple string replacement + `shlex.split()` for argument tokenization
+  - No external dependencies (no Jinja2 library required)
 - `format_duration(secs: float) -> str` - Format elapsed time as duration (NEW in v0.8.0)
   - Milliseconds (< 1s): "500ms", "999ms"
   - Decimal seconds (1-60s): "1.0s", "2.4s", "59.9s"

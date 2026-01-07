@@ -16,7 +16,7 @@
             "type": "bind"
         }
     ],
-    "postCreateCommand": "mkdir -p ~/.claude && ln -sf /mounted/dev/claude_settings/settings.json ~/.claude/settings.json && cd /mounted/dev/textual-filelink && pdm install -G test -G dev",
+    "postCreateCommand": "mkdir -p ~/.claude && ln -sf /mounted/dev/claude_settings/settings.json ~/.claude/settings.json && cd /mounted/dev/textual-filelink && pdm install -G test",
     "customizations": {
         "vscode": {
             "extensions": [

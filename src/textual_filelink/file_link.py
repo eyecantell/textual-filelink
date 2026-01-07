@@ -52,6 +52,15 @@ class FileLink(Static, can_focus=True):
 
     # Class-level default command builder
     default_command_builder: Callable | None = None
+    # Class-level default command template
+    default_command_template: str | None = None
+
+    # Built-in template constants
+    VSCODE_TEMPLATE = "code --goto {{ path }}:{{ line }}:{{ column }}"
+    VIM_TEMPLATE = "vim {{ line_plus }} {{ path }}"
+    SUBLIME_TEMPLATE = "subl {{ path }}:{{ line }}:{{ column }}"
+    NANO_TEMPLATE = "nano {{ line_plus }} {{ path }}"  # Note: doesn't support column
+    ECLIPSE_TEMPLATE = "eclipse --launcher.openFile {{ path }}{{ line_colon }}"
 
     class Opened(Message):
         """Posted after the file is opened.
@@ -89,6 +98,7 @@ class FileLink(Static, can_focus=True):
         line: int | None = None,
         column: int | None = None,
         command_builder: Callable | None = None,
+        command_template: str | None = None,
         open_keys: list[str] | None = None,
         name: str | None = None,
         id: str | None = None,
@@ -107,8 +117,10 @@ class FileLink(Static, can_focus=True):
             Optional cursor position to jump to.
         command_builder : Callable | None
             Function that takes (path, line, column) and returns a list of command arguments.
-            If None, uses the class-level default_command_builder.
-            If that's also None, uses VSCode's 'code --goto' command.
+            Takes precedence over command_template.
+        command_template : str | None
+            Template string for building editor commands (e.g., "vim {{ line_plus }} {{ path }}").
+            Converted to builder function at runtime. Use FileLink.VSCODE_TEMPLATE, etc. for common editors.
         open_keys : list[str] | None
             Custom keyboard shortcuts for opening the file. If None, uses DEFAULT_OPEN_KEYS.
             Example: ["f2"] or ["ctrl+o", "enter"]
@@ -126,6 +138,7 @@ class FileLink(Static, can_focus=True):
         self._line = line
         self._column = column
         self._command_builder = command_builder
+        self._command_template = command_template
 
         # Store custom open keys if provided (will be applied in on_mount)
         self._custom_open_keys = open_keys
@@ -232,6 +245,14 @@ class FileLink(Static, can_focus=True):
         return f"{base_tooltip} {key_hint}"
 
     # ------------------------------------------------------------------ #
+    # Properties
+    # ------------------------------------------------------------------ #
+    @property
+    def command_template(self) -> str | None:
+        """Get the command template string."""
+        return self._command_template
+
+    # ------------------------------------------------------------------ #
     # Mouse handling for clickability
     # ------------------------------------------------------------------ #
     def on_click(self, event: events.Click) -> None:
@@ -241,8 +262,30 @@ class FileLink(Static, can_focus=True):
 
     def _do_open_file(self) -> None:
         """Open the file (shared logic for click and keyboard activation)."""
-        # Determine which command builder to use
-        command_builder = self._command_builder or self.default_command_builder or self.vscode_command
+        # Determine which command builder to use (priority order):
+        # 1. Instance command_builder (explicit callable takes precedence)
+        # 2. Instance command_template (convert to builder)
+        # 3. Class default_command_builder
+        # 4. Class default_command_template (convert to builder)
+        # 5. Built-in vscode_command (fallback)
+        command_builder = self._command_builder
+
+        if command_builder is None and self._command_template:
+            from .utils import command_from_template
+
+            command_builder = command_from_template(self._command_template)
+
+        if command_builder is None:
+            command_builder = self.default_command_builder
+
+        if command_builder is None and self.default_command_template:
+            from .utils import command_from_template
+
+            command_builder = command_from_template(self.default_command_template)
+
+        if command_builder is None:
+            command_builder = self.vscode_command
+
         _logger.debug(f"Opening file: path={self._path}, line={self._line}, col={self._column}")
 
         # Open the file directly (it's fast enough not to block)

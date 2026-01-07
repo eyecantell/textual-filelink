@@ -190,6 +190,7 @@ class CommandLink(Horizontal, can_focus=True):
         *,
         output_path: Path | str | None = None,
         command_builder: Callable | None = None,
+        command_template: str | None = None,
         initial_status_icon: str = "❓",
         initial_status_tooltip: str | None = None,
         show_settings: bool = False,
@@ -216,6 +217,9 @@ class CommandLink(Horizontal, can_focus=True):
             Optional output file path. If set, clicking name opens the file.
         command_builder : Callable | None
             Optional command builder for opening output files.
+            Takes precedence over command_template.
+        command_template : str | None
+            Template string for building editor commands (e.g., "vim {{ line_plus }} {{ path }}").
         initial_status_icon : str
             Initial status icon (default: "❓").
         initial_status_tooltip : str | None
@@ -258,6 +262,7 @@ class CommandLink(Horizontal, can_focus=True):
         self._command_name = command_name
         self._output_path = Path(output_path).resolve() if output_path else None
         self._command_builder = command_builder
+        self._command_template = command_template
         self._show_settings = show_settings
         self._show_timer = show_timer
         self._timer_field_width = timer_field_width
@@ -322,6 +327,7 @@ class CommandLink(Horizontal, can_focus=True):
                 self._output_path,
                 display_name=self._command_name,
                 command_builder=self._command_builder,
+                command_template=self._command_template,
                 _embedded=True,
             )
         else:
@@ -662,6 +668,7 @@ class CommandLink(Horizontal, can_focus=True):
                     self._output_path,
                     display_name=self._command_name,
                     command_builder=self._command_builder,
+                    command_template=self._command_template,
                     _embedded=True,
                 )
                 # Mount before settings widget if it exists, otherwise at end

@@ -1,6 +1,8 @@
 """Tests for utility functions."""
 
-from textual_filelink.utils import format_duration, format_time_ago, sanitize_id
+import pytest
+
+from textual_filelink.utils import command_from_template, format_duration, format_time_ago, sanitize_id
 
 
 class TestSanitizeId:
@@ -197,3 +199,103 @@ class TestFormatTimeAgo:
         assert format_time_ago(60) == "1m ago"  # Exactly 60s
         assert format_time_ago(3599) == "59m ago"  # Just under 60m
         assert format_time_ago(3600) == "1h ago"  # Exactly 60m
+
+
+class TestCommandFromTemplate:
+    """Tests for command_from_template() function."""
+
+    def test_basic_template(self, tmp_path):
+        """Test basic template with path variable."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("editor {{ path }}")
+        result = builder(test_file, None, None)
+        assert result == ["editor", str(test_file.resolve())]
+
+    def test_template_with_line_column(self, tmp_path):
+        """Test template with line and column variables."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("editor {{ path }} {{ line }} {{ column }}")
+        result = builder(test_file, 42, 5)
+        assert result == ["editor", str(test_file.resolve()), "42", "5"]
+
+    def test_vscode_style_template(self, tmp_path):
+        """Test VSCode-style colon-separated template."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("code --goto {{ path }}:{{ line }}:{{ column }}")
+        result = builder(test_file, 10, 5)
+        assert result == ["code", "--goto", f"{test_file.resolve()}:10:5"]
+
+    def test_vim_style_template(self, tmp_path):
+        """Test vim-style template with line_plus."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("vim {{ line_plus }} {{ path }}")
+        result = builder(test_file, 42, None)
+        assert result == ["vim", "+42", str(test_file.resolve())]
+
+    def test_line_plus_none_value(self, tmp_path):
+        """Test that line_plus doesn't create bare + when None."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("vim {{ line_plus }} {{ path }}")
+        result = builder(test_file, None, None)
+        # Should NOT have bare +
+        assert result == ["vim", str(test_file.resolve())]
+
+    def test_path_name_variable(self, tmp_path):
+        """Test path_name variable extracts filename."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("editor {{ path_name }}")
+        result = builder(test_file, None, None)
+        assert result == ["editor", "test.py"]
+
+    def test_unknown_variable_raises_error(self):
+        """Test that unknown variables raise ValueError."""
+        with pytest.raises(ValueError, match="Unknown template variables"):
+            command_from_template("editor {{ unknown }} {{ path }}")
+
+    def test_typo_in_variable_caught(self):
+        """Test that typos are caught by validation."""
+        with pytest.raises(ValueError, match="Unknown template variables"):
+            command_from_template("editor {{ pth }} {{ line }}")  # typo: pth instead of path
+
+    def test_whitespace_variations(self, tmp_path):
+        """Test that {{ var }} and {{var}} both work."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder1 = command_from_template("editor {{ path }}")
+        builder2 = command_from_template("editor {{path}}")
+
+        result1 = builder1(test_file, None, None)
+        result2 = builder2(test_file, None, None)
+        assert result1 == result2
+
+    def test_quoted_paths_with_spaces(self, tmp_path):
+        """Test that quoted paths with spaces stay together."""
+        test_file = tmp_path / "my file.py"
+        test_file.write_text("test")
+
+        builder = command_from_template('editor "{{ path }}"')
+        result = builder(test_file, None, None)
+        assert result == ["editor", str(test_file.resolve())]
+
+    def test_empty_values_handled(self, tmp_path):
+        """Test that None values produce empty strings that collapse."""
+        test_file = tmp_path / "test.py"
+        test_file.write_text("test")
+
+        builder = command_from_template("editor {{ line }} {{ column }} {{ path }}")
+        result = builder(test_file, None, None)
+        # shlex.split() collapses whitespace
+        assert result == ["editor", str(test_file.resolve())]

@@ -104,6 +104,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         line: int | None = None,
         column: int | None = None,
         command_builder: Callable | None = None,
+        command_template: str | None = None,
         icons_before: list[Icon] | None = None,
         icons_after: list[Icon] | None = None,
         open_keys: list[str] | None = None,
@@ -123,6 +124,9 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             Optional cursor position to jump to.
         command_builder : Callable | None
             Function that takes (path, line, column) and returns command arguments.
+            Takes precedence over command_template.
+        command_template : str | None
+            Template string for building editor commands (e.g., "vim {{ line_plus }} {{ path }}").
         icons_before : list[Icon] | None
             Icons to display before the filename. Order is preserved.
         icons_after : list[Icon] | None
@@ -175,6 +179,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
             line=line,
             column=column,
             command_builder=command_builder,
+            command_template=command_template,  # Forward template to embedded FileLink
             open_keys=open_keys,  # Forward custom keys to embedded FileLink
             _embedded=True,
             tooltip=None,  # No tooltip on embedded FileLink

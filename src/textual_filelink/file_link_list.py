@@ -122,33 +122,33 @@ class FileLinkListItem(Horizontal):
 
 
 class FileLinkList(VerticalScroll):
-    """Container for managing file link widgets with uniform controls.
+    """Container for managing ANY Textual Widget with uniform toggle/remove controls.
+
+    Widget-Agnostic Container
+    -------------------------
+    Accepts any Widget subclass (FileLink, CommandLink, Button, Label, custom widgets).
+    Only requirement: all widgets must have explicit IDs set.
 
     Features
     --------
     - Automatic scrolling via VerticalScroll
-    - Optional toggle checkboxes for each item
-    - Optional remove buttons for each item
-    - ID validation (all items must have explicit IDs, no duplicates)
-    - Batch operations: toggle_all(), remove_selected()
+    - Optional toggle controls for each item
+    - Optional remove controls for each item
+    - Batch operations: toggle_all(), remove_selected(), get_toggled_items()
+    - Messages: ItemToggled, ItemRemoved (expose wrapped widget, not wrapper)
 
     Example
     -------
-    >>> from textual_filelink import FileLinkList, FileLink, FileLinkWithIcons, Icon
+    >>> from textual_filelink import FileLinkList, FileLink, CommandLink
+    >>> from textual.widgets import Button
     >>>
-    >>> file_list = FileLinkList(show_toggles=True, show_remove=True)
+    >>> widget_list = FileLinkList(show_toggles=True, show_remove=True)
     >>>
-    >>> # Add FileLink
-    >>> link1 = FileLink("test.py", id="test-py")
-    >>> file_list.add_item(link1, toggled=True)
-    >>>
-    >>> # Add FileLinkWithIcons
-    >>> link2 = FileLinkWithIcons(
-    ...     "main.py",
-    ...     icons_before=[Icon(name="status", icon="✅")],
-    ...     id="main-py"
-    ... )
-    >>> file_list.add_item(link2)
+    >>> # Add any widget type with explicit ID
+    >>> widget_list.add_item(FileLink("file.py", id="file1"))
+    >>> widget_list.add_item(CommandLink("Build", id="cmd1"))
+    >>> widget_list.add_item(Button("Click", id="btn1"))
+    >>> widget_list.add_item(MyCustomWidget(id="custom1"))
     """
 
     DEFAULT_CSS = """

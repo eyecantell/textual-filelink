@@ -20,6 +20,7 @@ Clickable file links for [Textual](https://github.com/Textualize/textual) applic
 - 👁️ **Dynamic visibility** - show/hide icons on the fly
 - 🎯 **Jump to specific line and column** in your editor
 - 🔧 **Customizable command builders** for any editor
+- 📝 **Command templates** - easy editor configuration with Jinja2-style syntax
 - 🎭 **Flexible layouts** - show/hide controls as needed
 - 💬 **Smart tooltips** - automatic keyboard shortcut hints with optional control
 - 🚀 **Command orchestration** with play/stop controls and animated spinners
@@ -308,6 +309,7 @@ FileLink(
     line: int | None = None,
     column: int | None = None,
     command_builder: Callable | None = None,
+    command_template: str | None = None,
     open_keys: list[str] | None = None,
     name: str | None = None,
     id: str | None = None,
@@ -322,7 +324,8 @@ FileLink(
 - `display_name`: Text to display for the link. If None, defaults to the filename
 - `line`: Optional line number to jump to
 - `column`: Optional column number to jump to
-- `command_builder`: Custom function to build the editor command
+- `command_builder`: Custom function to build the editor command (takes precedence over template)
+- `command_template`: Template string for editor command (e.g., `"vim {{ line_plus }} {{ path }}"`)
 - `open_keys`: Custom keyboard shortcuts for opening (default: ["enter", "o"])
 - `name`: Widget name
 - `id`: Widget ID
@@ -459,6 +462,7 @@ CommandLink(
     *,
     output_path: Path | str | None = None,
     command_builder: Callable | None = None,
+    command_template: str | None = None,
     initial_status_icon: str = "○",
     initial_status_tooltip: str | None = None,
     show_settings: bool = False,
@@ -477,7 +481,8 @@ CommandLink(
 **Parameters:**
 - `command_name`: Command display name (also used to generate widget ID if not provided)
 - `output_path`: Path to output file. If set, clicking command name opens the file
-- `command_builder`: Custom command builder for opening output files
+- `command_builder`: Custom command builder for opening output files (takes precedence over template)
+- `command_template`: Template string for opening output files (e.g., `"vim {{ line_plus }} {{ path }}"`)
 - `initial_status_icon`: Initial status icon (default: "○")
 - `initial_status_tooltip`: Initial tooltip for status icon
 - `show_settings`: Whether to show the settings icon (default: False)
@@ -816,7 +821,10 @@ if __name__ == "__main__":
 
 ## FileLinkList API
 
-`FileLinkList` is a container for managing collections of file link widgets with uniform controls.
+`FileLinkList` is a container for managing ANY Textual Widget with uniform toggle/remove controls.
+
+**Widget Support:** Accepts any Widget subclass (FileLink, CommandLink, Button, Label, custom widgets, etc.)
+**Requirement:** All widgets must have explicit IDs
 
 ### Features
 - Automatic scrolling via `VerticalScroll`
@@ -824,7 +832,7 @@ if __name__ == "__main__":
 - Optional remove buttons for each item
 - ID validation (all items must have explicit IDs, no duplicates)
 - Batch operations: `toggle_all()`, `remove_selected()`
-- Works with FileLink, FileLinkWithIcons, and CommandLink
+- Widget-agnostic: Works with FileLink, FileLinkWithIcons, CommandLink, and any custom Widget
 
 ### Constructor
 
@@ -967,6 +975,7 @@ FileLinkWithIcons(
     line: int | None = None,
     column: int | None = None,
     command_builder: Callable | None = None,
+    command_template: str | None = None,
     icons_before: list[Icon] | None = None,
     icons_after: list[Icon] | None = None,
     name: str | None = None,
@@ -981,7 +990,8 @@ FileLinkWithIcons(
 - `display_name`: Text to display for the link. If None, defaults to filename
 - `line`: Optional line number to jump to
 - `column`: Optional column number to jump to
-- `command_builder`: Function to build the editor command
+- `command_builder`: Function to build the editor command (takes precedence over template)
+- `command_template`: Template string for editor command (e.g., `"vim {{ line_plus }} {{ path }}"`)
 - `icons_before`: Icons to display before the filename (order preserved)
 - `icons_after`: Icons to display after the filename (order preserved)
 - `name`: Widget name
@@ -1319,6 +1329,66 @@ link = FileLink(path, command_builder=FileLink.nano_command)
 - `FileLink.eclipse_command` - Eclipse
 - `FileLink.copy_path_command` - Copy path to clipboard
 
+### Using Command Templates (Recommended)
+
+Command templates provide an easier way to configure editors using Jinja2-style template strings:
+
+```python
+from textual_filelink import FileLink, command_from_template
+
+# Method 1: Use built-in template constants
+link = FileLink("file.py", line=42, command_template=FileLink.VIM_TEMPLATE)
+
+# Method 2: Write your own custom template
+link = FileLink(
+    "file.py",
+    line=42,
+    command_template='myeditor "{{ path }}" --line {{ line }} --column {{ column }}'
+)
+
+# Method 3: Set class-level default for all FileLinks
+FileLink.default_command_template = FileLink.VIM_TEMPLATE
+
+# Method 4: Create builder explicitly (advanced)
+builder = command_from_template("emacs +{{ line }} {{ path }}")
+link = FileLink("file.py", command_builder=builder)
+```
+
+**Built-in template constants:**
+- `FileLink.VSCODE_TEMPLATE` - `"code --goto {{ path }}:{{ line }}:{{ column }}"`
+- `FileLink.VIM_TEMPLATE` - `"vim {{ line_plus }} {{ path }}"`
+- `FileLink.SUBLIME_TEMPLATE` - `"subl {{ path }}:{{ line }}:{{ column }}"`
+- `FileLink.NANO_TEMPLATE` - `"nano {{ line_plus }} {{ path }}"`
+- `FileLink.ECLIPSE_TEMPLATE` - `"eclipse --launcher.openFile {{ path }}{{ line_colon }}"`
+
+**Available template variables** (9 total):
+- `{{ path }}` - Full absolute path
+- `{{ path_relative }}` - Path relative to current directory (falls back to absolute)
+- `{{ path_name }}` - Just the filename
+- `{{ line }}` - Line number (empty string if None)
+- `{{ column }}` - Column number (empty string if None)
+- `{{ line_colon }}` - `:line` format, e.g., `:42` (empty if None)
+- `{{ column_colon }}` - `:column` format, e.g., `:5` (empty if None)
+- `{{ line_plus }}` - `+line` format, e.g., `+42` (empty if None) - for vim-style editors
+- `{{ column_plus }}` - `+column` format, e.g., `+5` (empty if None)
+
+**Template features:**
+- **Strict validation** - Unknown variables raise `ValueError` at template creation
+- **Automatic tokenization** - Uses `shlex.split()` for proper argument parsing
+- **Handles spaces** - Quote paths in templates: `'editor "{{ path }}"'`
+- **No dependencies** - Simple string replacement, no Jinja2 library required
+
+**Priority order** (when multiple options are set):
+1. Instance `command_builder` (highest priority)
+2. Instance `command_template`
+3. Class `default_command_builder`
+4. Class `default_command_template`
+5. Built-in VSCode command (fallback)
+
+**When to use templates vs custom builders:**
+- ✅ Use templates for simple formats (VSCode, Sublime, vim)
+- ❌ Use custom builder functions for complex conditional logic
+
 ### Custom Command Builder
 
 ```python
@@ -1533,6 +1603,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Todo
+- Add ability to pass the open file command as a string with {{ variables }}
 
 ## Acknowledgments
 
