@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.message import Message
 from textual.widgets import Static
@@ -104,6 +105,12 @@ class CommandLink(Horizontal, can_focus=True):
         padding: 0 1;
     }
     """
+
+    BINDINGS = [
+        Binding("enter,o", "open_output", "Open output", show=False),
+        Binding("space,p", "play_stop", "Play/Stop", show=False),
+        Binding("s", "settings", "Settings", show=False),
+    ]
 
     # Default spinner frames and interval for animation
     DEFAULT_SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
@@ -322,6 +329,7 @@ class CommandLink(Horizontal, can_focus=True):
         self._play_stop_widget._is_play_button = True  # type: ignore
 
         # Name (FileLink if output_path, Static otherwise)
+        self._name_widget: FileLink | Static
         if self._output_path:
             self._name_widget = FileLink(
                 self._output_path,

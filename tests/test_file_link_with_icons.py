@@ -611,3 +611,53 @@ class TestFileLinkWithIconsMessageBubbling:
         finally:
             # Restore original defaults
             FileLink.DEFAULT_OPEN_KEYS = original_defaults
+
+    async def test_filelink_with_icons_set_path(self, temp_file, tmp_path):
+        """Test FileLinkWithIcons.set_path() delegates to internal FileLink."""
+        widget = FileLinkWithIcons(temp_file, line=10, column=5)
+        app = FileLinkWithIconsTestApp(widget)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            # Verify initial state
+            assert widget.path == temp_file.resolve()
+            assert widget.line == 10
+            assert widget.column == 5
+
+            # Update path with new line/column
+            widget.set_path(temp_file2, line=20, column=15)
+
+            # Verify widget state updated
+            assert widget.path == temp_file2.resolve()
+            assert widget.line == 20
+            assert widget.column == 15
+
+            # Verify internal FileLink also updated
+            assert widget.file_link.path == temp_file2.resolve()
+            assert widget.file_link.line == 20
+            assert widget.file_link.column == 15
+
+    async def test_filelink_with_icons_set_path_clears_line_column(self, temp_file, tmp_path):
+        """Test FileLinkWithIcons.set_path() clears line/column when not provided."""
+        widget = FileLinkWithIcons(temp_file, line=10, column=5)
+        app = FileLinkWithIconsTestApp(widget)
+
+        # Create a second temp file
+        temp_file2 = tmp_path / "output.txt"
+        temp_file2.write_text("output content")
+
+        async with app.run_test():
+            # Update path without specifying line/column
+            widget.set_path(temp_file2)
+
+            # Line and column should be cleared
+            assert widget.path == temp_file2.resolve()
+            assert widget.line is None
+            assert widget.column is None
+
+            # Verify internal FileLink also cleared
+            assert widget.file_link.line is None
+            assert widget.file_link.column is None

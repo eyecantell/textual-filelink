@@ -487,9 +487,22 @@ class TestFileLink:
     # TODO: Implement proper instance-level keyboard binding support
 
     def test_filelink_opened_message_backwards_compatibility(self, temp_file):
-        """Test that FileLink.Clicked is aliased to FileLink.Opened."""
-        # Verify the alias exists
-        assert FileLink.Clicked is FileLink.Opened
+        """Test that FileLink.Clicked is a deprecated alias for FileLink.Opened."""
+        import warnings
+
+        # Verify the alias exists and is a subclass
+        assert issubclass(FileLink.Clicked, FileLink.Opened)
+
+        # Verify creating a Clicked message emits a deprecation warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            link = FileLink(temp_file)
+            _msg = FileLink.Clicked(link, temp_file, 10, 5)
+
+            assert len(w) == 1
+            assert issubclass(w[0].category, DeprecationWarning)
+            assert "deprecated" in str(w[0].message).lower()
+            assert "FileLink.Opened" in str(w[0].message)
 
     async def test_filelink_auto_generates_id(self, temp_file):
         """Test FileLink auto-generates ID from filename."""
@@ -592,8 +605,8 @@ class TestFileLink:
             assert link.line == 20
             assert link.column == 15
 
-    async def test_set_path_preserves_line_column_if_not_specified(self, temp_file, tmp_path):
-        """Test set_path() preserves line/column if not explicitly provided."""
+    async def test_set_path_clears_line_column_if_not_specified(self, temp_file, tmp_path):
+        """Test set_path() clears line/column if not explicitly provided (v0.8.0 behavior change)."""
         link = FileLink(temp_file, line=10, column=5)
         app = FileLinkTestApp(link)
 
@@ -605,6 +618,6 @@ class TestFileLink:
             # Update path without specifying line/column
             link.set_path(temp_file2)
 
-            # Line and column should be preserved
-            assert link.line == 10
-            assert link.column == 5
+            # Line and column should be cleared (changed in v0.8.0)
+            assert link.line is None
+            assert link.column is None

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import warnings
 from pathlib import Path
 from typing import Callable
 
@@ -85,7 +86,19 @@ class FileLink(Static, can_focus=True):
             self.column = column
 
     # Backwards compatibility (will be removed in future versions)
-    Clicked = Opened
+    class Clicked(Opened):
+        """Deprecated alias for Opened. Use FileLink.Opened instead.
+
+        This alias will be removed in a future version.
+        """
+
+        def __init__(self, widget: FileLink, path: Path, line: int | None, column: int | None) -> None:
+            warnings.warn(
+                "FileLink.Clicked is deprecated, use FileLink.Opened instead",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            super().__init__(widget, path, line, column)
 
     # Class-level default open keys
     DEFAULT_OPEN_KEYS = ["enter", "o"]
@@ -198,7 +211,7 @@ class FileLink(Static, can_focus=True):
             List of key names bound to the action (e.g., ['o'], ['space', 't'])
         """
         # For open_file action, return custom keys if set
-        if action_name == "open_file" and hasattr(self, "_custom_open_keys") and self._custom_open_keys is not None:
+        if action_name == "open_file" and self._custom_open_keys is not None:
             return self._custom_open_keys
 
         # Otherwise, use class-level BINDINGS
@@ -240,7 +253,7 @@ class FileLink(Static, can_focus=True):
             # "open_file" → "Open file"
             # "play_stop" → "Play/Stop"
             readable = action_name.replace("_", " ").title()
-            base_tooltip = readable
+            return f"{readable} {key_hint}"
 
         return f"{base_tooltip} {key_hint}"
 
@@ -294,7 +307,7 @@ class FileLink(Static, can_focus=True):
             _logger.debug(f"Executing: {' '.join(cmd)}")
 
             result = subprocess.run(
-                cmd, env=os.environ.copy(), cwd=str(Path.cwd()), capture_output=True, text=True, timeout=5
+                cmd, env=os.environ.copy(), cwd=str(Path.cwd()), capture_output=True, text=True, timeout=40
             )
 
             if result.returncode == 0:
@@ -309,7 +322,7 @@ class FileLink(Static, can_focus=True):
                 self.app.notify(f"Failed to open {self._path.name}: {error_msg}", severity="error", timeout=3)
 
         except subprocess.TimeoutExpired:
-            _logger.error(f"Timeout (5s): {self._path.name}")
+            _logger.error(f"Timeout (40s): {self._path.name}")
             self.app.notify(f"Timeout opening {self._path.name}", severity="error", timeout=3)
         except Exception as exc:
             _logger.exception(f"Exception opening {self._path.name}")
@@ -434,16 +447,14 @@ class FileLink(Static, can_focus=True):
         display_name : str | None
             New display name. If None, uses filename.
         line : int | None
-            New line number. If None, keeps existing.
+            New line number. If None, clears line.
         column : int | None
-            New column number. If None, keeps existing.
+            New column number. If None, clears column.
         """
         self._path = Path(path).resolve()
         self._display_name = display_name or self._path.name
-        if line is not None:
-            self._line = line
-        if column is not None:
-            self._column = column
+        self._line = line
+        self._column = column
 
         # Update display using Static's built-in method
         self.update(self._display_name)

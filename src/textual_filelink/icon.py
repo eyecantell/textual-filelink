@@ -50,7 +50,7 @@ class Icon:
 
     def __post_init__(self):
         """Validate icon configuration after initialization."""
-        if not self.name:
-            raise ValueError("Icon name cannot be empty")
-        if not self.icon:
-            raise ValueError("Icon character cannot be empty")
+        if not self.name or not self.name.strip():
+            raise ValueError("Icon name cannot be empty or whitespace-only")
+        if not self.icon or not self.icon.strip():
+            raise ValueError("Icon character cannot be empty or whitespace-only")

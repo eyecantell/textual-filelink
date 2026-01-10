@@ -195,8 +195,12 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - Default is VSCode with `code --goto file:line:column`
 - **Messages**:
   - `FileLink.Opened` (path, line, column) - Primary message (v0.3.0+)
-  - `FileLink.Clicked` - Backwards-compatible alias for `Opened` (will be removed in future)
+  - `FileLink.Clicked` - **DEPRECATED**: Backwards-compatible alias for `Opened` (emits DeprecationWarning, will be removed in v1.0)
 - **Keyboard Shortcuts**: Customizable via `open_keys` parameter (default: `["enter", "o"]`)
+- **Methods**:
+  - `set_path(path, display_name=None, line=None, column=None)` - Update file path
+    - **v0.8.0 breaking change**: Passing None for line/column now clears them (previously preserved existing values)
+    - Use case: Change file path and reset cursor position to start
 
 **Command Templates (NEW in v0.9.0)**:
 - **Built-in Template Constants**:
@@ -259,6 +263,9 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - `FileLinkWithIcons.IconClicked` (path, icon_name, icon_char)
   - Plus `FileLink.Opened` from embedded FileLink
 - **Properties**: `file_link` property provides access to internal FileLink widget
+- **Methods**:
+  - `set_path(path, display_name=None, line=None, column=None)` - Update file path, delegates to internal FileLink
+    - Setting line/column to None clears them (v0.8.0 behavior)
 
 ### ToggleableFileLink (src/textual_filelink/toggleable_file_link.py)
 ⚠️ **DEPRECATED in v0.4.0**: This widget will be removed. Use `FileLinkWithIcons` + `FileLinkList` instead.
@@ -275,7 +282,8 @@ Note: See refactor-2025-12-22.md for planned v0.4.0 architecture changes.
   - Animated spinner using `set_interval()` when running
   - Optional timer display with `show_timer=True` (added in v0.7.0, redesigned in v0.8.0)
   - Auto-generates widget ID from command name via `sanitize_id()`
-  - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys`
+  - **Class-level BINDINGS** (added in v0.8.0): Default bindings for enter/o, space/p, s
+  - Runtime keyboard bindings: `open_keys`, `play_stop_keys`, `settings_keys` can override defaults
   - Internal attribute naming: `_command_running` (not `_running` to avoid Textual's MessagePump conflict)
   - **Supports `command_template` parameter** for output file opening (NEW in v0.9.0)
 - **API (v0.8.0)**:
@@ -376,6 +384,10 @@ class Icon:
     key: str | None = None # Keyboard shortcut (optional)
     visible: bool = True   # Whether icon is displayed
 ```
+
+**Validation (v0.8.0)**:
+- `name` and `icon` cannot be empty or whitespace-only
+- Raises `ValueError` if validation fails: "Icon name/character cannot be empty or whitespace-only"
 
 ### Utility Functions (src/textual_filelink/utils.py)
 - `sanitize_id(name: str) -> str` - Convert any string to valid widget ID
@@ -480,7 +492,8 @@ link.open_file()
 
 ### Message Naming Convention
 - **v0.3.0**: `FileLink.Opened` is the primary message, with `FileLink.Clicked` as a backwards-compatible alias
-- **Future**: `FileLink.Clicked` will be removed (use `Opened` for all new code)
+- **v0.8.0**: `FileLink.Clicked` now emits a `DeprecationWarning` when instantiated
+- **v1.0**: `FileLink.Clicked` will be removed (use `Opened` for all new code)
 
 ### Keyboard Accessibility
 

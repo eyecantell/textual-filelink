@@ -407,7 +407,7 @@ class TestCommandLinkPlayStop:
 
     async def test_custom_play_stop_keys(self):
         """Test custom play_stop_keys parameter creates bindings."""
-        link = CommandLink("TestCommand", play_stop_keys=["r", "enter"])
+        link = CommandLink("TestCommand", play_stop_keys=["r", "t"])
         app = CommandLinkTestApp(link)
 
         async with app.run_test():
@@ -416,9 +416,9 @@ class TestCommandLinkPlayStop:
             assert len(bindings_r) > 0
             assert bindings_r[0].action == "play_stop"
 
-            bindings_enter = link._bindings.get_bindings_for_key("enter")
-            assert len(bindings_enter) > 0
-            assert bindings_enter[0].action == "play_stop"
+            bindings_t = link._bindings.get_bindings_for_key("t")
+            assert len(bindings_t) > 0
+            assert bindings_t[0].action == "play_stop"
 
 
 class TestCommandLinkOutput:

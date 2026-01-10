@@ -51,10 +51,20 @@ class TestIcon:
         with pytest.raises(ValueError, match="name cannot be empty"):
             Icon(name="", icon="✅")
 
+    def test_icon_whitespace_only_name_raises_error(self):
+        """Test that whitespace-only name raises ValueError."""
+        with pytest.raises(ValueError, match="name cannot be empty or whitespace-only"):
+            Icon(name="   ", icon="✅")
+
     def test_icon_empty_icon_raises_error(self):
         """Test that empty icon raises ValueError."""
         with pytest.raises(ValueError, match="character cannot be empty"):
             Icon(name="status", icon="")
+
+    def test_icon_whitespace_only_icon_raises_error(self):
+        """Test that whitespace-only icon character raises ValueError."""
+        with pytest.raises(ValueError, match="character cannot be empty or whitespace-only"):
+            Icon(name="status", icon="   ")
 
     def test_icon_none_name_raises_error(self):
         """Test that None name is treated as empty and raises ValueError."""

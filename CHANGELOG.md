@@ -5,7 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.10.1]
+
+### Changed
+- **BREAKING: FileLink.set_path() behavior** - Now clears line/column when None is passed
+  - Previously: `set_path(path)` would preserve existing line/column values
+  - Now: `set_path(path)` clears line and column to None (explicitly pass values to set them)
+  - **Migration**: If you need to preserve line/column, explicitly pass them: `set_path(path, line=widget.line, column=widget.column)`
+  - **Rationale**: More intuitive behavior - changing file path typically means resetting cursor position
+  - Also applies to `FileLinkWithIcons.set_path()`
+- **BREAKING: FileLink subprocess timeout increased** - Changed from 5s to 40s
+  - Prevents premature failures in slow environments (SSH, remote filesystems, slow editors)
+  - Standard timeout documented in CLAUDE.md for all subprocess operations
+  - Error message updated to reflect 40s timeout
+
+### Added
+- **FileLinkWithIcons.set_path() method** - Update file path on existing widget
+  - Signature: `set_path(path, display_name=None, line=None, column=None)`
+  - Delegates to internal FileLink's `set_path()` method
+  - Updates widget state and internal FileLink simultaneously
+- **CommandLink class-level BINDINGS** - Default keyboard bindings defined at class level
+  - Consistent with FileLink and FileLinkWithIcons patterns
+  - Default bindings: enter/o (open output), space/p (play/stop), s (settings)
+  - Custom instance keys still override defaults via `open_keys`, `play_stop_keys`, `settings_keys` parameters
+- **Icon whitespace validation** - Icon name and character cannot be whitespace-only
+  - Raises `ValueError` with clear message: "Icon name/character cannot be empty or whitespace-only"
+  - Catches edge cases like `Icon(name="   ", icon=" ")` at initialization
+- **Type annotation for CommandLink._name_widget** - Explicitly typed as `FileLink | Static`
+  - Improves type safety and IDE support
+  - Documents the widget's internal dual nature (FileLink with output, Static without)
+
+### Fixed
+- **FileLink tooltip leading space bug** - No longer adds leading space when base tooltip is empty
+  - Previously: Empty tooltip would become " (enter/o)" with leading space
+  - Now: Generates sensible default from action name when tooltip is empty
+- **FileLink hasattr() redundancy** - Removed unnecessary `hasattr()` check
+  - `_custom_open_keys` is always initialized in `__init__`, check was redundant
+  - Simplified condition: `if self._custom_open_keys is not None`
+
+### Deprecated
+- **FileLink.Clicked message** - Now emits `DeprecationWarning` when instantiated
+  - Use `FileLink.Opened` instead (primary message since v0.3.0)
+  - Warning message: "FileLink.Clicked is deprecated, use FileLink.Opened instead"
+  - Will be removed in v1.0.0
+  - `Clicked` is now a subclass of `Opened` that emits the warning in `__init__`
+
+### Removed
+- **5 broken demo scripts** - Deleted scripts that imported removed `ToggleableFileLink`
+  - `scripts/demo_03_icons_simple.py`
+  - `scripts/demo_04_icons_advanced.py`
+  - `scripts/demo_05_state_management.py`
+  - `scripts/demo_09_file_browser.py`
+  - `scripts/demo_multiple_icons.py`
+  - These scripts were non-functional since ToggleableFileLink removal in v0.5.0
 
 ## [0.10.0]
 

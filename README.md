@@ -103,7 +103,7 @@ if __name__ == "__main__":
     MyApp().run()
 ```
 
-**With Timer (NEW in v0.8.0):**
+**With Timer:**
 
 ```python
 from textual_filelink import CommandLink
@@ -212,30 +212,36 @@ All FileLink widgets support keyboard activation:
 - `space` or `p` - Play/Stop command
 - `s` - Settings (if show_settings=True)
 
-**FileLinkWithIcons:**
-- `enter` or `o` - Open file in editor
-- Custom keys - If icons have `key` parameter set
-
 ### Default Keyboard Shortcuts
 
-All widgets have class-level default keyboard shortcuts that can be customized:
+All widgets define class-level keyboard bindings via the `BINDINGS` class variable. These can be overridden per-instance using the `open_keys`, `play_stop_keys`, and `settings_keys` parameters:
 
 **FileLink:**
 ```python
-FileLink.DEFAULT_OPEN_KEYS = ["enter", "o"]
+# Class-level binding (defined in BINDINGS)
+Binding("enter,o", "open_file", "Open", show=False)
+```
+
+Override per-instance:
+```python
+link = FileLink("file.py", open_keys=["f2", "ctrl+o"])
 ```
 
 **FileLinkWithIcons:**
-Uses `FileLink.DEFAULT_OPEN_KEYS` as its default (since it embeds a FileLink).
+Inherits FileLink bindings and adds icon number bindings (1-9).
 
 **CommandLink:**
 ```python
-CommandLink.DEFAULT_OPEN_KEYS = ["enter", "o"]
-CommandLink.DEFAULT_PLAY_STOP_KEYS = ["space", "p"]
-CommandLink.DEFAULT_SETTINGS_KEYS = ["s"]
+# Class-level bindings (defined in BINDINGS)
+Binding("enter,o", "open_output", "Open output", show=False),
+Binding("space,p", "play_stop", "Play/Stop", show=False),
+Binding("s", "settings", "Settings", show=False),
 ```
 
-These defaults apply to all instances unless overridden with the `open_keys`, `play_stop_keys`, or `settings_keys` parameters.
+Override per-instance:
+```python
+cmd = CommandLink("Build", open_keys=["f5"], play_stop_keys=["ctrl+r"])
+```
 
 ### Customizing Keyboard Shortcuts
 
@@ -340,13 +346,25 @@ FileLink(
 - `line: int | None` - The line number
 - `column: int | None` - The column number
 
+### Class-Level Keyboard Bindings
+
+FileLink defines default keyboard bindings at the class level:
+
+```python
+BINDINGS = [
+    Binding("enter,o", "open_file", "Open", show=False),
+]
+```
+
+Custom bindings can be set per-instance using the `open_keys` parameter.
+
 ### Methods
 
 #### `open_file()`
 Open the file in the configured editor (can be called programmatically).
 
-#### `set_path(path, display_name=None, line=None, column=None)` (NEW in v0.8.1)
-Update the file path after initialization.
+#### `set_path(path, display_name=None, line=None, column=None)`
+Update the file path after initialization. **Breaking change in v0.8.0**: Line/column now clear when None instead of preserving previous values.
 
 ```python
 # Update to a new file path
@@ -355,22 +373,23 @@ link.set_path("new_file.py")
 # Update with custom display name
 link.set_path("output.log", display_name="Build Output")
 
-# Update with line/column position
+# Update with line/column position (clears previous values if not specified)
 link.set_path("script.py", line=42, column=10)
 
-# Line/column are preserved if not specified
-link.set_path("different.py")  # Keeps existing line/column
+# Starting from v0.8.0: Line/column are cleared if not specified
+link.set_path("different.py")  # line and column are now None
 ```
 
 **Parameters:**
 - `path: Path | str` - New file path (required)
 - `display_name: str | None` - New display name. If None, uses filename (default: None)
-- `line: int | None` - New line number. If None, preserves existing value (default: None)
-- `column: int | None` - New column number. If None, preserves existing value (default: None)
+- `line: int | None` - New line number. If None, clears to None (default: None)
+- `column: int | None` - New column number. If None, clears to None (default: None)
 
 **Notes:**
 - Updates the internal path, display text, and tooltip
-- Line and column are only updated if explicitly provided
+- **Breaking change (v0.8.0)**: Line and column are cleared to None if not specified (previously preserved)
+- To preserve existing values, explicitly pass them: `link.set_path("file.py", line=link.line, column=link.column)`
 - Useful for updating file links after file operations or command completion
 
 ### Messages
@@ -384,7 +403,7 @@ Posted when the link is clicked or opened via keyboard.
 - `line: int | None` - The line number to navigate to (or None)
 - `column: int | None` - The column number to navigate to (or None)
 
-**Note:** `FileLink.Clicked` is deprecated but still available for backwards compatibility. Use `FileLink.Opened` instead.
+**Note:** `FileLink.Clicked` is **deprecated** and will be removed in v1.0. Use `FileLink.Opened` instead. Using `FileLink.Clicked` emits a `DeprecationWarning`.
 
 ### Class-Level Configuration
 
@@ -466,6 +485,10 @@ CommandLink(
     initial_status_icon: str = "○",
     initial_status_tooltip: str | None = None,
     show_settings: bool = False,
+    show_timer: bool = False,
+    timer_field_width: int = 12,
+    start_time: float | None = None,
+    end_time: float | None = None,
     tooltip: str | None = None,
     open_keys: list[str] | None = None,
     play_stop_keys: list[str] | None = None,
@@ -486,6 +509,10 @@ CommandLink(
 - `initial_status_icon`: Initial status icon (default: "○")
 - `initial_status_tooltip`: Initial tooltip for status icon
 - `show_settings`: Whether to show the settings icon (default: False)
+- `show_timer`: Whether to show elapsed/time-ago timer column (default: False)
+- `timer_field_width`: Fixed width for timer column in characters (default: 12)
+- `start_time`: Unix timestamp when command started (for elapsed time display)
+- `end_time`: Unix timestamp when command completed (for time-ago display)
 - `tooltip`: Custom tooltip for command name widget. If None, uses command name. Keyboard shortcuts are automatically appended
 - `open_keys`: Custom keyboard shortcuts for opening output (default: ["enter", "o"])
 - `play_stop_keys`: Custom keyboard shortcuts for play/stop (default: ["space", "p"])
@@ -514,6 +541,20 @@ CommandLink(
 - `output_path: Path | None` - Current output file path
 - `is_running: bool` - Whether the command is currently running
 - `name: str | None` - Widget name (Textual's widget identification system)
+
+### Class-Level Keyboard Bindings
+
+CommandLink defines default keyboard bindings at the class level:
+
+```python
+BINDINGS = [
+    Binding("enter,o", "open_output", "Open output", show=False),
+    Binding("space,p", "play_stop", "Play/Stop", show=False),
+    Binding("s", "settings", "Settings", show=False),
+]
+```
+
+These bindings can be overridden per-instance using the `open_keys`, `play_stop_keys`, and `settings_keys` parameters.
 
 ### Methods
 
@@ -1036,6 +1077,22 @@ Icon(
 - `column: int | None` - The column number
 - `file_link: FileLink` - The internal FileLink widget (read-only access)
 
+### Class-Level Keyboard Bindings
+
+FileLinkWithIcons inherits default keyboard bindings from FileLink and adds support for icon activation:
+
+```python
+BINDINGS = [
+    Binding("enter,o", "open_file", "Open", show=False),
+    Binding("1", "icon_1", "", show=False),
+    Binding("2", "icon_2", "", show=False),
+    # ... up to icon_9
+]
+```
+
+- Numbers 1-9 activate the first through ninth clickable icons (if `key` is set in Icon definition)
+- Custom icon shortcuts can be set per-icon using the `key` parameter
+
 ### Methods
 
 #### `update_icon(name: str, **kwargs)`
@@ -1071,6 +1128,33 @@ icon = widget.get_icon("status")
 if icon:
     print(f"Icon: {icon.icon}, Visible: {icon.visible}")
 ```
+
+#### `set_path(path, display_name=None, line=None, column=None)`
+Update the file path and optionally line/column position. Delegates to the internal FileLink widget.
+
+```python
+# Update to a new file path
+widget.set_path("new_file.py")
+
+# Update with custom display name
+widget.set_path("output.log", display_name="Build Output")
+
+# Update with line/column position (clears previous values if not specified)
+widget.set_path("script.py", line=42, column=10)
+
+# Starting from v0.8.0: Line/column are cleared if not specified
+widget.set_path("different.py")  # line and column are now None
+```
+
+**Parameters:**
+- `path: Path | str` - New file path (required)
+- `display_name: str | None` - New display name. If None, uses filename (default: None)
+- `line: int | None` - New line number. If None, clears to None (default: None)
+- `column: int | None` - New column number. If None, clears to None (default: None)
+
+**Notes:**
+- **Breaking change (v0.8.0)**: Line and column are cleared to None if not specified (previously preserved)
+- To preserve existing values, explicitly pass them: `widget.set_path("file.py", line=widget.line, column=widget.column)`
 
 ### Messages
 
@@ -1603,9 +1687,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Todo
-- Add ability to pass the open file command as a string with {{ variables }}
 
 ## Acknowledgments
 

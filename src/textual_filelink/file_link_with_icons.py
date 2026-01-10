@@ -469,3 +469,30 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
     def column(self) -> int | None:
         """Get the column number."""
         return self._column
+
+    def set_path(
+        self,
+        path: Path | str,
+        display_name: str | None = None,
+        line: int | None = None,
+        column: int | None = None,
+    ) -> None:
+        """Update the file path.
+
+        Delegates to the internal FileLink widget's set_path() method.
+
+        Parameters
+        ----------
+        path : Path | str
+            New file path.
+        display_name : str | None
+            New display name. If None, uses filename.
+        line : int | None
+            New line number. If None, clears line.
+        column : int | None
+            New column number. If None, clears column.
+        """
+        self._path = Path(path).resolve()
+        self._line = line
+        self._column = column
+        self._file_link.set_path(path, display_name, line, column)
