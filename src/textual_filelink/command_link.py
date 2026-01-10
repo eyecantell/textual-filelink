@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from textual.binding import Binding
 from textual.containers import Horizontal
@@ -125,11 +125,11 @@ class CommandLink(Horizontal, can_focus=True):
             The CommandLink widget that was clicked.
         name : str
             Command name.
-        output_path : Path | None
+        output_path : Optional[Path]
             Output file path if set.
         """
 
-        def __init__(self, widget: CommandLink, name: str, output_path: Path | None) -> None:
+        def __init__(self, widget: CommandLink, name: str, output_path: Optional[Path]) -> None:
             super().__init__()
             self.widget = widget
             self.name = name
@@ -144,11 +144,11 @@ class CommandLink(Horizontal, can_focus=True):
             The CommandLink widget that was clicked.
         name : str
             Command name.
-        output_path : Path | None
+        output_path : Optional[Path]
             Output file path if set.
         """
 
-        def __init__(self, widget: CommandLink, name: str, output_path: Path | None) -> None:
+        def __init__(self, widget: CommandLink, name: str, output_path: Optional[Path]) -> None:
             super().__init__()
             self.widget = widget
             self.name = name
@@ -163,11 +163,11 @@ class CommandLink(Horizontal, can_focus=True):
             The CommandLink widget that was clicked.
         name : str
             Command name.
-        output_path : Path | None
+        output_path : Optional[Path]
             Output file path if set.
         """
 
-        def __init__(self, widget: CommandLink, name: str, output_path: Path | None) -> None:
+        def __init__(self, widget: CommandLink, name: str, output_path: Optional[Path]) -> None:
             super().__init__()
             self.widget = widget
             self.name = name
@@ -195,41 +195,41 @@ class CommandLink(Horizontal, can_focus=True):
         self,
         command_name: str,
         *,
-        output_path: Path | str | None = None,
-        command_builder: Callable | None = None,
-        command_template: str | None = None,
+        output_path: Union[Path, str, None] = None,
+        command_builder: Optional[Callable] = None,
+        command_template: Optional[str] = None,
         initial_status_icon: str = "❓",
-        initial_status_tooltip: str | None = None,
+        initial_status_tooltip: Optional[str] = None,
         show_settings: bool = False,
         show_timer: bool = False,
         timer_field_width: int = 12,
-        start_time: float | None = None,
-        end_time: float | None = None,
-        tooltip: str | None = None,
-        open_keys: list[str] | None = None,
-        play_stop_keys: list[str] | None = None,
-        settings_keys: list[str] | None = None,
-        spinner_frames: list[str] | None = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
+        tooltip: Optional[str] = None,
+        open_keys: Optional[list[str]] = None,
+        play_stop_keys: Optional[list[str]] = None,
+        settings_keys: Optional[list[str]] = None,
+        spinner_frames: Optional[list[str]] = None,
         spinner_interval: float = 0.1,
-        name: str | None = None,
-        id: str | None = None,
-        classes: str | None = None,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
     ) -> None:
         """
         Parameters
         ----------
         command_name : str
             Command name to display.
-        output_path : Path | str | None
+        output_path : Union[Path, str, None]
             Optional output file path. If set, clicking name opens the file.
-        command_builder : Callable | None
+        command_builder : Optional[Callable]
             Optional command builder for opening output files.
             Takes precedence over command_template.
-        command_template : str | None
+        command_template : Optional[str]
             Template string for building editor commands (e.g., "vim {{ line_plus }} {{ path }}").
         initial_status_icon : str
             Initial status icon (default: "❓").
-        initial_status_tooltip : str | None
+        initial_status_tooltip : Optional[str]
             Initial tooltip for status icon.
         show_settings : bool
             Whether to show settings icon (default: False).
@@ -237,33 +237,33 @@ class CommandLink(Horizontal, can_focus=True):
             Whether to show elapsed/time-ago timer in a fixed-width field (default: False).
         timer_field_width : int
             Fixed width of the timing column in characters (default: 12).
-        start_time : float | None
+        start_time : Optional[float]
             Unix timestamp (time.time()) when command started. Widget will compute
             and display elapsed duration automatically. Default: None.
-        end_time : float | None
+        end_time : Optional[float]
             Unix timestamp (time.time()) when command completed. Widget will compute
             and display time-ago automatically. Default: None.
-        tooltip : str | None
+        tooltip : Optional[str]
             Custom tooltip text for the command name. If provided, keyboard shortcuts
             will be appended. If None, uses command name as base.
-        open_keys : list[str] | None
+        open_keys : Optional[list[str]]
             Custom keyboard shortcuts for opening output. If None, uses DEFAULT_OPEN_KEYS.
-        play_stop_keys : list[str] | None
+        play_stop_keys : Optional[list[str]]
             Custom keyboard shortcuts for play/stop. If None, uses DEFAULT_PLAY_STOP_KEYS.
-        settings_keys : list[str] | None
+        settings_keys : Optional[list[str]]
             Custom keyboard shortcuts for settings. If None, uses DEFAULT_SETTINGS_KEYS.
-        spinner_frames : list[str] | None
+        spinner_frames : Optional[list[str]]
             Custom spinner animation frames (unicode characters).
             If None, uses DEFAULT_SPINNER_FRAMES (Braille pattern).
             Example: ["◐", "◓", "◑", "◒"] for circle spinner
         spinner_interval : float
             Seconds between spinner frame updates. Default: 0.1
             Lower values = faster spin. Example: 0.05 for 2x speed
-        name : str | None
+        name : Optional[str]
             Widget name for Textual's widget identification system (optional).
-        id : str | None
+        id : Optional[str]
             Widget ID. If None, auto-generated from command_name via sanitize_id().
-        classes : str | None
+        classes : Optional[str]
             CSS classes.
         """
         self._command_name = command_name
@@ -286,9 +286,9 @@ class CommandLink(Horizontal, can_focus=True):
         self._command_running = False
 
         # Custom tooltips for play/stop button (will be used if set)
-        self._custom_run_tooltip: str | None = None
-        self._custom_stop_tooltip: str | None = None
-        self._custom_settings_tooltip: str | None = None
+        self._custom_run_tooltip: Optional[str] = None
+        self._custom_stop_tooltip: Optional[str] = None
+        self._custom_settings_tooltip: Optional[str] = None
 
         # Spinner configuration and state
         self._spinner_frames = spinner_frames if spinner_frames is not None else self.DEFAULT_SPINNER_FRAMES
@@ -297,8 +297,8 @@ class CommandLink(Horizontal, can_focus=True):
         self._spinner_timer = None
 
         # Timer state for elapsed/time-ago display
-        self._start_time: float | None = start_time
-        self._end_time: float | None = end_time
+        self._start_time: Optional[float] = start_time
+        self._end_time: Optional[float] = end_time
         self._timer_update_interval = None
         self._last_timer_display: str = ""  # Track last displayed timer to avoid unnecessary refreshes
 
@@ -329,7 +329,7 @@ class CommandLink(Horizontal, can_focus=True):
         self._play_stop_widget._is_play_button = True  # type: ignore
 
         # Name (FileLink if output_path, Static otherwise)
-        self._name_widget: FileLink | Static
+        self._name_widget: Union[FileLink, Static]
         if self._output_path:
             self._name_widget = FileLink(
                 self._output_path,
@@ -484,35 +484,35 @@ class CommandLink(Horizontal, can_focus=True):
     def set_status(
         self,
         *,
-        icon: str | None = None,
-        running: bool | None = None,
-        tooltip: str | None = None,
-        name_tooltip: str | None = None,
-        run_tooltip: str | None = None,
-        stop_tooltip: str | None = None,
-        start_time: float | None = None,
-        end_time: float | None = None,
+        icon: Optional[str] = None,
+        running: Optional[bool] = None,
+        tooltip: Optional[str] = None,
+        name_tooltip: Optional[str] = None,
+        run_tooltip: Optional[str] = None,
+        stop_tooltip: Optional[str] = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
         append_shortcuts: bool = True,
     ) -> None:
         """Update command status and optionally update tooltips.
 
         Parameters
         ----------
-        icon : str | None
+        icon : Optional[str]
             New status icon. If None, keeps current icon.
-        running : bool | None
+        running : Optional[bool]
             Whether command is running. If True, starts spinner.
-        tooltip : str | None
+        tooltip : Optional[str]
             New tooltip for status icon.
-        name_tooltip : str | None
+        name_tooltip : Optional[str]
             New tooltip for command name widget. Keyboard shortcuts appended based on append_shortcuts.
-        run_tooltip : str | None
+        run_tooltip : Optional[str]
             New tooltip for play button (when not running).
-        stop_tooltip : str | None
+        stop_tooltip : Optional[str]
             New tooltip for stop button (when running).
-        start_time : float | None
+        start_time : Optional[float]
             Unix timestamp (time.time()) when command started. Sets timer start time.
-        end_time : float | None
+        end_time : Optional[float]
             Unix timestamp (time.time()) when command completed. Sets timer end time.
         append_shortcuts : bool
             Whether to append keyboard shortcuts to name/run/stop tooltips. Default: True.
@@ -604,12 +604,12 @@ class CommandLink(Horizontal, can_focus=True):
         if end_time is not None:
             self.set_end_time(end_time)
 
-    def set_start_time(self, timestamp: float | None) -> None:
+    def set_start_time(self, timestamp: Optional[float]) -> None:
         """Set command start timestamp for elapsed time display.
 
         Parameters
         ----------
-        timestamp : float | None
+        timestamp : Optional[float]
             Unix timestamp (time.time()) when command started, or None to clear.
 
         Examples
@@ -627,12 +627,12 @@ class CommandLink(Horizontal, can_focus=True):
         if self._show_timer:
             self._update_timer_display()
 
-    def set_end_time(self, timestamp: float | None) -> None:
+    def set_end_time(self, timestamp: Optional[float]) -> None:
         """Set command end timestamp for time-ago display.
 
         Parameters
         ----------
-        timestamp : float | None
+        timestamp : Optional[float]
             Unix timestamp (time.time()) when command completed, or None to clear.
 
         Examples
@@ -650,12 +650,12 @@ class CommandLink(Horizontal, can_focus=True):
         if self._show_timer:
             self._update_timer_display()
 
-    def set_output_path(self, output_path: Path | str | None) -> None:
+    def set_output_path(self, output_path: Union[Path, str, None]) -> None:
         """Set or update the output file path.
 
         Parameters
         ----------
-        output_path : Path | str | None
+        output_path : Union[Path, str, None]
             New output path. If None, removes output path.
         """
         self._output_path = Path(output_path).resolve() if output_path else None
@@ -699,12 +699,12 @@ class CommandLink(Horizontal, can_focus=True):
         # Update tooltip to reflect new output path availability
         self._build_tooltip_with_shortcuts()
 
-    def set_name_tooltip(self, tooltip: str | None, append_shortcuts: bool = True) -> None:
+    def set_name_tooltip(self, tooltip: Optional[str], append_shortcuts: bool = True) -> None:
         """Set custom tooltip for the command name widget.
 
         Parameters
         ----------
-        tooltip : str | None
+        tooltip : Optional[str]
             Custom tooltip text. If None, uses command name as base.
         append_shortcuts : bool
             Whether to automatically append keyboard shortcuts to the tooltip.
@@ -726,18 +726,18 @@ class CommandLink(Horizontal, can_focus=True):
     def set_play_stop_tooltips(
         self,
         *,
-        run_tooltip: str | None = None,
-        stop_tooltip: str | None = None,
+        run_tooltip: Optional[str] = None,
+        stop_tooltip: Optional[str] = None,
         append_shortcuts: bool = True,
     ) -> None:
         """Set custom tooltips for play/stop button.
 
         Parameters
         ----------
-        run_tooltip : str | None
+        run_tooltip : Optional[str]
             Tooltip shown when button is in "play" state (command not running).
             If None, keeps current run tooltip.
-        stop_tooltip : str | None
+        stop_tooltip : Optional[str]
             Tooltip shown when button is in "stop" state (command running).
             If None, keeps current stop tooltip.
         append_shortcuts : bool
@@ -778,12 +778,12 @@ class CommandLink(Horizontal, can_focus=True):
         else:
             self._play_stop_widget.tooltip = self._custom_run_tooltip or "Run command (space/p)"
 
-    def set_settings_tooltip(self, tooltip: str | None, append_shortcuts: bool = True) -> None:
+    def set_settings_tooltip(self, tooltip: Optional[str], append_shortcuts: bool = True) -> None:
         """Set custom tooltip for settings icon.
 
         Parameters
         ----------
-        tooltip : str | None
+        tooltip : Optional[str]
             Custom tooltip text. If None, uses default "Settings (s)".
         append_shortcuts : bool
             Whether to automatically append keyboard shortcuts to the tooltip.
@@ -868,7 +868,7 @@ class CommandLink(Horizontal, can_focus=True):
         return self._command_name
 
     @property
-    def output_path(self) -> Path | None:
+    def output_path(self) -> Optional[Path]:
         """Get output file path."""
         return self._output_path
 

@@ -3,7 +3,7 @@
 import re
 import shlex
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 
 # Allowed template variables for command_from_template
 ALLOWED_VARIABLES = {
@@ -188,7 +188,7 @@ def format_time_ago(secs: float) -> str:
     return f"{weeks}w ago"
 
 
-def command_from_template(template: str) -> Callable[[Path, int | None, int | None], list[str]]:
+def command_from_template(template: str) -> Callable[[Path, Optional[int], Optional[int]], list[str]]:
     """Create a command builder from a template string.
 
     Supports Jinja2-style template variables:
@@ -212,7 +212,7 @@ def command_from_template(template: str) -> Callable[[Path, int | None, int | No
 
     Returns
     -------
-    Callable[[Path, int | None, int | None], list[str]]
+    Callable[[Path, Optional[int], Optional[int]], list[str]]
         Command builder function that takes (path, line, column) and returns
         command arguments as a list of strings
 
@@ -247,7 +247,7 @@ def command_from_template(template: str) -> Callable[[Path, int | None, int | No
     if unknown:
         raise ValueError(f"Unknown template variables: {unknown}. Allowed: {sorted(ALLOWED_VARIABLES)}")
 
-    def builder(path: Path, line: int | None, column: int | None) -> list[str]:
+    def builder(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Build command from template with given path, line, and column."""
         # Compute path variants
         path_abs = str(path.resolve())

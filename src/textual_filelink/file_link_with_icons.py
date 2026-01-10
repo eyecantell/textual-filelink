@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from textual.binding import Binding
 from textual.containers import Horizontal
@@ -98,49 +98,49 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
 
     def __init__(
         self,
-        path: Path | str,
-        display_name: str | None = None,
+        path: Union[Path, str],
+        display_name: Optional[str] = None,
         *,
-        line: int | None = None,
-        column: int | None = None,
-        command_builder: Callable | None = None,
-        command_template: str | None = None,
-        icons_before: list[Icon] | None = None,
-        icons_after: list[Icon] | None = None,
-        open_keys: list[str] | None = None,
-        name: str | None = None,
-        id: str | None = None,
-        classes: str | None = None,
-        tooltip: str | None = None,
+        line: Optional[int] = None,
+        column: Optional[int] = None,
+        command_builder: Optional[Callable] = None,
+        command_template: Optional[str] = None,
+        icons_before: Optional[list[Icon]] = None,
+        icons_after: Optional[list[Icon]] = None,
+        open_keys: Optional[list[str]] = None,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
+        tooltip: Optional[str] = None,
     ) -> None:
         """
         Parameters
         ----------
-        path : Path | str
+        path : Union[Path, str]
             Full path to the file.
-        display_name : str | None
+        display_name : Optional[str]
             Text to display for the link. If None, defaults to the filename.
-        line, column : int | None
+        line, column : Optional[int]
             Optional cursor position to jump to.
-        command_builder : Callable | None
+        command_builder : Optional[Callable]
             Function that takes (path, line, column) and returns command arguments.
             Takes precedence over command_template.
-        command_template : str | None
+        command_template : Optional[str]
             Template string for building editor commands (e.g., "vim {{ line_plus }} {{ path }}").
-        icons_before : list[Icon] | None
+        icons_before : Optional[list[Icon]]
             Icons to display before the filename. Order is preserved.
-        icons_after : list[Icon] | None
+        icons_after : Optional[list[Icon]]
             Icons to display after the filename. Order is preserved.
-        open_keys : list[str] | None
+        open_keys : Optional[list[str]]
             Custom keyboard shortcuts for opening the file. If None, uses ["enter", "o"].
             Example: ["f2"] or ["ctrl+o", "enter"]
-        id : str | None
+        id : Optional[str]
             Widget ID. If None, auto-generates from filename using sanitize_id().
             Example: "README.md" becomes "readme-md".
             Note: If you have multiple FileLinkWithIcons with the same filename, provide explicit IDs.
-        name, classes : str | None
+        name, classes : Optional[str]
             Standard Textual widget parameters.
-        tooltip : str | None
+        tooltip : Optional[str]
             Optional tooltip for the entire widget.
         """
         # Validate icons first (fail fast)
@@ -401,7 +401,7 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         icon.visible = visible
         self._rerender_icons()
 
-    def get_icon(self, name: str) -> Icon | None:
+    def get_icon(self, name: str) -> Optional[Icon]:
         """Get icon by name.
 
         Parameters
@@ -411,12 +411,12 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
 
         Returns
         -------
-        Icon | None
+        Optional[Icon]
             The icon if found, None otherwise.
         """
         return self._get_icon_by_name(name)
 
-    def _get_icon_by_name(self, name: str) -> Icon | None:
+    def _get_icon_by_name(self, name: str) -> Optional[Icon]:
         """Helper to find icon by name in both lists."""
         all_icons = self._icons_before + self._icons_after
         for icon in all_icons:
@@ -461,21 +461,21 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
         return self._path
 
     @property
-    def line(self) -> int | None:
+    def line(self) -> Optional[int]:
         """Get the line number."""
         return self._line
 
     @property
-    def column(self) -> int | None:
+    def column(self) -> Optional[int]:
         """Get the column number."""
         return self._column
 
     def set_path(
         self,
-        path: Path | str,
-        display_name: str | None = None,
-        line: int | None = None,
-        column: int | None = None,
+        path: Union[Path, str],
+        display_name: Optional[str] = None,
+        line: Optional[int] = None,
+        column: Optional[int] = None,
     ) -> None:
         """Update the file path.
 
@@ -483,13 +483,13 @@ class FileLinkWithIcons(Horizontal, can_focus=True):
 
         Parameters
         ----------
-        path : Path | str
+        path : Union[Path, str]
             New file path.
-        display_name : str | None
+        display_name : Optional[str]
             New display name. If None, uses filename.
-        line : int | None
+        line : Optional[int]
             New line number. If None, clears line.
-        column : int | None
+        column : Optional[int]
             New column number. If None, clears column.
         """
         self._path = Path(path).resolve()

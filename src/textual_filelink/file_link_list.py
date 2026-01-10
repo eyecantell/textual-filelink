@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Optional
 
 from textual.containers import Horizontal, VerticalScroll
 from textual.message import Message
@@ -194,8 +195,8 @@ class FileLinkList(VerticalScroll):
         *,
         show_toggles: bool = False,
         show_remove: bool = False,
-        id: str | None = None,
-        classes: str | None = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
     ) -> None:
         """Initialize the file link list.
 
@@ -205,9 +206,9 @@ class FileLinkList(VerticalScroll):
             Whether to show toggle checkboxes for all items (default: False).
         show_remove : bool
             Whether to show remove buttons for all items (default: False).
-        id : str | None
+        id : Optional[str]
             Widget ID.
-        classes : str | None
+        classes : Optional[str]
             CSS classes.
         """
         super().__init__(id=id, classes=classes)

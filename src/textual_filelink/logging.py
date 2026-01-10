@@ -16,7 +16,7 @@ Example:
 from __future__ import annotations
 
 import logging
-from typing import Literal
+from typing import Literal, Optional, Union
 
 _LOGGER_NAME = "textual_filelink"
 _logger = logging.getLogger(_LOGGER_NAME)
@@ -26,8 +26,8 @@ _DEFAULT_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(linen
 
 
 def setup_logging(
-    level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] | int = "DEBUG",
-    format_string: str | None = None,
+    level: Union[Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], int] = "DEBUG",
+    format_string: Optional[str] = None,
 ) -> None:
     """Enable console logging for textual-filelink.
 
@@ -35,7 +35,7 @@ def setup_logging(
     ----------
     level : str or int
         Logging level (e.g., "DEBUG", "INFO", logging.DEBUG). Default: "DEBUG"
-    format_string : str | None
+    format_string : Optional[str]
         Custom format string. If None, uses default format with timestamp,
         logger name, level, function, line number, and message.
 

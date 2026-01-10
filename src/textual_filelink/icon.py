@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -15,11 +16,11 @@ class Icon:
         REQUIRED: Unique identifier for this icon within the widget
     icon : str
         REQUIRED: Unicode character to display (e.g., "✅", "⚙️", "🔒")
-    tooltip : str | None
+    tooltip : Optional[str]
         Optional tooltip text shown on hover
     clickable : bool
         Whether clicking this icon emits IconClicked events (default: False)
-    key : str | None
+    key : Optional[str]
         Optional keyboard shortcut to trigger this icon (e.g., "1", "s", "ctrl+x")
     visible : bool
         Whether the icon is initially visible (default: True)
@@ -43,9 +44,9 @@ class Icon:
 
     name: str
     icon: str
-    tooltip: str | None = None
+    tooltip: Optional[str] = None
     clickable: bool = False
-    key: str | None = None
+    key: Optional[str] = None
     visible: bool = True
 
     def __post_init__(self):

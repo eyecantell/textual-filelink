@@ -4,7 +4,7 @@ import os
 import subprocess
 import warnings
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from textual import events
 from textual.binding import Binding
@@ -52,9 +52,9 @@ class FileLink(Static, can_focus=True):
     """
 
     # Class-level default command builder
-    default_command_builder: Callable | None = None
+    default_command_builder: Optional[Callable] = None
     # Class-level default command template
-    default_command_template: str | None = None
+    default_command_template: Optional[str] = None
 
     # Built-in template constants
     VSCODE_TEMPLATE = "code --goto {{ path }}:{{ line }}:{{ column }}"
@@ -72,13 +72,13 @@ class FileLink(Static, can_focus=True):
             The FileLink widget that was opened.
         path : Path
             The file path that was opened.
-        line : int | None
+        line : Optional[int]
             The line number to navigate to, or None.
-        column : int | None
+        column : Optional[int]
             The column number to navigate to, or None.
         """
 
-        def __init__(self, widget: FileLink, path: Path, line: int | None, column: int | None) -> None:
+        def __init__(self, widget: FileLink, path: Path, line: Optional[int], column: Optional[int]) -> None:
             super().__init__()
             self.widget = widget
             self.path = path
@@ -92,7 +92,7 @@ class FileLink(Static, can_focus=True):
         This alias will be removed in a future version.
         """
 
-        def __init__(self, widget: FileLink, path: Path, line: int | None, column: int | None) -> None:
+        def __init__(self, widget: FileLink, path: Path, line: Optional[int], column: Optional[int]) -> None:
             warnings.warn(
                 "FileLink.Clicked is deprecated, use FileLink.Opened instead",
                 DeprecationWarning,
@@ -105,45 +105,45 @@ class FileLink(Static, can_focus=True):
 
     def __init__(
         self,
-        path: Path | str,
-        display_name: str | None = None,
+        path: Union[Path, str],
+        display_name: Optional[str] = None,
         *,
-        line: int | None = None,
-        column: int | None = None,
-        command_builder: Callable | None = None,
-        command_template: str | None = None,
-        open_keys: list[str] | None = None,
-        name: str | None = None,
-        id: str | None = None,
-        classes: str | None = None,
+        line: Optional[int] = None,
+        column: Optional[int] = None,
+        command_builder: Optional[Callable] = None,
+        command_template: Optional[str] = None,
+        open_keys: Optional[list[str]] = None,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
+        classes: Optional[str] = None,
         _embedded: bool = False,
-        tooltip: str | None = None,
+        tooltip: Optional[str] = None,
     ) -> None:
         """
         Parameters
         ----------
-        path : Path | str
+        path : Union[Path, str]
             Full path to the file.
-        display_name : str | None
+        display_name : Optional[str]
             Text to display for the link. If None, defaults to the filename (path.name).
-        line, column : int | None
+        line, column : Optional[int]
             Optional cursor position to jump to.
-        command_builder : Callable | None
+        command_builder : Optional[Callable]
             Function that takes (path, line, column) and returns a list of command arguments.
             Takes precedence over command_template.
-        command_template : str | None
+        command_template : Optional[str]
             Template string for building editor commands (e.g., "vim {{ line_plus }} {{ path }}").
             Converted to builder function at runtime. Use FileLink.VSCODE_TEMPLATE, etc. for common editors.
-        open_keys : list[str] | None
+        open_keys : Optional[list[str]]
             Custom keyboard shortcuts for opening the file. If None, uses DEFAULT_OPEN_KEYS.
             Example: ["f2"] or ["ctrl+o", "enter"]
-        id : str | None
+        id : Optional[str]
             Widget ID. If None, auto-generates from filename using sanitize_id().
             Example: "README.md" becomes "readme-md".
             Note: If you have multiple FileLinks with the same filename, provide explicit IDs.
         _embedded : bool
             Internal use only. If True, disables focus to prevent stealing focus from parent widget.
-        tooltip : str | None
+        tooltip : Optional[str]
             Optional tooltip text. If provided, will be enhanced with keyboard shortcuts.
         """
         self._path = Path(path).resolve()
@@ -221,7 +221,7 @@ class FileLink(Static, can_focus=True):
                 keys.append(binding.key)
         return keys
 
-    def _enhance_tooltip(self, base_tooltip: str | None, action_name: str) -> str:
+    def _enhance_tooltip(self, base_tooltip: Optional[str], action_name: str) -> str:
         """Enhance tooltip with keyboard shortcut hints.
 
         Args:
@@ -261,7 +261,7 @@ class FileLink(Static, can_focus=True):
     # Properties
     # ------------------------------------------------------------------ #
     @property
-    def command_template(self) -> str | None:
+    def command_template(self) -> Optional[str]:
         """Get the command template string."""
         return self._command_template
 
@@ -332,7 +332,7 @@ class FileLink(Static, can_focus=True):
     # Default command builders
     # ------------------------------------------------------------------ #
     @staticmethod
-    def vscode_command(path: Path, line: int | None, column: int | None) -> list[str]:
+    def vscode_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Build VSCode 'code --goto' command."""
         try:
             cwd = Path.cwd()
@@ -352,7 +352,7 @@ class FileLink(Static, can_focus=True):
         return ["code", "--goto", goto_arg]
 
     @staticmethod
-    def vim_command(path: Path, line: int | None, column: int | None) -> list[str]:
+    def vim_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Build vim command."""
         cmd = ["vim"]
         if line is not None:
@@ -364,7 +364,7 @@ class FileLink(Static, can_focus=True):
         return cmd
 
     @staticmethod
-    def nano_command(path: Path, line: int | None, column: int | None) -> list[str]:
+    def nano_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Build nano command."""
         cmd = ["nano"]
         if line is not None:
@@ -376,7 +376,7 @@ class FileLink(Static, can_focus=True):
         return cmd
 
     @staticmethod
-    def eclipse_command(path: Path, line: int | None, column: int | None) -> list[str]:
+    def eclipse_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Build Eclipse command."""
         cmd = ["eclipse"]
         if line is not None:
@@ -386,7 +386,7 @@ class FileLink(Static, can_focus=True):
         return cmd
 
     @staticmethod
-    def copy_path_command(path: Path, line: int | None, column: int | None) -> list[str]:
+    def copy_path_command(path: Path, line: Optional[int], column: Optional[int]) -> list[str]:
         """Copy the full path (with line:column) to clipboard."""
         import platform
 
@@ -422,33 +422,33 @@ class FileLink(Static, can_focus=True):
         return self._display_name
 
     @property
-    def line(self) -> int | None:
+    def line(self) -> Optional[int]:
         """Get the line number."""
         return self._line
 
     @property
-    def column(self) -> int | None:
+    def column(self) -> Optional[int]:
         """Get the column number."""
         return self._column
 
     def set_path(
         self,
-        path: Path | str,
-        display_name: str | None = None,
-        line: int | None = None,
-        column: int | None = None,
+        path: Union[Path, str],
+        display_name: Optional[str] = None,
+        line: Optional[int] = None,
+        column: Optional[int] = None,
     ) -> None:
         """Update the file path.
 
         Parameters
         ----------
-        path : Path | str
+        path : Union[Path, str]
             New file path.
-        display_name : str | None
+        display_name : Optional[str]
             New display name. If None, uses filename.
-        line : int | None
+        line : Optional[int]
             New line number. If None, clears line.
-        column : int | None
+        column : Optional[int]
             New column number. If None, clears column.
         """
         self._path = Path(path).resolve()
